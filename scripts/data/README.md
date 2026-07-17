@@ -31,10 +31,11 @@ FlatGeobufは空間インデックス付きで生成する。JavaScript版`flatg
 `serialize`は空間インデックスを生成しないため、公開成果物の作成には使用しない。
 同パッケージはブラウザからのbbox Range取得と成果物の読込み検証に使用する。
 
-## 最初の固定入力
+## 固定入力
 
-`A31a-25_13_10_GEOJSON.zip`のうち、`A31a-20-*`が東京都の洪水予報河川・
-水位周知河川に関する想定最大規模ポリゴンである。元属性は次のとおり。
+`A31a-25_{都県コード}_10_GEOJSON.zip`のうち、`A31a-20-*`が関東1都6県の
+洪水予報河川・水位周知河川に関する想定最大規模ポリゴンである。対象都県は茨城、
+栃木、群馬、埼玉、千葉、東京、神奈川。元属性は次のとおり。
 
 - `A31a_201`: 河川番号
 - `A31a_202`: 河川名
@@ -48,6 +49,7 @@ FlatGeobufは空間インデックス付きで生成する。JavaScript版`flatg
 ## 実行
 
 ```bash
+vp run data:sources:download
 vp run data:a31a:download
 vp run data:a31a:build
 vp run data:a31a:validate
@@ -55,7 +57,12 @@ vp run data:a31a:upload
 vp run data:a31a:verify-remote
 ```
 
-生成物は`.data/output/risk-data/v1/`へ出力される。地点判定用FGBには全判定属性を
-保持し、地図用PMTilesには描画に必要な`depth_code`だけを保持する。`upload`は公開
-R2バケットの`risk-data/v1/`へ、FGBとPMTilesを1年immutable、マニフェスト類を
-5分キャッシュで配置する。
+生成物は`.data/output/risk-data/v1/`へ出力される。地点判定用FGBは都県別に生成し、
+全判定属性と都県コードを保持する。地図用PMTilesは関東7都県を1ファイルへまとめ、
+描画に必要な`depth_code`だけを保持する。`upload`は公開R2バケットの
+`risk-data/v1/`へ、FGBとPMTilesを1年immutable、マニフェスト類を5分キャッシュで
+配置する。
+
+`data:sources:download`はA31aに加え、A53関東地方整備局版と東京都地域危険度の
+Shapefile・CSVも入力ロックに従って取得・検証する。変換処理はデータ種別ごとの
+スクリプトで段階的に追加する。
