@@ -31,6 +31,14 @@ function featureId(feature: A31aFeature, index: number): string {
     : String(feature.id);
 }
 
+/**
+ * A31aの河川コード（10桁以上）を、A53が持つ水系コード（先頭6桁）へ揃える。
+ * 数字6桁未満の値はテストfixtureや将来の対応表を壊さないよう、そのまま返す。
+ */
+export function a31aBasinCode(riverId: string): string {
+  return /^\d{6}/.test(riverId) ? riverId.slice(0, 6) : riverId;
+}
+
 function matchingA31aFeatures(
   location: GeoPoint,
   candidates: readonly A31aFeature[],
@@ -46,7 +54,7 @@ function a31aFeatureToMatch(feature: A31aFeature, index: number): FloodPolygonMa
   return {
     datasetId: properties.dataset_id,
     featureId: featureId(feature, index),
-    riverOrBasinId: properties.river_id,
+    riverOrBasinId: a31aBasinCode(properties.river_id),
     riverOrBasinName: properties.river_name,
     depth: {
       sourceCode: String(properties.depth_code),

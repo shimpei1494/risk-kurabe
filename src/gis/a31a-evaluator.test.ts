@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  a31aBasinCode,
   evaluateA31aAtPoint,
   hasA31aBoundaryWarning,
   type A31aFeature,
@@ -55,6 +56,11 @@ function square(
 const tokyoPoint = { longitude: 139.7, latitude: 35.6 };
 
 describe("evaluateA31aAtPoint", () => {
+  it("A31a河川コードをA53の6桁水系コードへ正規化する", () => {
+    expect(a31aBasinCode("8303010001")).toBe("830301");
+    expect(a31aBasinCode("fixture-river")).toBe("fixture-river");
+  });
+
   it("bbox候補のうち正確に地点を含むポリゴンだけを採用する", () => {
     const inside = square([139.7, 35.6], 0.001, properties(2, "0.5m以上3.0m未満", 0.5, 3));
     const bboxOnly = square(
