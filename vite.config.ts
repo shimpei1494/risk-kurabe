@@ -11,7 +11,7 @@ const reactDoctorRules = {
 
 export default defineConfig({
   fmt: {
-    ignorePatterns: ["**/routeTree.gen.ts"],
+    ignorePatterns: [".agents/**", "docs/**", "**/routeTree.gen.ts"],
     sortImports: {
       partitionByComment: true,
     },
@@ -27,7 +27,7 @@ export default defineConfig({
       browser: true,
       node: true,
     },
-    ignorePatterns: ["**/routeTree.gen.ts"],
+    ignorePatterns: [".agents/**", "docs/**", "**/routeTree.gen.ts"],
     jsPlugins: [{ name: "react-doctor", specifier: "react-doctor/oxlint-plugin" }],
     options: {
       denyWarnings: true,
