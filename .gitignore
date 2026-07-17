@@ -6,6 +6,8 @@ dist
 .output
 
 # environment variable files
+.dev.vars*
+!.dev.vars.example
 .env
 .env.development.local
 .env.test.local

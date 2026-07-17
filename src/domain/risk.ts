@@ -15,12 +15,14 @@ export type RegionalRiskRank = 1 | 2 | 3 | 4 | 5;
 
 export interface FloodDepthEvidence {
   riverOrBasinName: string;
-  category: FloodDepthCategory;
+  /** 公開元の区分名をそのまま表示する。 */
+  category: string;
 }
 
 export interface MaxFloodDepthResult {
   state: DataStateKind;
   category?: FloodDepthCategory;
+  sourceLabel?: string;
   /** 重複判定: 複数河川が該当した場合の全根拠 */
   evidences?: FloodDepthEvidence[];
   boundaryWarning?: boolean;
@@ -31,11 +33,17 @@ export interface FloodFrequencyResult {
   /** 例: "30年に1回程度から" */
   frequencyLabel?: string;
   category?: FloodDepthCategory;
+  sourceLabel?: string;
+  evidences?: FloodDepthEvidence[];
+  boundaryWarning?: boolean;
 }
 
 export interface RegionalRiskResult {
   state: DataStateKind;
   rank?: RegionalRiskRank;
+  boundaryWarning?: boolean;
+  municipalityName?: string;
+  townName?: string;
 }
 
 export interface InvestigationResult {

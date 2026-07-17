@@ -23,12 +23,20 @@ import { InfoBanner } from "../components/shared/InfoBlocks";
 import { ResultLegend } from "../components/shared/Legend";
 import { RiskMap } from "../components/shared/RiskMap";
 import {
+  failedInvestigationResult,
+  KANTO_PREFECTURE_CODES,
+  outsideKantoResult,
+  toUiInvestigationResult,
+} from "../domain/investigation-adapter";
+import {
   MAX_COMPARISON_LOCATIONS,
   defaultLocationName,
   type ComparisonLocation,
   type LocationOrder,
+  type LocationSelection,
 } from "../domain/location";
-import { investigate, mockPoint } from "../domain/mock-data";
+import { riskDataBaseUrl } from "../gis/config";
+import { investigateRisk } from "../gis/investigate-risk";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -42,16 +50,30 @@ function Home() {
   const investigatedCount = locations.length;
   const isHome = investigatedCount === 0 && pendingOrder === 1;
 
-  function handleInvestigate(order: LocationOrder, address: string) {
-    const result = investigate(order);
+  async function handleInvestigate(order: LocationOrder, selection: LocationSelection) {
+    let result;
+    if (!KANTO_PREFECTURE_CODES.has(selection.prefectureCode)) {
+      result = outsideKantoResult();
+    } else {
+      const investigation = await investigateRisk({
+        baseUrl: riskDataBaseUrl(),
+        prefectureCode: selection.prefectureCode,
+        location: selection.point,
+      });
+      result =
+        investigation.kind === "completed"
+          ? toUiInvestigationResult(investigation)
+          : failedInvestigationResult();
+    }
+
     setLocations((prev) => [
       ...prev,
       {
         id: crypto.randomUUID(),
         order,
         name: defaultLocationName(order),
-        address,
-        point: mockPoint(order),
+        address: selection.address,
+        point: selection.point,
         result,
       },
     ]);
@@ -117,13 +139,24 @@ function Home() {
 function PageShell({ children }: { children: React.ReactNode }) {
   const { other } = useMantineTheme();
   return (
-    <Box mih="100vh" bg={other.risk.appBg}>
-      {children}
+    <Box mih="100vh" bg={other.risk.appBg} style={{ display: "flex", flexDirection: "column" }}>
+      <Box style={{ flex: 1 }}>{children}</Box>
+      {/* Begin Yahoo! JAPAN Web Services Attribution Snippet */}
+      <Box component="footer" ta="center">
+        <span style={{ margin: "15px 15px 15px 15px" }}>
+          <a href="https://developer.yahoo.co.jp/sitemap/">Webサービス by Yahoo! JAPAN</a>
+        </span>
+      </Box>
+      {/* End Yahoo! JAPAN Web Services Attribution Snippet */}
     </Box>
   );
 }
 
-function HomeInitialView({ onSubmit }: { onSubmit: (address: string) => void }) {
+function HomeInitialView({
+  onSubmit,
+}: {
+  onSubmit: (selection: LocationSelection) => Promise<void>;
+}) {
   return (
     <PageShell>
       <AppHeaderFull />
@@ -199,7 +232,7 @@ function ResultsView({
 }: {
   locations: ComparisonLocation[];
   pendingOrder: LocationOrder | null;
-  onInvestigate: (order: LocationOrder, address: string) => void;
+  onInvestigate: (order: LocationOrder, selection: LocationSelection) => Promise<void>;
   onAddLocation: () => void;
   onRename: (id: string, name: string) => void;
   onReset: () => void;
@@ -219,7 +252,7 @@ function ResultsView({
       order={pendingOrder}
       defaultName={defaultLocationName(pendingOrder)}
       submitLabel="この地点を調べる"
-      onSubmit={(address) => onInvestigate(pendingOrder, address)}
+      onSubmit={(selection) => onInvestigate(pendingOrder, selection)}
     />
   );
 

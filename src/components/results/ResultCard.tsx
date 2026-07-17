@@ -185,11 +185,12 @@ export function ResultCard({
             >
               <DataBadge
                 state={maxFloodDepth.state}
-                valueLabel={maxFloodDepth.category}
+                valueLabel={maxFloodDepth.sourceLabel ?? maxFloodDepth.category}
                 valueColor={
                   maxFloodDepth.category ? other.risk.floodDepth[maxFloodDepth.category] : undefined
                 }
                 outOfAreaSuffix="※"
+                notApplicableLabel="対象外（関東1都6県）"
               />
             </IndicatorRow>
             {maxFloodDepth.state === "value" &&
@@ -209,12 +210,22 @@ export function ResultCard({
           <IndicatorRow icon="頻" iconColor={other.risk.indicatorIcon.water} label="頻度別浸水">
             <DataBadge
               state={floodFrequency.state}
-              valueLabel={floodFrequency.frequencyLabel}
+              valueLabel={
+                floodFrequency.frequencyLabel && floodFrequency.sourceLabel
+                  ? `${floodFrequency.frequencyLabel}・${floodFrequency.sourceLabel}`
+                  : floodFrequency.frequencyLabel
+              }
               valueColor={
                 floodFrequency.category ? other.risk.floodDepth[floodFrequency.category] : undefined
               }
+              notApplicableLabel="対象外（関東1都6県）"
             />
           </IndicatorRow>
+          {floodFrequency.boundaryWarning ? (
+            <Box mb="2xs">
+              <BoundaryWarningNote />
+            </Box>
+          ) : null}
 
           <IndicatorRow
             icon="倒"
@@ -233,6 +244,11 @@ export function ResultCard({
               }
             />
           </IndicatorRow>
+          {buildingCollapseRisk.boundaryWarning ? (
+            <Box mb="2xs">
+              <BoundaryWarningNote />
+            </Box>
+          ) : null}
 
           <IndicatorRow
             icon="火"
@@ -246,6 +262,17 @@ export function ResultCard({
               valueColor={fireRisk.rank ? other.risk.regionalRiskRank[fireRisk.rank] : undefined}
             />
           </IndicatorRow>
+          {fireRisk.boundaryWarning ? (
+            <Box mt="2xs">
+              <BoundaryWarningNote />
+            </Box>
+          ) : null}
+          {buildingCollapseRisk.municipalityName && buildingCollapseRisk.townName ? (
+            <Text mt="xs" fz={11} c="var(--mantine-color-stone-7)">
+              地域危険度の根拠：{buildingCollapseRisk.municipalityName}
+              {buildingCollapseRisk.townName}
+            </Text>
+          ) : null}
         </Box>
       </Card.Section>
 
@@ -255,9 +282,11 @@ export function ResultCard({
         </Text>
       ) : null}
 
-      <Card.Section inheritPadding pt={showOutOfAreaFootnote ? 0 : "3xs"} pb="md" px="md">
-        <AiSummaryBox text={aiSummary} />
-      </Card.Section>
+      {aiSummary.trim().length > 0 ? (
+        <Card.Section inheritPadding pt={showOutOfAreaFootnote ? 0 : "3xs"} pb="md" px="md">
+          <AiSummaryBox text={aiSummary} />
+        </Card.Section>
+      ) : null}
     </Card>
   );
 }

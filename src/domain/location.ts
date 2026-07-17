@@ -5,6 +5,13 @@ export const MAX_COMPARISON_LOCATIONS = 3;
 
 export type LocationOrder = 1 | 2 | 3;
 
+export interface LocationSelection {
+  address: string;
+  point: GeoPoint;
+  /** Yahoo GovernmentCodeの都道府県部分（JIS X 0401、2桁） */
+  prefectureCode: string;
+}
+
 export interface ComparisonLocation {
   id: string;
   order: LocationOrder;

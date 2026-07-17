@@ -98,7 +98,9 @@ export function MobileComparisonView({ locations }: { locations: readonly Compar
             <BadgeCell key={loc.id}>
               <DataBadge
                 state={loc.result.maxFloodDepth.state}
-                valueLabel={loc.result.maxFloodDepth.category}
+                valueLabel={
+                  loc.result.maxFloodDepth.sourceLabel ?? loc.result.maxFloodDepth.category
+                }
                 valueColor={
                   loc.result.maxFloodDepth.category
                     ? other.risk.floodDepth[loc.result.maxFloodDepth.category]
@@ -106,6 +108,7 @@ export function MobileComparisonView({ locations }: { locations: readonly Compar
                 }
                 outOfAreaLabel="区域外"
                 outOfAreaSuffix="※"
+                notApplicableLabel="対象外（関東）"
               />
             </BadgeCell>
           ))}
@@ -133,12 +136,17 @@ export function MobileComparisonView({ locations }: { locations: readonly Compar
             <BadgeCell key={loc.id}>
               <DataBadge
                 state={loc.result.floodFrequency.state}
-                valueLabel={loc.result.floodFrequency.frequencyLabel}
+                valueLabel={
+                  loc.result.floodFrequency.frequencyLabel && loc.result.floodFrequency.sourceLabel
+                    ? `${loc.result.floodFrequency.frequencyLabel}・${loc.result.floodFrequency.sourceLabel}`
+                    : loc.result.floodFrequency.frequencyLabel
+                }
                 valueColor={
                   loc.result.floodFrequency.category
                     ? other.risk.floodDepth[loc.result.floodFrequency.category]
                     : undefined
                 }
+                notApplicableLabel="対象外（関東）"
               />
             </BadgeCell>
           ))}

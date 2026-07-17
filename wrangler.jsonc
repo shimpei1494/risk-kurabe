@@ -7,6 +7,9 @@
   "observability": {
     "enabled": true,
   },
+  "secrets": {
+    "required": ["YAHOO_CLIENT_ID"],
+  },
   "r2_buckets": [
     {
       "bucket_name": "risk-kurabe-data",
