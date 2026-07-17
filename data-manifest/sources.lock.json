@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "acquiredAt": "2026-07-17",
+  "sources": [
+    {
+      "id": "mlit-a31a-2025-tokyo-managed-rivers-geojson",
+      "dataset": "A31a",
+      "title": "国土数値情報 洪水浸水想定区域データ（河川単位）",
+      "provider": "国土交通省",
+      "prefectureCode": "13",
+      "prefectureName": "東京都",
+      "riverCategory": "洪水予報河川・水位周知河川",
+      "dataYear": 2025,
+      "format": "GeoJSON ZIP",
+      "fileName": "A31a-25_13_10_GEOJSON.zip",
+      "url": "https://nlftp.mlit.go.jp/ksj/gml/data/A31a/A31a-25/A31a-25_13_10_GEOJSON.zip",
+      "downloadPageUrl": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-A31a-2025.html",
+      "license": "CC BY 4.0",
+      "sha256": "ecaccc85cb630434116976cb96326b3f5c332ded2930c3dcb271d7973f94dc8b",
+      "includedCategory": {
+        "code": "20",
+        "label": "想定最大規模",
+        "filePattern": "A31a-20-*.geojson"
+      }
+    }
+  ]
+}

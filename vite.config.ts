@@ -1,3 +1,4 @@
+import { cloudflare } from "@cloudflare/vite-plugin";
 import babel from "@rolldown/plugin-babel";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
@@ -9,7 +10,7 @@ const reactDoctorRules = {
   ...reactDoctor.configs["tanstack-start"].rules,
 };
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   fmt: {
     ignorePatterns: [".agents/**", "docs/**", "**/routeTree.gen.ts"],
     sortImports: {
@@ -52,6 +53,7 @@ export default defineConfig({
     "*.{js,jsx,ts,tsx,json,css}": "vp check --fix",
   },
   plugins: [
+    mode === "test" ? undefined : cloudflare({ viteEnvironment: { name: "ssr" } }),
     tanstackStart(),
     // react's vite plugin must come after start's vite plugin
     react(),
@@ -63,4 +65,4 @@ export default defineConfig({
   test: {
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
   },
-});
+}));

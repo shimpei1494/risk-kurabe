@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "build": "vp build",
+    "cf-typegen": "vp exec wrangler types",
     "check": "vp check",
+    "deploy": "vp build && vp exec wrangler deploy",
     "dev": "vp dev",
     "doctor": "react-doctor . --verbose --yes --no-lint",
     "fallow": "vp exec fallow dead-code",
@@ -18,10 +20,13 @@
     "@mantine/hooks": "^9.4.1",
     "@tanstack/react-router": "^1.169.2",
     "@tanstack/react-start": "^1.167.65",
+    "flatgeobuf": "^4.4.0",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.45.0",
     "@rolldown/plugin-babel": "^0.2.3",
     "@tanstack/react-router-devtools": "^1.166.13",
     "@types/react": "^19.2.14",
@@ -35,7 +40,8 @@
     "postcss-simple-vars": "^7.0.1",
     "react-doctor": "^0.1.0",
     "vite": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "wrangler": "^4.111.0"
   },
   "engines": {
     "node": ">=24.17.0"

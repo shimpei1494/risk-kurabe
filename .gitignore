@@ -15,7 +15,12 @@ dist
 # caches
 .cache
 .fallow
+.pnpm-store
+.wrangler
 *.tsbuildinfo
+
+# generated and downloaded GIS data
+.data
 
 # IntelliJ based IDEs
 .idea

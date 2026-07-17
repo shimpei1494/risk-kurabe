@@ -42,7 +42,7 @@ function RootComponent() {
         <MantineProvider theme={theme}>
           <Outlet />
         </MantineProvider>
-        <TanStackRouterDevtools position="bottom-right" />
+        {import.meta.env.DEV ? <TanStackRouterDevtools position="bottom-right" /> : null}
         <Scripts />
       </body>
     </html>
