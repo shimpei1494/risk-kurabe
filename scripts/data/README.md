@@ -83,3 +83,17 @@ vp run data:a53:verify-remote
 
 入力に存在する年超過確率は1/10、1/30、1/50、1/100、1/150、1/200。未公開の
 水系・降雨規模の組み合わせも`coverage.json`へ`unpublished`として記録する。
+
+## 東京都地域危険度
+
+第9回調査のShapefileとCSVを区市町村名・町丁目名で1対1に結合し、5,192町丁目の
+建物倒壊危険度・火災危険度・地盤分類を正規化する。Shapefileの`ID`は公式町丁目
+コードではなく連番のため`source_id`として保持し、名称組を`town_key`とする。
+
+```bash
+vp run data:tokyo-risk:download
+vp run data:tokyo-risk:build
+vp run data:tokyo-risk:validate
+vp run data:tokyo-risk:upload
+vp run data:tokyo-risk:verify-remote
+```

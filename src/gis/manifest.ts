@@ -42,7 +42,22 @@ const a53DatasetSchema = datasetBaseSchema.extend({
   mapArtifact: mapArtifactSchema,
 });
 
-const datasetSchema = z.discriminatedUnion("indicator", [a31aDatasetSchema, a53DatasetSchema]);
+const tokyoRegionalRiskDatasetSchema = datasetBaseSchema.extend({
+  indicator: z.literal("tokyo-regional-risk"),
+  prefectures: z.tuple([z.literal("13")]),
+  townCount: z.number().int().positive(),
+  artifact: artifactSchema,
+  mapArtifacts: z.object({
+    buildingCollapse: mapArtifactSchema,
+    fire: mapArtifactSchema,
+  }),
+});
+
+const datasetSchema = z.discriminatedUnion("indicator", [
+  a31aDatasetSchema,
+  a53DatasetSchema,
+  tokyoRegionalRiskDatasetSchema,
+]);
 
 export const riskDataManifestSchema = z.object({
   schemaVersion: z.literal(1),
@@ -92,6 +107,16 @@ export const riskDataCoverageSchema = z.object({
       ),
     })
     .optional(),
+  tokyoRegionalRisk: z
+    .object({
+      prefectureCode: z.literal("13"),
+      status: coverageStatusSchema,
+      datasetId: z.string().min(1),
+      townCount: z.number().int().positive(),
+      municipalityCount: z.number().int().positive(),
+      excludedAreas: z.array(z.string().min(1)),
+    })
+    .optional(),
 });
 
 export type RiskDataManifest = z.infer<typeof riskDataManifestSchema>;
@@ -125,6 +150,22 @@ export async function loadRiskDataCatalog(
   return { manifest, coverage };
 }
 
+type A31aDataset = Extract<
+  RiskDataManifest["datasets"][number],
+  { indicator: "a31a-maximum-flood-depth" }
+>;
+
+function a31aDatasetForPrefecture(
+  manifest: RiskDataManifest,
+  prefectureCode: string,
+): A31aDataset | undefined {
+  return manifest.datasets.find(
+    (dataset): dataset is A31aDataset =>
+      dataset.indicator === "a31a-maximum-flood-depth" &&
+      dataset.prefectures.includes(prefectureCode),
+  );
+}
+
 export function a31aArtifactUrl({
   baseUrl,
   manifest,
@@ -134,10 +175,7 @@ export function a31aArtifactUrl({
   manifest: RiskDataManifest;
   prefectureCode: string;
 }): string | undefined {
-  const dataset = manifest.datasets.find(
-    ({ indicator, prefectures }) =>
-      indicator === "a31a-maximum-flood-depth" && prefectures.includes(prefectureCode),
-  );
+  const dataset = a31aDatasetForPrefecture(manifest, prefectureCode);
   return dataset ? urlFromBase(baseUrl, dataset.artifact.path) : undefined;
 }
 
@@ -150,10 +188,7 @@ export function a31aMapArtifactUrl({
   manifest: RiskDataManifest;
   prefectureCode: string;
 }): string | undefined {
-  const dataset = manifest.datasets.find(
-    ({ indicator, prefectures }) =>
-      indicator === "a31a-maximum-flood-depth" && prefectures.includes(prefectureCode),
-  );
+  const dataset = a31aDatasetForPrefecture(manifest, prefectureCode);
   return dataset?.mapArtifact ? urlFromBase(baseUrl, dataset.mapArtifact.path) : undefined;
 }
 
@@ -197,4 +232,46 @@ export function a53MapArtifactUrl({
 }): string | undefined {
   const dataset = a53DatasetForReturnPeriod(manifest, rainfallDenominator);
   return dataset ? urlFromBase(baseUrl, dataset.mapArtifact.path) : undefined;
+}
+
+type TokyoRegionalRiskDataset = Extract<
+  RiskDataManifest["datasets"][number],
+  { indicator: "tokyo-regional-risk" }
+>;
+
+function tokyoRegionalRiskDataset(
+  manifest: RiskDataManifest,
+): TokyoRegionalRiskDataset | undefined {
+  return manifest.datasets.find(
+    (dataset): dataset is TokyoRegionalRiskDataset => dataset.indicator === "tokyo-regional-risk",
+  );
+}
+
+export function tokyoRegionalRiskArtifactUrl({
+  baseUrl,
+  manifest,
+}: {
+  baseUrl: string;
+  manifest: RiskDataManifest;
+}): string | undefined {
+  const dataset = tokyoRegionalRiskDataset(manifest);
+  return dataset ? urlFromBase(baseUrl, dataset.artifact.path) : undefined;
+}
+
+export function tokyoRegionalRiskMapArtifactUrl({
+  baseUrl,
+  manifest,
+  indicator,
+}: {
+  baseUrl: string;
+  manifest: RiskDataManifest;
+  indicator: "building-collapse" | "fire";
+}): string | undefined {
+  const dataset = tokyoRegionalRiskDataset(manifest);
+  if (!dataset) return undefined;
+  const artifact =
+    indicator === "building-collapse"
+      ? dataset.mapArtifacts.buildingCollapse
+      : dataset.mapArtifacts.fire;
+  return urlFromBase(baseUrl, artifact.path);
 }

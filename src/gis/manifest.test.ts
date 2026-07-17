@@ -7,6 +7,8 @@ import {
   a53MapArtifactUrl,
   riskDataCoverageSchema,
   riskDataManifestSchema,
+  tokyoRegionalRiskArtifactUrl,
+  tokyoRegionalRiskMapArtifactUrl,
 } from "./manifest";
 
 const validManifest = {
@@ -218,5 +220,65 @@ describe("A53 artifact URL", () => {
         rainfallDenominator: 30,
       }),
     ).toBe("https://data.example.com/risk-data/v1/map/a53/030.pmtiles");
+  });
+});
+
+describe("東京都地域危険度 artifact URL", () => {
+  const manifest = riskDataManifestSchema.parse({
+    ...validManifest,
+    datasets: [
+      ...validManifest.datasets,
+      {
+        id: "tokyo-regional-risk-9",
+        indicator: "tokyo-regional-risk",
+        name: "地震に関する地域危険度測定調査",
+        provider: "東京都都市整備局",
+        referencePeriod: "2022年9月",
+        acquiredAt: "2026-07-17",
+        license: "CC BY 4.0",
+        sourceUrl: "https://example.com/tokyo-risk",
+        prefectures: ["13"],
+        townCount: 5192,
+        artifact: {
+          path: "query/tokyo/regional-risk.fgb",
+          contentType: "application/flatgeobuf",
+          size: 100,
+          sha256: "e".repeat(64),
+        },
+        mapArtifacts: {
+          buildingCollapse: {
+            path: "map/tokyo-building-collapse.pmtiles",
+            contentType: "application/vnd.pmtiles",
+            size: 80,
+            sha256: "f".repeat(64),
+          },
+          fire: {
+            path: "map/tokyo-fire.pmtiles",
+            contentType: "application/vnd.pmtiles",
+            size: 70,
+            sha256: "1".repeat(64),
+          },
+        },
+      },
+    ],
+  });
+
+  it("地点判定用FGB URLを組み立てる", () => {
+    expect(
+      tokyoRegionalRiskArtifactUrl({
+        baseUrl: "https://data.example.com/risk-data/v1",
+        manifest,
+      }),
+    ).toBe("https://data.example.com/risk-data/v1/query/tokyo/regional-risk.fgb");
+  });
+
+  it("選択指標のPMTiles URLを組み立てる", () => {
+    expect(
+      tokyoRegionalRiskMapArtifactUrl({
+        baseUrl: "https://data.example.com/risk-data/v1",
+        manifest,
+        indicator: "fire",
+      }),
+    ).toBe("https://data.example.com/risk-data/v1/map/tokyo-fire.pmtiles");
   });
 });
