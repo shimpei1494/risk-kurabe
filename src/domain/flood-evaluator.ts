@@ -19,7 +19,7 @@ export interface FloodPolygonMatch {
   depth: NormalizedFloodDepth;
 }
 
-export type FloodCoverageStatus = "available" | "unpublished" | "failed" | "unknown";
+export type FloodCoverageStatus = "available" | "partial" | "unpublished" | "failed" | "unknown";
 
 export interface EvaluatedFloodResult {
   state: Extract<DataStateKind, "value" | "outOfArea" | "unpublished" | "undetermined">;
@@ -57,7 +57,7 @@ function sortedCopy<T>(values: readonly T[], compare: (a: T, b: T) => number): T
  * 3. datasetId
  * 4. featureId
  */
-export function compareFloodMatches(a: FloodPolygonMatch, b: FloodPolygonMatch): number {
+function compareFloodMatches(a: FloodPolygonMatch, b: FloodPolygonMatch): number {
   const maxDifference = comparableMaxMeters(b.depth) - comparableMaxMeters(a.depth);
   if (Number.isFinite(maxDifference) && maxDifference !== 0) return maxDifference;
 
@@ -98,6 +98,7 @@ export function evaluateFloodMatches(
   const stateByCoverage = {
     available: "outOfArea",
     failed: "undetermined",
+    partial: "undetermined",
     unknown: "undetermined",
     unpublished: "unpublished",
   } as const satisfies Record<FloodCoverageStatus, EvaluatedFloodResult["state"]>;

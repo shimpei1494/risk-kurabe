@@ -150,7 +150,7 @@ jq -n \
     a31a: {
       prefectures: {
         "13": {
-          status: "available",
+          status: "partial",
           datasetIds: ["a31a-2025-tokyo-managed-rivers"],
           includedRiverCategories: ["洪水予報河川・水位周知河川"],
           excludedRiverCategories: ["その他の河川"]

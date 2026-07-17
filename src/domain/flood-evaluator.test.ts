@@ -74,6 +74,7 @@ describe("evaluateFloodMatches", () => {
 
   it.each([
     ["available", "outOfArea"],
+    ["partial", "undetermined"],
     ["unpublished", "unpublished"],
     ["failed", "undetermined"],
     ["unknown", "undetermined"],
