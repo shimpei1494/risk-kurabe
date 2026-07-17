@@ -5,9 +5,14 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 WORK_DIR="${RISK_DATA_WORK_DIR:-"$ROOT_DIR/.data"}"
 FGB_PATH="$WORK_DIR/output/risk-data/v1/query/a31a/tokyo.fgb"
+PMTILES_PATH="$WORK_DIR/output/risk-data/v1/map/a31a.pmtiles"
 
 if [[ ! -f "$FGB_PATH" ]]; then
   echo "FlatGeobuf not found: $FGB_PATH" >&2
+  exit 1
+fi
+if [[ ! -f "$PMTILES_PATH" ]]; then
+  echo "PMTiles not found: $PMTILES_PATH" >&2
   exit 1
 fi
 
@@ -56,4 +61,21 @@ if [[ "$INVALID_DEPTH_COUNT" -ne 0 ]]; then
   exit 1
 fi
 
+PMTILES_HEADER="$(pmtiles show "$PMTILES_PATH" --header-json)"
+PMTILES_TYPE="$(jq -r '.tile_type' <<<"$PMTILES_HEADER")"
+PMTILES_MIN_ZOOM="$(jq -r '.minzoom' <<<"$PMTILES_HEADER")"
+PMTILES_MAX_ZOOM="$(jq -r '.maxzoom' <<<"$PMTILES_HEADER")"
+
+if [[ "$PMTILES_TYPE" != "mvt" ]]; then
+  echo "unexpected PMTiles tile type: $PMTILES_TYPE" >&2
+  exit 1
+fi
+if [[ "$PMTILES_MIN_ZOOM" -ne 8 || "$PMTILES_MAX_ZOOM" -ne 16 ]]; then
+  echo "unexpected PMTiles zoom range: $PMTILES_MIN_ZOOM-$PMTILES_MAX_ZOOM" >&2
+  exit 1
+fi
+
+pmtiles verify "$PMTILES_PATH"
+
 echo "validated FlatGeobuf: $FEATURE_COUNT features, $GEOMETRY_TYPE, EPSG:$EPSG_CODE"
+echo "validated PMTiles: $PMTILES_TYPE, zoom $PMTILES_MIN_ZOOM-$PMTILES_MAX_ZOOM"

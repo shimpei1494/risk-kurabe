@@ -1,3 +1,4 @@
+import type { GeoPoint } from "../gis/geometry";
 import {
   evaluateFloodMatches,
   type FloodCoverageStatus,
@@ -105,4 +106,16 @@ export function investigate(order: number): InvestigationResult {
     throw new Error("投稿された調査結果の固定データが見つかりません");
   }
   return fixture;
+}
+
+const MOCK_POINTS: readonly GeoPoint[] = [
+  { longitude: 139.7, latitude: 35.57 },
+  { longitude: 139.731, latitude: 35.664 },
+  { longitude: 139.516, latitude: 35.644 },
+];
+
+export function mockPoint(order: number): GeoPoint {
+  const point = MOCK_POINTS[(order - 1) % MOCK_POINTS.length];
+  if (!point) throw new Error("地点の固定座標が見つかりません");
+  return point;
 }

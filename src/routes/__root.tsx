@@ -7,6 +7,7 @@ import { theme } from "../theme";
 
 import appCss from "../styles.css?url";
 import mantineCss from "@mantine/core/styles.css?url";
+import maplibreCss from "maplibre-gl/dist/maplibre-gl.css?url";
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -14,6 +15,7 @@ export const Route = createRootRoute({
   head: () => ({
     links: [
       { href: mantineCss, rel: "stylesheet" },
+      { href: maplibreCss, rel: "stylesheet" },
       { href: appCss, rel: "stylesheet" },
       { href: "https://fonts.googleapis.com", rel: "preconnect" },
       {
@@ -33,7 +35,7 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   return (
-    <html lang="ja">
+    <html lang="ja" suppressHydrationWarning>
       <head>
         <HeadContent />
         <ColorSchemeScript />

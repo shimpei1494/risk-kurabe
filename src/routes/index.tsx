@@ -10,7 +10,7 @@ import {
   Title,
   useMantineTheme,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -21,14 +21,14 @@ import { ResultCard } from "../components/results/ResultCard";
 import { AppHeaderCompact, AppHeaderFull } from "../components/shared/AppHeader";
 import { InfoBanner } from "../components/shared/InfoBlocks";
 import { ResultLegend } from "../components/shared/Legend";
-import { MapPlaceholder } from "../components/shared/MapPlaceholder";
+import { RiskMap } from "../components/shared/RiskMap";
 import {
   MAX_COMPARISON_LOCATIONS,
   defaultLocationName,
   type ComparisonLocation,
   type LocationOrder,
 } from "../domain/location";
-import { investigate } from "../domain/mock-data";
+import { investigate, mockPoint } from "../domain/mock-data";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -46,7 +46,14 @@ function Home() {
     const result = investigate(order);
     setLocations((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), order, name: defaultLocationName(order), address, result },
+      {
+        id: crypto.randomUUID(),
+        order,
+        name: defaultLocationName(order),
+        address,
+        point: mockPoint(order),
+        result,
+      },
     ]);
     setPendingOrder(null);
   }
@@ -91,11 +98,14 @@ function Home() {
       >
         <Stack gap="sm">
           <Text fz={12.5} c="var(--mantine-color-stone-8)">
-            全地点のピンと選択中指標のレイヤーを表示する地図は今後実装します。ここでは配置イメージのみ確認できます。
+            各地点の位置と、想定最大規模の洪水浸水深区分を重ねて表示しています。
           </Text>
-          <MapPlaceholder
-            order={locations[0]?.order ?? 1}
-            label={locations[0]?.name ?? "地点1"}
+          <RiskMap
+            locations={locations.map(({ order, name, point }) => ({
+              order,
+              label: name,
+              point,
+            }))}
             height={320}
           />
         </Stack>
@@ -196,6 +206,7 @@ function ResultsView({
   onOpenMap: () => void;
 }) {
   const { other } = useMantineTheme();
+  const isDesktop = useMediaQuery("(min-width: 48em)");
   const count = locations.length;
   const remaining = MAX_COMPARISON_LOCATIONS - count;
   const crumb = count <= 1 ? "調査結果" : `比較結果（${count}地点）`;
@@ -238,7 +249,12 @@ function ResultsView({
             {/* モバイル: 地図（コンパクト）→ カード → 追加CTA（デザイン 3f） */}
             <Box hiddenFrom="sm">
               <Stack gap="md">
-                <MapPlaceholder order={primary.order} label={primary.name} height={150} compact />
+                <RiskMap
+                  locations={[{ order: primary.order, label: primary.name, point: primary.point }]}
+                  height={150}
+                  compact
+                  active={!isDesktop}
+                />
                 <ResultCard
                   order={primary.order}
                   name={primary.name}
@@ -275,7 +291,10 @@ function ResultsView({
                 ) : null}
                 {pendingInput}
               </Stack>
-              <MapPlaceholder order={primary.order} label={primary.name} />
+              <RiskMap
+                locations={[{ order: primary.order, label: primary.name, point: primary.point }]}
+                active={isDesktop}
+              />
             </Box>
           </>
         ) : (

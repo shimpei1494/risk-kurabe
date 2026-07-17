@@ -9,12 +9,22 @@
 - `unzip`
 - `shasum`
 - GDAL 3.1以降（`ogr2ogr`、`ogrinfo`）
+- Tippecanoe 2.79以降
+- PMTiles CLI 1.31以降
 
 macOSでGDALが未導入の場合:
 
 ```bash
 brew install gdal
 ogr2ogr --version
+```
+
+地図表示用PMTilesの生成にはTippecanoeとPMTiles CLIを使う。
+
+```bash
+brew install tippecanoe
+tippecanoe --version
+pmtiles version
 ```
 
 FlatGeobufは空間インデックス付きで生成する。JavaScript版`flatgeobuf`の
@@ -45,5 +55,7 @@ vp run data:a31a:upload
 vp run data:a31a:verify-remote
 ```
 
-生成物は`.data/output/risk-data/v1/`へ出力される。`upload`は公開R2バケットの
-`risk-data/v1/`へ、FGBを1年immutable、マニフェスト類を5分キャッシュで配置する。
+生成物は`.data/output/risk-data/v1/`へ出力される。地点判定用FGBには全判定属性を
+保持し、地図用PMTilesには描画に必要な`depth_code`だけを保持する。`upload`は公開
+R2バケットの`risk-data/v1/`へ、FGBとPMTilesを1年immutable、マニフェスト類を
+5分キャッシュで配置する。

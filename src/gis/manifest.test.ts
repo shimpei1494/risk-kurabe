@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { a31aArtifactUrl, riskDataCoverageSchema, riskDataManifestSchema } from "./manifest";
+import {
+  a31aArtifactUrl,
+  a31aMapArtifactUrl,
+  riskDataCoverageSchema,
+  riskDataManifestSchema,
+} from "./manifest";
 
 const validManifest = {
   schemaVersion: 1,
@@ -22,6 +27,12 @@ const validManifest = {
         contentType: "application/flatgeobuf",
         size: 100,
         sha256: "a".repeat(64),
+      },
+      mapArtifact: {
+        path: "map/a31a.pmtiles",
+        contentType: "application/vnd.pmtiles",
+        size: 80,
+        sha256: "b".repeat(64),
       },
     },
   ],
@@ -78,5 +89,16 @@ describe("a31aArtifactUrl", () => {
         prefectureCode: "13",
       }),
     ).toBe("https://data.example.com/risk-data/v1/query/a31a/tokyo.fgb");
+  });
+
+  it("都県に対応するPMTilesの絶対URLを組み立てる", () => {
+    const manifest = riskDataManifestSchema.parse(validManifest);
+    expect(
+      a31aMapArtifactUrl({
+        baseUrl: "https://data.example.com/risk-data/v1",
+        manifest,
+        prefectureCode: "13",
+      }),
+    ).toBe("https://data.example.com/risk-data/v1/map/a31a.pmtiles");
   });
 });

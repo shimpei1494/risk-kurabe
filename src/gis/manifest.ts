@@ -9,6 +9,13 @@ const artifactSchema = z.object({
   sha256: z.string().regex(/^[a-f0-9]{64}$/),
 });
 
+const mapArtifactSchema = z.object({
+  path: z.string().min(1),
+  contentType: z.literal("application/vnd.pmtiles"),
+  size: z.number().int().positive(),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/),
+});
+
 const datasetSchema = z.object({
   id: z.string().min(1),
   indicator: z.literal("a31a-maximum-flood-depth"),
@@ -20,6 +27,7 @@ const datasetSchema = z.object({
   sourceUrl: z.url(),
   prefectures: z.array(z.string().regex(/^\d{2}$/)).min(1),
   artifact: artifactSchema,
+  mapArtifact: mapArtifactSchema.optional(),
 });
 
 export const riskDataManifestSchema = z.object({
@@ -98,4 +106,20 @@ export function a31aArtifactUrl({
       indicator === "a31a-maximum-flood-depth" && prefectures.includes(prefectureCode),
   );
   return dataset ? urlFromBase(baseUrl, dataset.artifact.path) : undefined;
+}
+
+export function a31aMapArtifactUrl({
+  baseUrl,
+  manifest,
+  prefectureCode,
+}: {
+  baseUrl: string;
+  manifest: RiskDataManifest;
+  prefectureCode: string;
+}): string | undefined {
+  const dataset = manifest.datasets.find(
+    ({ indicator, prefectures }) =>
+      indicator === "a31a-maximum-flood-depth" && prefectures.includes(prefectureCode),
+  );
+  return dataset?.mapArtifact ? urlFromBase(baseUrl, dataset.mapArtifact.path) : undefined;
 }

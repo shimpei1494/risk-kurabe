@@ -10,15 +10,17 @@ EXTRACT_DIR="$WORK_DIR/extracted/a31a-tokyo"
 INTERMEDIATE_DIR="$WORK_DIR/intermediate"
 VERSION_DIR="$WORK_DIR/output/risk-data/v1"
 FGB_PATH="$VERSION_DIR/query/a31a/tokyo.fgb"
+PMTILES_PATH="$VERSION_DIR/map/a31a.pmtiles"
 GPKG_PATH="$INTERMEDIATE_DIR/a31a-tokyo.gpkg"
+MBTILES_PATH="$INTERMEDIATE_DIR/a31a-tokyo.mbtiles"
 ENTRY_LIST="$INTERMEDIATE_DIR/a31a-tokyo-entries.txt"
 DATASET_ID="a31a-2025-tokyo-managed-rivers"
 
 bash "$ROOT_DIR/scripts/data/download-a31a-tokyo.sh"
 
 rm -rf "$EXTRACT_DIR"
-rm -f "$GPKG_PATH" "$FGB_PATH"
-mkdir -p "$EXTRACT_DIR" "$INTERMEDIATE_DIR" "$(dirname "$FGB_PATH")"
+rm -f "$GPKG_PATH" "$MBTILES_PATH" "$FGB_PATH" "$PMTILES_PATH"
+mkdir -p "$EXTRACT_DIR" "$INTERMEDIATE_DIR" "$(dirname "$FGB_PATH")" "$(dirname "$PMTILES_PATH")"
 
 unzip -Z1 "$ARCHIVE_PATH" |
   grep 'A31a-20-.*\.geojson$' |
@@ -110,14 +112,31 @@ ogr2ogr \
   -select dataset_id,source_file,river_id,river_name,manager_code,manager_name,depth_code,depth_label,depth_min_m,depth_max_m \
   -lco SPATIAL_INDEX=YES
 
+tippecanoe \
+  -o "$MBTILES_PATH" \
+  -l a31a \
+  -Z8 \
+  -z16 \
+  --force \
+  --no-feature-limit \
+  --no-tile-size-limit \
+  -y depth_code \
+  "$FGB_PATH"
+
+pmtiles convert "$MBTILES_PATH" "$PMTILES_PATH"
+
 bash "$ROOT_DIR/scripts/data/validate-a31a-tokyo.sh"
 
 FGB_SHA256="$(shasum -a 256 "$FGB_PATH" | awk '{print $1}')"
 FGB_SIZE="$(wc -c <"$FGB_PATH" | tr -d ' ')"
+PMTILES_SHA256="$(shasum -a 256 "$PMTILES_PATH" | awk '{print $1}')"
+PMTILES_SIZE="$(wc -c <"$PMTILES_PATH" | tr -d ' ')"
 
 jq -n \
-  --arg sha256 "$FGB_SHA256" \
-  --argjson size "$FGB_SIZE" \
+  --arg fgb_sha256 "$FGB_SHA256" \
+  --argjson fgb_size "$FGB_SIZE" \
+  --arg pmtiles_sha256 "$PMTILES_SHA256" \
+  --argjson pmtiles_size "$PMTILES_SIZE" \
   '{
     schemaVersion: 1,
     dataVersion: "risk-data-v1",
@@ -136,8 +155,14 @@ jq -n \
         artifact: {
           path: "query/a31a/tokyo.fgb",
           contentType: "application/flatgeobuf",
-          size: $size,
-          sha256: $sha256
+          size: $fgb_size,
+          sha256: $fgb_sha256
+        },
+        mapArtifact: {
+          path: "map/a31a.pmtiles",
+          contentType: "application/vnd.pmtiles",
+          size: $pmtiles_size,
+          sha256: $pmtiles_sha256
         }
       }
     ]
@@ -160,14 +185,20 @@ jq -n \
   }' >"$VERSION_DIR/coverage.json"
 
 jq -n \
-  --arg sha256 "$FGB_SHA256" \
-  --argjson size "$FGB_SIZE" \
+  --arg fgb_sha256 "$FGB_SHA256" \
+  --argjson fgb_size "$FGB_SIZE" \
+  --arg pmtiles_sha256 "$PMTILES_SHA256" \
+  --argjson pmtiles_size "$PMTILES_SIZE" \
   '{
     schemaVersion: 1,
     files: {
       "query/a31a/tokyo.fgb": {
-        size: $size,
-        sha256: $sha256
+        size: $fgb_size,
+        sha256: $fgb_sha256
+      },
+      "map/a31a.pmtiles": {
+        size: $pmtiles_size,
+        sha256: $pmtiles_sha256
       }
     }
   }' >"$VERSION_DIR/checksums.json"
@@ -175,3 +206,6 @@ jq -n \
 echo "created: $FGB_PATH"
 echo "sha256: $FGB_SHA256"
 echo "size: $FGB_SIZE bytes"
+echo "created: $PMTILES_PATH"
+echo "sha256: $PMTILES_SHA256"
+echo "size: $PMTILES_SIZE bytes"

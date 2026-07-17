@@ -17,6 +17,14 @@ vp exec wrangler r2 object put \
   --remote \
   --force
 
+vp exec wrangler r2 object put \
+  "$BUCKET_NAME/risk-data/v1/map/a31a.pmtiles" \
+  --file "$VERSION_DIR/map/a31a.pmtiles" \
+  --content-type application/vnd.pmtiles \
+  --cache-control 'public, max-age=31536000, immutable' \
+  --remote \
+  --force
+
 for metadata_file in manifest.json coverage.json checksums.json; do
   vp exec wrangler r2 object put \
     "$BUCKET_NAME/risk-data/v1/$metadata_file" \
