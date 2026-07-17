@@ -3,6 +3,8 @@ import { ColorSchemeScript, MantineProvider } from "@mantine/core";
 import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
+import { theme } from "../theme";
+
 import appCss from "../styles.css?url";
 import mantineCss from "@mantine/core/styles.css?url";
 
@@ -13,11 +15,16 @@ export const Route = createRootRoute({
     links: [
       { href: mantineCss, rel: "stylesheet" },
       { href: appCss, rel: "stylesheet" },
+      { href: "https://fonts.googleapis.com", rel: "preconnect" },
+      {
+        href: "https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap",
+        rel: "stylesheet",
+      },
     ],
     meta: [
       { charSet: "utf8" },
       { content: "width=device-width, initial-scale=1", name: "viewport" },
-      { title: "TanStack Start Start" },
+      { title: "リスクくらべ｜災害リスク比較サービス" },
     ],
   }),
   notFoundComponent: NotFoundComponent,
@@ -32,7 +39,7 @@ function RootComponent() {
         <ColorSchemeScript />
       </head>
       <body>
-        <MantineProvider>
+        <MantineProvider theme={theme}>
           <Outlet />
         </MantineProvider>
         <TanStackRouterDevtools position="bottom-right" />
