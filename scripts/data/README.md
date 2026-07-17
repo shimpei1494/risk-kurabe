@@ -34,3 +34,16 @@ FlatGeobufは空間インデックス付きで生成する。JavaScript版`flatg
 
 浸水深ランクは国土数値情報のコード表に従い、元ラベル、下限、上限を成果物へ保持する。
 上限なしのコード6は上限を`null`として扱う。
+
+## 実行
+
+```bash
+vp run data:a31a:download
+vp run data:a31a:build
+vp run data:a31a:validate
+vp run data:a31a:upload
+vp run data:a31a:verify-remote
+```
+
+生成物は`.data/output/risk-data/v1/`へ出力される。`upload`は公開R2バケットの
+`risk-data/v1/`へ、FGBを1年immutable、マニフェスト類を5分キャッシュで配置する。
