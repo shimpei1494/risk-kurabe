@@ -3,6 +3,8 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   a31aArtifactUrl,
   a31aMapArtifactUrl,
+  a53ArtifactUrl,
+  a53MapArtifactUrl,
   riskDataCoverageSchema,
   riskDataManifestSchema,
 } from "./manifest";
@@ -56,6 +58,42 @@ describe("riskDataManifestSchema", () => {
       }),
     ).toThrow();
   });
+
+  it("A53の降雨規模別datasetを受け入れる", () => {
+    const manifest = riskDataManifestSchema.parse({
+      ...validManifest,
+      datasets: [
+        ...validManifest.datasets,
+        {
+          id: "a53-kanto-010",
+          indicator: "a53-frequency-flood-depth",
+          name: "洪水浸水想定区域（1/10）",
+          provider: "国土交通省",
+          referencePeriod: "2025年度",
+          acquiredAt: "2026-07-17",
+          license: "CC BY 4.0",
+          sourceUrl: "https://example.com/a53",
+          prefectures: ["08", "09", "10", "11", "12", "13", "14"],
+          basinCodes: ["830301"],
+          rainfallDenominator: 10,
+          artifact: {
+            path: "query/a53/010/kanto.fgb",
+            contentType: "application/flatgeobuf",
+            size: 100,
+            sha256: "c".repeat(64),
+          },
+          mapArtifact: {
+            path: "map/a53/010.pmtiles",
+            contentType: "application/vnd.pmtiles",
+            size: 80,
+            sha256: "d".repeat(64),
+          },
+        },
+      ],
+    });
+
+    expect(manifest.datasets[1]?.indicator).toBe("a53-frequency-flood-depth");
+  });
 });
 
 describe("riskDataCoverageSchema", () => {
@@ -76,6 +114,32 @@ describe("riskDataCoverageSchema", () => {
     });
 
     expect(coverage.a31a.prefectures["13"]?.status).toBe("partial");
+  });
+
+  it("A53の水系別・降雨規模別カバレッジを受け入れる", () => {
+    const coverage = riskDataCoverageSchema.parse({
+      schemaVersion: 1,
+      dataVersion: "risk-data-v1",
+      a31a: {
+        prefectures: {},
+      },
+      a53: {
+        basins: {
+          "830301": {
+            name: "久慈川水系",
+            a31aLinkStatus: "linked",
+            returnPeriods: {
+              "10": {
+                status: "available",
+                datasetId: "a53-kanto-010",
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(coverage.a53?.basins["830301"]?.returnPeriods["10"]?.status).toBe("available");
   });
 });
 
@@ -100,5 +164,59 @@ describe("a31aArtifactUrl", () => {
         prefectureCode: "13",
       }),
     ).toBe("https://data.example.com/risk-data/v1/map/a31a.pmtiles");
+  });
+});
+
+describe("A53 artifact URL", () => {
+  const manifest = riskDataManifestSchema.parse({
+    ...validManifest,
+    datasets: [
+      ...validManifest.datasets,
+      {
+        id: "a53-kanto-030",
+        indicator: "a53-frequency-flood-depth",
+        name: "洪水浸水想定区域（1/30）",
+        provider: "国土交通省",
+        referencePeriod: "2025年度",
+        acquiredAt: "2026-07-17",
+        license: "CC BY 4.0",
+        sourceUrl: "https://example.com/a53",
+        prefectures: ["08", "09", "10", "11", "12", "13", "14"],
+        basinCodes: ["830301"],
+        rainfallDenominator: 30,
+        artifact: {
+          path: "query/a53/030/kanto.fgb",
+          contentType: "application/flatgeobuf",
+          size: 100,
+          sha256: "c".repeat(64),
+        },
+        mapArtifact: {
+          path: "map/a53/030.pmtiles",
+          contentType: "application/vnd.pmtiles",
+          size: 80,
+          sha256: "d".repeat(64),
+        },
+      },
+    ],
+  });
+
+  it("降雨規模に対応するFGB URLを組み立てる", () => {
+    expect(
+      a53ArtifactUrl({
+        baseUrl: "https://data.example.com/risk-data/v1",
+        manifest,
+        rainfallDenominator: 30,
+      }),
+    ).toBe("https://data.example.com/risk-data/v1/query/a53/030/kanto.fgb");
+  });
+
+  it("降雨規模に対応するPMTiles URLを組み立てる", () => {
+    expect(
+      a53MapArtifactUrl({
+        baseUrl: "https://data.example.com/risk-data/v1",
+        manifest,
+        rainfallDenominator: 30,
+      }),
+    ).toBe("https://data.example.com/risk-data/v1/map/a53/030.pmtiles");
   });
 });

@@ -66,3 +66,20 @@ vp run data:a31a:verify-remote
 `data:sources:download`はA31aに加え、A53関東地方整備局版と東京都地域危険度の
 Shapefile・CSVも入力ロックに従って取得・検証する。変換処理はデータ種別ごとの
 スクリプトで段階的に追加する。
+
+## A53頻度別浸水
+
+A53関東地方整備局版は水系単位で公開されているため、降雨規模ごとに関東全域の
+地点判定用FGBを生成する。地点検索時はbboxで候補を取得し、A31aの河川番号先頭6桁と
+A53の水系コードを照合して対象水系だけを判定する。
+
+```bash
+vp run data:a53:download
+vp run data:a53:build
+vp run data:a53:validate
+vp run data:a53:upload
+vp run data:a53:verify-remote
+```
+
+入力に存在する年超過確率は1/10、1/30、1/50、1/100、1/150、1/200。未公開の
+水系・降雨規模の組み合わせも`coverage.json`へ`unpublished`として記録する。

@@ -16,19 +16,33 @@ const mapArtifactSchema = z.object({
   sha256: z.string().regex(/^[a-f0-9]{64}$/),
 });
 
-const datasetSchema = z.object({
+const datasetBaseSchema = z.object({
   id: z.string().min(1),
-  indicator: z.literal("a31a-maximum-flood-depth"),
   name: z.string().min(1),
   provider: z.string().min(1),
   referencePeriod: z.string().min(1),
   acquiredAt: z.iso.date(),
   license: z.string().min(1),
   sourceUrl: z.url(),
+});
+
+const a31aDatasetSchema = datasetBaseSchema.extend({
+  indicator: z.literal("a31a-maximum-flood-depth"),
   prefectures: z.array(z.string().regex(/^\d{2}$/)).min(1),
   artifact: artifactSchema,
   mapArtifact: mapArtifactSchema.optional(),
 });
+
+const a53DatasetSchema = datasetBaseSchema.extend({
+  indicator: z.literal("a53-frequency-flood-depth"),
+  prefectures: z.array(z.string().regex(/^\d{2}$/)).min(1),
+  basinCodes: z.array(z.string().regex(/^\d{6}$/)).min(1),
+  rainfallDenominator: z.number().int().positive(),
+  artifact: artifactSchema,
+  mapArtifact: mapArtifactSchema,
+});
+
+const datasetSchema = z.discriminatedUnion("indicator", [a31aDatasetSchema, a53DatasetSchema]);
 
 export const riskDataManifestSchema = z.object({
   schemaVersion: z.literal(1),
@@ -59,6 +73,25 @@ export const riskDataCoverageSchema = z.object({
       }),
     ),
   }),
+  a53: z
+    .object({
+      basins: z.record(
+        z.string().regex(/^\d{6}$/),
+        z.object({
+          name: z.string().min(1),
+          a31aLinkStatus: z.enum(["linked", "unmatched"]),
+          a31aLinkReason: z.string().min(1).nullable().optional(),
+          returnPeriods: z.record(
+            z.string().regex(/^\d+$/),
+            z.object({
+              status: coverageStatusSchema,
+              datasetId: z.string().min(1).optional(),
+            }),
+          ),
+        }),
+      ),
+    })
+    .optional(),
 });
 
 export type RiskDataManifest = z.infer<typeof riskDataManifestSchema>;
@@ -122,4 +155,46 @@ export function a31aMapArtifactUrl({
       indicator === "a31a-maximum-flood-depth" && prefectures.includes(prefectureCode),
   );
   return dataset?.mapArtifact ? urlFromBase(baseUrl, dataset.mapArtifact.path) : undefined;
+}
+
+type A53Dataset = Extract<
+  RiskDataManifest["datasets"][number],
+  { indicator: "a53-frequency-flood-depth" }
+>;
+
+function a53DatasetForReturnPeriod(
+  manifest: RiskDataManifest,
+  rainfallDenominator: number,
+): A53Dataset | undefined {
+  return manifest.datasets.find(
+    (dataset): dataset is A53Dataset =>
+      dataset.indicator === "a53-frequency-flood-depth" &&
+      dataset.rainfallDenominator === rainfallDenominator,
+  );
+}
+
+export function a53ArtifactUrl({
+  baseUrl,
+  manifest,
+  rainfallDenominator,
+}: {
+  baseUrl: string;
+  manifest: RiskDataManifest;
+  rainfallDenominator: number;
+}): string | undefined {
+  const dataset = a53DatasetForReturnPeriod(manifest, rainfallDenominator);
+  return dataset ? urlFromBase(baseUrl, dataset.artifact.path) : undefined;
+}
+
+export function a53MapArtifactUrl({
+  baseUrl,
+  manifest,
+  rainfallDenominator,
+}: {
+  baseUrl: string;
+  manifest: RiskDataManifest;
+  rainfallDenominator: number;
+}): string | undefined {
+  const dataset = a53DatasetForReturnPeriod(manifest, rainfallDenominator);
+  return dataset ? urlFromBase(baseUrl, dataset.mapArtifact.path) : undefined;
 }
