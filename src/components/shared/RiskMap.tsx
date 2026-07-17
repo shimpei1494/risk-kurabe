@@ -2,7 +2,17 @@ import { Box, Center, Loader, Paper, Stack, Text, useMantineTheme } from "@manti
 import { useEffect, useReducer, useRef } from "react";
 
 import type { LocationOrder } from "../../domain/location";
-import { a31aPmtilesUrl } from "../../gis/config";
+import {
+  DEFAULT_MAP_SELECTION,
+  mapSelectionLabel,
+  type MapSelection,
+} from "../../domain/map-selection";
+import {
+  a31aPmtilesUrl,
+  a53PmtilesUrl,
+  tokyoBuildingCollapsePmtilesUrl,
+  tokyoFirePmtilesUrl,
+} from "../../gis/config";
 import type { GeoPoint } from "../../gis/geometry";
 
 export interface RiskMapLocation {
@@ -20,6 +30,55 @@ const depthColors = {
   6: "#172F52",
 } as const;
 
+const rankColors = {
+  1: "#F7F0CB",
+  2: "#F2DC86",
+  3: "#EFB25C",
+  4: "#E0763F",
+  5: "#C13A32",
+} as const;
+
+function selectedTheme(selection: MapSelection) {
+  switch (selection.indicator) {
+    case "frequency-flood":
+      return {
+        url: a53PmtilesUrl(selection.rainfallDenominator),
+        sourceLayer: "a53",
+        valueProperty: "depth_code",
+        palette: depthColors,
+        outline: "rgba(42, 78, 128, 0.35)",
+        attribution: "頻度別洪水浸水想定区域: 国土交通省",
+      };
+    case "building-collapse":
+      return {
+        url: tokyoBuildingCollapsePmtilesUrl(),
+        sourceLayer: "tokyo_building_collapse",
+        valueProperty: "building_collapse_rank",
+        palette: rankColors,
+        outline: "rgba(92, 74, 10, 0.35)",
+        attribution: "建物倒壊危険度: 東京都都市整備局",
+      };
+    case "fire":
+      return {
+        url: tokyoFirePmtilesUrl(),
+        sourceLayer: "tokyo_fire",
+        valueProperty: "fire_rank",
+        palette: rankColors,
+        outline: "rgba(120, 55, 32, 0.35)",
+        attribution: "火災危険度: 東京都都市整備局",
+      };
+    default:
+      return {
+        url: a31aPmtilesUrl(),
+        sourceLayer: "a31a",
+        valueProperty: "depth_code",
+        palette: depthColors,
+        outline: "rgba(42, 78, 128, 0.35)",
+        attribution: "洪水浸水想定区域: 国土交通省 国土数値情報",
+      };
+  }
+}
+
 let protocolRegistered = false;
 
 export function RiskMap({
@@ -27,11 +86,13 @@ export function RiskMap({
   height = 560,
   compact = false,
   active = true,
+  selection = DEFAULT_MAP_SELECTION,
 }: {
   locations: readonly RiskMapLocation[];
   height?: number;
   compact?: boolean;
   active?: boolean;
+  selection?: MapSelection;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [status, dispatchStatus] = useReducer(
@@ -42,10 +103,14 @@ export function RiskMap({
   const locationKey = locations
     .map(({ order, point }) => `${order}:${point.longitude}:${point.latitude}`)
     .join("|");
+  const theme = selectedTheme(selection);
+  const selectionKey = `${selection.indicator}:${selection.rainfallDenominator}`;
+  const selectionLabel = mapSelectionLabel(selection);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!active || !container || locations.length === 0) return;
+    dispatchStatus("loading");
 
     let disposed = false;
     let map: import("maplibre-gl").Map | undefined;
@@ -81,10 +146,10 @@ export function RiskMap({
                 attribution:
                   '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
               },
-              a31a: {
+              riskTheme: {
                 type: "vector",
-                url: `pmtiles://${a31aPmtilesUrl()}`,
-                attribution: "洪水浸水想定区域: 国土交通省 国土数値情報",
+                url: `pmtiles://${theme.url}`,
+                attribution: theme.attribution,
               },
             },
             layers: [
@@ -104,30 +169,32 @@ export function RiskMap({
                 },
               },
               {
-                id: "a31a-fill",
+                id: "risk-theme-fill",
                 type: "fill",
-                source: "a31a",
-                "source-layer": "a31a",
+                source: "riskTheme",
+                "source-layer": theme.sourceLayer,
                 paint: {
                   "fill-color": [
                     "match",
-                    ["to-number", ["get", "depth_code"]],
+                    ["to-number", ["get", theme.valueProperty]],
                     1,
-                    depthColors[1],
+                    theme.palette[1],
                     2,
-                    depthColors[2],
+                    theme.palette[2],
                     3,
-                    depthColors[3],
+                    theme.palette[3],
                     4,
-                    depthColors[4],
+                    theme.palette[4],
                     5,
-                    depthColors[5],
-                    6,
-                    depthColors[6],
+                    theme.palette[5],
+                    ...(selection.indicator === "maximum-flood" ||
+                    selection.indicator === "frequency-flood"
+                      ? [6, depthColors[6]]
+                      : []),
                     "#B5B2A9",
                   ],
                   "fill-opacity": 0.78,
-                  "fill-outline-color": "rgba(42, 78, 128, 0.35)",
+                  "fill-outline-color": theme.outline,
                 },
               },
             ],
@@ -168,7 +235,7 @@ export function RiskMap({
         handleIdle = () => {
           if (!disposed && map) {
             container.dataset.visibleRiskFeatures = String(
-              map.queryRenderedFeatures(undefined, { layers: ["a31a-fill"] }).length,
+              map.queryRenderedFeatures(undefined, { layers: ["risk-theme-fill"] }).length,
             );
             dispatchStatus("ready");
           }
@@ -191,13 +258,13 @@ export function RiskMap({
     };
     // locationKey is a stable, serializable representation of the locations.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, compact, locationKey, other.risk.locationAccents]);
+  }, [active, compact, locationKey, other.risk.locationAccents, selectionKey]);
 
   return (
     <Paper
       component="section"
       radius="lg"
-      aria-label="想定最大規模の洪水浸水深地図"
+      aria-label={`${selectionLabel}の地図`}
       style={{
         position: "relative",
         overflow: "hidden",
@@ -213,7 +280,7 @@ export function RiskMap({
           <Stack align="center" gap="xs">
             <Loader size="sm" />
             <Text fz={12} fw={700} c="var(--mantine-color-stone-8)">
-              浸水想定区域を読み込んでいます
+              {selectionLabel}を読み込んでいます
             </Text>
           </Stack>
         </Center>
@@ -245,17 +312,21 @@ export function RiskMap({
           style={{ zIndex: 1 }}
         >
           <Text fz={10.5} fw={700} c="var(--mantine-color-stone-9)">
-            想定最大規模の浸水深
+            {selectionLabel}
           </Text>
           <Box mt="4xs" style={{ display: "flex" }}>
-            {Object.values(depthColors).map((color) => (
+            {Object.values(theme.palette).map((color) => (
               <Box key={color} w={22} h={6} bg={color} />
             ))}
           </Box>
           <Text mt={3} fz={9.5} c="var(--mantine-color-stone-7)">
-            0m以上
+            {selection.indicator === "maximum-flood" || selection.indicator === "frequency-flood"
+              ? "浅い"
+              : "ランク1"}
             <Text component="span" ml={76}>
-              20m以上
+              {selection.indicator === "maximum-flood" || selection.indicator === "frequency-flood"
+                ? "深い"
+                : "ランク5"}
             </Text>
           </Text>
         </Paper>

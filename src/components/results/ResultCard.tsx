@@ -10,7 +10,11 @@ import {
 } from "@mantine/core";
 import { useState } from "react";
 
-import type { InvestigationResult } from "../../domain/risk";
+import {
+  floodFrequencyAt,
+  type InvestigationResult,
+  type RainfallDenominator,
+} from "../../domain/risk";
 import { DataBadge } from "../shared/DataBadge";
 import { AiSummaryBox, BoundaryWarningNote, MultiRiverEvidence } from "../shared/InfoBlocks";
 
@@ -137,6 +141,7 @@ export function ResultCard({
   result,
   accentColor,
   compact = false,
+  rainfallDenominator = 30,
   onRename,
 }: {
   order: number;
@@ -146,10 +151,12 @@ export function ResultCard({
   accentColor?: string;
   /** 3列比較グリッドなど横幅が狭い文脈では、名前編集を「✎」アイコンのみで表示する */
   compact?: boolean;
+  rainfallDenominator?: RainfallDenominator;
   onRename: (name: string) => void;
 }) {
   const { other } = useMantineTheme();
   const { maxFloodDepth, floodFrequency, buildingCollapseRisk, fireRisk, aiSummary } = result;
+  const selectedFrequency = floodFrequencyAt(floodFrequency, rainfallDenominator);
   const showOutOfAreaFootnote =
     maxFloodDepth.state === "outOfArea" || floodFrequency.state === "outOfArea";
 
@@ -207,21 +214,27 @@ export function ResultCard({
             ) : null}
           </Box>
 
-          <IndicatorRow icon="頻" iconColor={other.risk.indicatorIcon.water} label="頻度別浸水">
+          <IndicatorRow
+            icon="頻"
+            iconColor={other.risk.indicatorIcon.water}
+            label={`頻度別浸水（${rainfallDenominator}年）`}
+          >
             <DataBadge
-              state={floodFrequency.state}
+              state={selectedFrequency.state}
               valueLabel={
-                floodFrequency.frequencyLabel && floodFrequency.sourceLabel
-                  ? `${floodFrequency.frequencyLabel}・${floodFrequency.sourceLabel}`
-                  : floodFrequency.frequencyLabel
+                selectedFrequency.sourceLabel
+                  ? `${rainfallDenominator}年に1回程度・${selectedFrequency.sourceLabel}`
+                  : undefined
               }
               valueColor={
-                floodFrequency.category ? other.risk.floodDepth[floodFrequency.category] : undefined
+                selectedFrequency.category
+                  ? other.risk.floodDepth[selectedFrequency.category]
+                  : undefined
               }
               notApplicableLabel="対象外（関東1都6県）"
             />
           </IndicatorRow>
-          {floodFrequency.boundaryWarning ? (
+          {selectedFrequency.boundaryWarning ? (
             <Box mb="2xs">
               <BoundaryWarningNote />
             </Box>

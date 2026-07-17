@@ -36,7 +36,21 @@ export interface FloodFrequencyResult {
   sourceLabel?: string;
   evidences?: FloodDepthEvidence[];
   boundaryWarning?: boolean;
+  /** 降雨規模ごとの判定。比較表示と地図はこの同じ値を参照する。 */
+  periods: readonly FloodFrequencyPeriodResult[];
 }
+
+export interface FloodFrequencyPeriodResult {
+  rainfallDenominator: RainfallDenominator;
+  state: DataStateKind;
+  category?: FloodDepthCategory;
+  sourceLabel?: string;
+  evidences?: FloodDepthEvidence[];
+  boundaryWarning?: boolean;
+}
+
+export const RAINFALL_DENOMINATORS = [10, 30, 50, 100, 150, 200] as const;
+export type RainfallDenominator = (typeof RAINFALL_DENOMINATORS)[number];
 
 export interface RegionalRiskResult {
   state: DataStateKind;
@@ -53,4 +67,20 @@ export interface InvestigationResult {
   fireRisk: RegionalRiskResult;
   /** AIによる公開データの要約（評価ではない） */
   aiSummary: string;
+}
+
+export function floodFrequencyAt(
+  result: FloodFrequencyResult,
+  rainfallDenominator: RainfallDenominator,
+): FloodFrequencyPeriodResult {
+  return (
+    result.periods.find((period) => period.rainfallDenominator === rainfallDenominator) ?? {
+      rainfallDenominator,
+      state: result.state,
+      category: result.category,
+      sourceLabel: result.sourceLabel,
+      evidences: result.evidences,
+      boundaryWarning: result.boundaryWarning,
+    }
+  );
 }

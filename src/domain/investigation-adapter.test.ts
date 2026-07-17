@@ -83,6 +83,18 @@ describe("toUiInvestigationResult", () => {
       frequencyLabel: "30年に1回程度",
       sourceLabel: "3.0m以上5.0m未満",
     });
+    expect(adapted.floodFrequency.periods).toEqual([
+      expect.objectContaining({
+        rainfallDenominator: 10,
+        state: "outOfArea",
+      }),
+      expect.objectContaining({
+        rainfallDenominator: 30,
+        state: "value",
+        category: "3〜5m",
+        sourceLabel: "3.0m以上5.0m未満",
+      }),
+    ]);
   });
 
   it("関東外は洪水を区域外ではなく対象外にする", () => {

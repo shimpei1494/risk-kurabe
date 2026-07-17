@@ -9,3 +9,18 @@ export function riskDataBaseUrl(): string {
 export function a31aPmtilesUrl(): string {
   return new URL("map/a31a.pmtiles", riskDataBaseUrl()).toString();
 }
+
+export function a53PmtilesUrl(rainfallDenominator: number): string {
+  return new URL(
+    `map/a53/${String(rainfallDenominator).padStart(3, "0")}.pmtiles`,
+    riskDataBaseUrl(),
+  ).toString();
+}
+
+export function tokyoBuildingCollapsePmtilesUrl(): string {
+  return new URL("map/tokyo-building-collapse.pmtiles", riskDataBaseUrl()).toString();
+}
+
+export function tokyoFirePmtilesUrl(): string {
+  return new URL("map/tokyo-fire.pmtiles", riskDataBaseUrl()).toString();
+}

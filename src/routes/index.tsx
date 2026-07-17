@@ -16,11 +16,13 @@ import { useState } from "react";
 
 import { LocationInputCard } from "../components/location-input/LocationInputCard";
 import { AddLocationCard } from "../components/results/AddLocationCard";
+import { DesktopComparisonTable } from "../components/results/DesktopComparisonTable";
 import { MobileComparisonView } from "../components/results/MobileComparisonView";
 import { ResultCard } from "../components/results/ResultCard";
 import { AppHeaderCompact, AppHeaderFull } from "../components/shared/AppHeader";
 import { InfoBanner } from "../components/shared/InfoBlocks";
 import { ResultLegend } from "../components/shared/Legend";
+import { MapThemeControls } from "../components/shared/MapThemeControls";
 import { RiskMap } from "../components/shared/RiskMap";
 import {
   failedInvestigationResult,
@@ -35,6 +37,11 @@ import {
   type LocationOrder,
   type LocationSelection,
 } from "../domain/location";
+import {
+  DEFAULT_MAP_SELECTION,
+  mapSelectionLabel,
+  type MapSelection,
+} from "../domain/map-selection";
 import { riskDataBaseUrl } from "../gis/config";
 import { investigateRisk } from "../gis/investigate-risk";
 
@@ -45,6 +52,7 @@ export const Route = createFileRoute("/")({
 function Home() {
   const [locations, setLocations] = useState<ComparisonLocation[]>([]);
   const [pendingOrder, setPendingOrder] = useState<LocationOrder | null>(1);
+  const [mapSelection, setMapSelection] = useState<MapSelection>(DEFAULT_MAP_SELECTION);
   const [mapOpened, { open: openMap, close: closeMap }] = useDisclosure(false);
 
   const investigatedCount = locations.length;
@@ -109,6 +117,8 @@ function Home() {
         onRename={handleRename}
         onReset={handleReset}
         onOpenMap={openMap}
+        mapSelection={mapSelection}
+        onMapSelectionChange={setMapSelection}
       />
       <Modal
         opened={mapOpened}
@@ -120,8 +130,9 @@ function Home() {
       >
         <Stack gap="sm">
           <Text fz={12.5} c="var(--mantine-color-stone-8)">
-            各地点の位置と、想定最大規模の洪水浸水深区分を重ねて表示しています。
+            各地点の位置と、{mapSelectionLabel(mapSelection)}を重ねて表示しています。
           </Text>
+          <MapThemeControls selection={mapSelection} onChange={setMapSelection} compact />
           <RiskMap
             locations={locations.map(({ order, name, point }) => ({
               order,
@@ -129,6 +140,7 @@ function Home() {
               point,
             }))}
             height={320}
+            selection={mapSelection}
           />
         </Stack>
       </Modal>
@@ -229,6 +241,8 @@ function ResultsView({
   onRename,
   onReset,
   onOpenMap,
+  mapSelection,
+  onMapSelectionChange,
 }: {
   locations: ComparisonLocation[];
   pendingOrder: LocationOrder | null;
@@ -237,8 +251,9 @@ function ResultsView({
   onRename: (id: string, name: string) => void;
   onReset: () => void;
   onOpenMap: () => void;
+  mapSelection: MapSelection;
+  onMapSelectionChange: (selection: MapSelection) => void;
 }) {
-  const { other } = useMantineTheme();
   const isDesktop = useMediaQuery("(min-width: 48em)");
   const count = locations.length;
   const remaining = MAX_COMPARISON_LOCATIONS - count;
@@ -287,12 +302,19 @@ function ResultsView({
                   height={150}
                   compact
                   active={!isDesktop}
+                  selection={mapSelection}
+                />
+                <MapThemeControls
+                  selection={mapSelection}
+                  onChange={onMapSelectionChange}
+                  compact
                 />
                 <ResultCard
                   order={primary.order}
                   name={primary.name}
                   address={primary.address}
                   result={primary.result!}
+                  rainfallDenominator={mapSelection.rainfallDenominator}
                   onRename={(name) => onRename(primary.id, name)}
                 />
                 {showAddSlot ? (
@@ -317,6 +339,7 @@ function ResultsView({
                   name={primary.name}
                   address={primary.address}
                   result={primary.result!}
+                  rainfallDenominator={mapSelection.rainfallDenominator}
                   onRename={(name) => onRename(primary.id, name)}
                 />
                 {showAddSlot ? (
@@ -324,17 +347,31 @@ function ResultsView({
                 ) : null}
                 {pendingInput}
               </Stack>
-              <RiskMap
-                locations={[{ order: primary.order, label: primary.name, point: primary.point }]}
-                active={isDesktop}
-              />
+              <Stack gap="sm">
+                <MapThemeControls selection={mapSelection} onChange={onMapSelectionChange} />
+                <RiskMap
+                  locations={[{ order: primary.order, label: primary.name, point: primary.point }]}
+                  active={isDesktop}
+                  selection={mapSelection}
+                />
+              </Stack>
             </Box>
           </>
         ) : (
           <>
             {/* モバイル: 指標別グルーピング比較（デザイン 3g） */}
             <Box hiddenFrom="sm">
-              <MobileComparisonView locations={locations} />
+              <Box px="lg">
+                <MapThemeControls
+                  selection={mapSelection}
+                  onChange={onMapSelectionChange}
+                  compact
+                />
+              </Box>
+              <MobileComparisonView
+                locations={locations}
+                rainfallDenominator={mapSelection.rainfallDenominator}
+              />
               {showAddSlot ? (
                 <Box mt="sm">
                   <AddLocationCard remaining={remaining} onClick={onAddLocation} />
@@ -343,33 +380,26 @@ function ResultsView({
               {pendingOrder !== null ? <Box mt="sm">{pendingInput}</Box> : null}
             </Box>
 
-            {/* デスクトップ: 地点ごとの列比較（デザイン 3c / 3e） */}
-            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="2xl" visibleFrom="sm">
-              {locations.map((loc) => (
-                <ResultCard
-                  key={loc.id}
-                  order={loc.order}
-                  name={loc.name}
-                  address={loc.address}
-                  result={loc.result!}
-                  accentColor={
-                    other.risk.locationAccents[(loc.order - 1) % other.risk.locationAccents.length]
-                  }
-                  compact
-                  onRename={(name) => onRename(loc.id, name)}
-                />
-              ))}
-              {pendingOrder !== null ? pendingInput : null}
-              {showAddSlot ? (
-                <AddLocationCard remaining={remaining} variant="slot" onClick={onAddLocation} />
+            {/* デスクトップ: 指標を行、地点を列に揃えた比較表 */}
+            <Stack visibleFrom="sm" gap="md">
+              <MapThemeControls selection={mapSelection} onChange={onMapSelectionChange} />
+              <DesktopComparisonTable
+                locations={locations}
+                rainfallDenominator={mapSelection.rainfallDenominator}
+                selectedIndicator={mapSelection.indicator}
+              />
+              {pendingOrder !== null || showAddSlot ? (
+                <SimpleGrid cols={3} spacing="2xl">
+                  {pendingOrder !== null ? pendingInput : null}
+                  {showAddSlot ? (
+                    <AddLocationCard remaining={remaining} variant="slot" onClick={onAddLocation} />
+                  ) : null}
+                </SimpleGrid>
               ) : null}
-            </SimpleGrid>
-
-            <Box visibleFrom="sm" mt="2xs">
               <InfoBanner variant="neutral">
                 色は各公開データ固有の階級（浸水深・東京都公式ランク1〜5）をそのまま示したもので、当サービスによる安全・危険の判定ではありません。グレーは「値のない状態」を示し、安全を意味しません。
               </InfoBanner>
-            </Box>
+            </Stack>
           </>
         )}
       </Box>

@@ -5,6 +5,7 @@ import type {
   FloodDepthCategory,
   FloodFrequencyResult,
   InvestigationResult,
+  RainfallDenominator,
 } from "./risk";
 
 export const KANTO_PREFECTURE_CODES = new Set(["08", "09", "10", "11", "12", "13", "14"]);
@@ -40,6 +41,16 @@ function summarizedFrequencyState(
 
 function frequencyResult(investigation: EvidenceBasedInvestigationResult): FloodFrequencyResult {
   const firstValue = investigation.frequencyFloods.find(({ result }) => result.state === "value");
+  const periods = investigation.frequencyFloods.map(
+    ({ rainfallDenominator, result, boundaryWarning }) => ({
+      rainfallDenominator: rainfallDenominator as RainfallDenominator,
+      state: result.state,
+      category: result.primary ? floodCategory(result.primary.depth) : undefined,
+      sourceLabel: result.primary?.depth.sourceLabel,
+      evidences: evidences(result),
+      boundaryWarning,
+    }),
+  );
   if (firstValue?.result.primary) {
     return {
       state: "value",
@@ -48,12 +59,14 @@ function frequencyResult(investigation: EvidenceBasedInvestigationResult): Flood
       sourceLabel: firstValue.result.primary.depth.sourceLabel,
       evidences: evidences(firstValue.result),
       boundaryWarning: firstValue.boundaryWarning,
+      periods,
     };
   }
 
   return {
     state: summarizedFrequencyState(investigation.frequencyFloods.map(({ result }) => result)),
     boundaryWarning: investigation.frequencyFloods.some(({ boundaryWarning }) => boundaryWarning),
+    periods,
   };
 }
 
@@ -95,7 +108,7 @@ export function toUiInvestigationResult(
 export function outsideKantoResult(): InvestigationResult {
   return {
     maxFloodDepth: { state: "notApplicable" },
-    floodFrequency: { state: "notApplicable" },
+    floodFrequency: { state: "notApplicable", periods: [] },
     buildingCollapseRisk: { state: "notApplicable" },
     fireRisk: { state: "notApplicable" },
     aiSummary: "",
@@ -105,7 +118,7 @@ export function outsideKantoResult(): InvestigationResult {
 export function failedInvestigationResult(): InvestigationResult {
   return {
     maxFloodDepth: { state: "undetermined" },
-    floodFrequency: { state: "undetermined" },
+    floodFrequency: { state: "undetermined", periods: [] },
     buildingCollapseRisk: { state: "undetermined" },
     fireRisk: { state: "undetermined" },
     aiSummary: "",

@@ -65,6 +65,7 @@ const FIXTURES: readonly InvestigationResult[] = [
       state: "value",
       frequencyLabel: "30年に1回程度から",
       category: "0.5〜3m",
+      periods: [],
     },
     buildingCollapseRisk: { state: "notApplicable" },
     fireRisk: { state: "notApplicable" },
@@ -73,7 +74,7 @@ const FIXTURES: readonly InvestigationResult[] = [
   },
   {
     maxFloodDepth: mockMaxFloodDepth([], "available"),
-    floodFrequency: { state: "unpublished" },
+    floodFrequency: { state: "unpublished", periods: [] },
     buildingCollapseRisk: { state: "value", rank: 2 },
     fireRisk: { state: "value", rank: 4 },
     aiSummary:
@@ -88,6 +89,7 @@ const FIXTURES: readonly InvestigationResult[] = [
       state: "value",
       frequencyLabel: "100年に1回程度から",
       category: "0.5m未満",
+      periods: [],
     },
     buildingCollapseRisk: { state: "value", rank: 1 },
     fireRisk: { state: "value", rank: 1 },
