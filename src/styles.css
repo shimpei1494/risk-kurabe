@@ -1,1 +1,5 @@
 /* アプリ固有のカスタムスタイルをここに追加 */
+body {
+  margin: 0;
+  background: #f0eee9;
+}
