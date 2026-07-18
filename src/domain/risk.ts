@@ -13,6 +13,27 @@ export type FloodDepthCategory = "0.5m未満" | "0.5〜3m" | "3〜5m" | "5m以�
 
 export type RegionalRiskRank = 1 | 2 | 3 | 4 | 5;
 
+export type InvestigationProblemCode =
+  | "catalog-unavailable"
+  | "a31a-artifact-unavailable"
+  | "a53-artifact-unavailable"
+  | "tokyo-regional-risk-artifact-unavailable";
+
+export interface InvestigationProblem {
+  code: InvestigationProblemCode;
+  rainfallDenominator?: RainfallDenominator;
+}
+
+export interface RiskDataSourceInfo {
+  id: string;
+  name: string;
+  provider: string;
+  referencePeriod: string;
+  acquiredAt: string;
+  license: string;
+  sourceUrl: string;
+}
+
 export interface FloodDepthEvidence {
   riverOrBasinName: string;
   /** 公開元の区分名をそのまま表示する。 */
@@ -65,6 +86,10 @@ export interface InvestigationResult {
   floodFrequency: FloodFrequencyResult;
   buildingCollapseRisk: RegionalRiskResult;
   fireRisk: RegionalRiskResult;
+  dataVersion?: string;
+  logicVersion?: string;
+  problems: readonly InvestigationProblem[];
+  sources: readonly RiskDataSourceInfo[];
   /** AIによる公開データの要約（評価ではない） */
   aiSummary: string;
 }

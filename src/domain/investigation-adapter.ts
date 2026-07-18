@@ -101,6 +101,13 @@ export function toUiInvestigationResult(
       municipalityName: tokyoPrimary?.municipality_name,
       townName: tokyoPrimary?.town_name,
     },
+    dataVersion: investigation.dataVersion,
+    logicVersion: investigation.logicVersion,
+    problems: investigation.issues.map(({ code, rainfallDenominator }) => ({
+      code,
+      rainfallDenominator: rainfallDenominator as RainfallDenominator | undefined,
+    })),
+    sources: investigation.sources,
     aiSummary: "",
   };
 }
@@ -111,6 +118,8 @@ export function outsideKantoResult(): InvestigationResult {
     floodFrequency: { state: "notApplicable", periods: [] },
     buildingCollapseRisk: { state: "notApplicable" },
     fireRisk: { state: "notApplicable" },
+    problems: [],
+    sources: [],
     aiSummary: "",
   };
 }
@@ -121,6 +130,8 @@ export function failedInvestigationResult(): InvestigationResult {
     floodFrequency: { state: "undetermined", periods: [] },
     buildingCollapseRisk: { state: "undetermined" },
     fireRisk: { state: "undetermined" },
+    problems: [{ code: "catalog-unavailable" }],
+    sources: [],
     aiSummary: "",
   };
 }

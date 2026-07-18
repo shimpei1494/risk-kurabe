@@ -9,6 +9,7 @@ const result: EvidenceBasedInvestigationResult = {
   prefectureCode: "13",
   dataVersion: "v1",
   logicVersion: "v1",
+  sources: [],
   maximumFlood: {
     result: {
       state: "value",
@@ -99,5 +100,29 @@ describe("toUiInvestigationResult", () => {
 
   it("関東外は洪水を区域外ではなく対象外にする", () => {
     expect(outsideKantoResult().maxFloodDepth.state).toBe("notApplicable");
+  });
+
+  it("部分失敗をUIモデルへ残し、判定不能を区域外へ変換しない", () => {
+    const adapted = toUiInvestigationResult({
+      ...result,
+      issues: [{ code: "a53-artifact-unavailable", rainfallDenominator: 30 }],
+      frequencyFloods: [
+        {
+          rainfallDenominator: 30,
+          result: {
+            state: "undetermined",
+            evidences: [],
+            candidateBasinIds: ["830301"],
+            unpublishedBasinIds: [],
+          },
+          boundaryWarning: false,
+        },
+      ],
+    });
+
+    expect(adapted.floodFrequency.state).toBe("undetermined");
+    expect(adapted.problems).toEqual([
+      { code: "a53-artifact-unavailable", rainfallDenominator: 30 },
+    ]);
   });
 });

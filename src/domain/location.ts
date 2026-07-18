@@ -21,6 +21,8 @@ export interface ComparisonLocation {
   address: string;
   /** 住所候補またはピン操作で確定した座標 */
   point: GeoPoint;
+  /** 再試行時にも使うJIS X 0401都道府県コード */
+  prefectureCode: string;
   /** 地点調査の結果。未調査の間は undefined */
   result?: InvestigationResult;
 }

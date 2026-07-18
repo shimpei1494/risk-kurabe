@@ -8,6 +8,7 @@ import type {
   FrequencyFloodInvestigation,
   InvestigationIssue,
 } from "../domain/investigation";
+import type { RiskDataSourceInfo } from "../domain/risk";
 import { evaluateA31aAtPoint, hasA31aBoundaryWarning, type A31aFeature } from "./a31a-evaluator";
 import { evaluateA53AtPoint, hasA53BoundaryWarning, type A53Feature } from "./a53-evaluator";
 import {
@@ -193,6 +194,7 @@ export async function investigateRisk({
   radiusMeters = 25,
   signal,
   dependencies = defaultDependencies,
+  catalog: suppliedCatalog,
 }: {
   baseUrl: string;
   prefectureCode: string;
@@ -200,12 +202,15 @@ export async function investigateRisk({
   radiusMeters?: number;
   signal?: AbortSignal;
   dependencies?: InvestigationDependencies;
+  catalog?: { manifest: RiskDataManifest; coverage: RiskDataCoverage };
 }): Promise<EvidenceBasedInvestigation> {
-  let catalog: { manifest: RiskDataManifest; coverage: RiskDataCoverage };
-  try {
-    catalog = await dependencies.loadCatalog(baseUrl, signal);
-  } catch {
-    return { kind: "failed", location, prefectureCode, errorCode: "catalog-unavailable" };
+  let catalog = suppliedCatalog;
+  if (!catalog) {
+    try {
+      catalog = await dependencies.loadCatalog(baseUrl, signal);
+    } catch {
+      return { kind: "failed", location, prefectureCode, errorCode: "catalog-unavailable" };
+    }
   }
 
   const issues: InvestigationIssue[] = [];
@@ -303,12 +308,30 @@ export async function investigateRisk({
         })
       : { buildingCollapse: false, fire: false };
 
+  const sources: RiskDataSourceInfo[] = [];
+  for (const dataset of catalog.manifest.datasets) {
+    let isRelevant = dataset.indicator !== "tokyo-regional-risk" || isTokyo;
+    if (dataset.indicator === "a31a-maximum-flood-depth") {
+      isRelevant = false;
+      for (const datasetPrefectureCode of dataset.prefectures) {
+        if (datasetPrefectureCode === prefectureCode) {
+          isRelevant = true;
+          break;
+        }
+      }
+    }
+    if (!isRelevant) continue;
+    const { id, name, provider, referencePeriod, acquiredAt, license, sourceUrl } = dataset;
+    sources.push({ id, name, provider, referencePeriod, acquiredAt, license, sourceUrl });
+  }
+
   return {
     kind: "completed",
     location,
     prefectureCode,
     dataVersion: catalog.manifest.dataVersion,
     logicVersion: catalog.manifest.logicVersion,
+    sources,
     maximumFlood,
     frequencyFloods,
     tokyoRegionalRisk: { result: tokyoResult, boundaryWarnings },

@@ -69,6 +69,8 @@ const FIXTURES: readonly InvestigationResult[] = [
     },
     buildingCollapseRisk: { state: "notApplicable" },
     fireRisk: { state: "notApplicable" },
+    problems: [],
+    sources: [],
     aiSummary:
       "荒川・芝川の浸水想定が重なる地点で、想定最大規模では3〜5mの浸水が想定されています。比較的高い頻度（30年に1回程度）から浸水が想定されています。地域危険度は東京都のみの指標のため対象外です。",
   },
@@ -77,6 +79,8 @@ const FIXTURES: readonly InvestigationResult[] = [
     floodFrequency: { state: "unpublished", periods: [] },
     buildingCollapseRisk: { state: "value", rank: 2 },
     fireRisk: { state: "value", rank: 4 },
+    problems: [],
+    sources: [],
     aiSummary:
       "想定最大規模の洪水浸水想定区域の外側にあたります（頻度別データは未公開）。木造住宅が密集する地域にあたり、東京都の調査では火災危険度がランク4と測定されています。",
   },
@@ -93,6 +97,8 @@ const FIXTURES: readonly InvestigationResult[] = [
     },
     buildingCollapseRisk: { state: "value", rank: 1 },
     fireRisk: { state: "value", rank: 1 },
+    problems: [],
+    sources: [],
     aiSummary:
       "洪水時は0.5〜3mの浸水が想定されており、頻度別データでは100年に1回程度の降雨から浸水が想定されています。東京都の調査では建物倒壊・火災の危険度はいずれもランク1と測定されています。",
   },

@@ -158,7 +158,7 @@ export function LocationInputCard({
         </Group>
 
         {candidates.length > 0 && !selected ? (
-          <Paper withBorder radius="md" p="2xs" aria-label="住所候補">
+          <Paper withBorder radius="md" p="2xs" aria-label="住所候補" aria-live="polite">
             <Text px="xs" py="2xs" fz={11.5} fw={700} c="var(--mantine-color-stone-7)">
               調べる住所を選択
             </Text>
@@ -252,7 +252,7 @@ export function LocationInputCard({
         ) : null}
 
         {message ? (
-          <Alert color="orange" variant="light" py="xs">
+          <Alert color="orange" variant="light" py="xs" role="alert">
             <Text fz={12}>{message}</Text>
           </Alert>
         ) : null}

@@ -4,6 +4,7 @@ import type {
   TokyoBoundaryWarnings,
 } from "../gis/tokyo-risk-evaluator";
 import type { EvaluatedFloodResult, EvaluatedFrequencyFloodResult } from "./flood-evaluator";
+import type { RiskDataSourceInfo } from "./risk";
 
 export interface FloodIndicatorInvestigation {
   result: EvaluatedFloodResult;
@@ -40,6 +41,7 @@ export interface EvidenceBasedInvestigationResult {
   prefectureCode: string;
   dataVersion: string;
   logicVersion: string;
+  sources: readonly RiskDataSourceInfo[];
   maximumFlood: FloodIndicatorInvestigation;
   frequencyFloods: readonly FrequencyFloodInvestigation[];
   tokyoRegionalRisk: TokyoRegionalRiskInvestigation;

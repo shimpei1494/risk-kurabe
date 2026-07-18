@@ -16,7 +16,13 @@ import {
   type RainfallDenominator,
 } from "../../domain/risk";
 import { DataBadge } from "../shared/DataBadge";
-import { AiSummaryBox, BoundaryWarningNote, MultiRiverEvidence } from "../shared/InfoBlocks";
+import {
+  AiSummaryBox,
+  BoundaryWarningNote,
+  DataSourcesDisclosure,
+  InvestigationProblemNotice,
+  MultiRiverEvidence,
+} from "../shared/InfoBlocks";
 
 interface IndicatorRowProps {
   icon: string;
@@ -142,6 +148,8 @@ export function ResultCard({
   accentColor,
   compact = false,
   rainfallDenominator = 30,
+  retrying = false,
+  onRetry,
   onRename,
 }: {
   order: number;
@@ -152,6 +160,8 @@ export function ResultCard({
   /** 3列比較グリッドなど横幅が狭い文脈では、名前編集を「✎」アイコンのみで表示する */
   compact?: boolean;
   rainfallDenominator?: RainfallDenominator;
+  retrying?: boolean;
+  onRetry?: () => void;
   onRename: (name: string) => void;
 }) {
   const { other } = useMantineTheme();
@@ -182,6 +192,15 @@ export function ResultCard({
       </Card.Section>
 
       <Card.Section inheritPadding px="xl">
+        {result.problems.length > 0 ? (
+          <Box pt="md">
+            <InvestigationProblemNotice
+              problems={result.problems}
+              retrying={retrying}
+              onRetry={onRetry}
+            />
+          </Box>
+        ) : null}
         <Box py="3xs">
           <Box pb="md" style={{ borderBottom: "1px solid var(--mantine-color-stone-1)" }}>
             <IndicatorRow
@@ -298,6 +317,12 @@ export function ResultCard({
       {aiSummary.trim().length > 0 ? (
         <Card.Section inheritPadding pt={showOutOfAreaFootnote ? 0 : "3xs"} pb="md" px="md">
           <AiSummaryBox text={aiSummary} />
+        </Card.Section>
+      ) : null}
+
+      {result.sources.length > 0 ? (
+        <Card.Section inheritPadding pb="md" px="md">
+          <DataSourcesDisclosure sources={result.sources} />
         </Card.Section>
       ) : null}
     </Card>

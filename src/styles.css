@@ -4,6 +4,22 @@ body {
   background: #f0eee9;
 }
 
+:where(button, a, input, summary, [tabindex]):focus-visible {
+  outline: 3px solid #25776f;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
 .risk-map-marker {
   display: grid;
   width: 32px;

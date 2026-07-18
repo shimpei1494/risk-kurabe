@@ -304,4 +304,19 @@ describe("investigateRisk", () => {
     });
     expect(result).toMatchObject({ kind: "failed", errorCode: "catalog-unavailable" });
   });
+
+  it("検証済みカタログを渡した場合は再取得せず地点判定する", async () => {
+    const deps = dependencies();
+    deps.loadCatalog.mockRejectedValue(new Error("should not load"));
+    const result = await investigateRisk({
+      baseUrl: "https://data.example.com/risk-data/v1",
+      prefectureCode: "13",
+      location,
+      dependencies: deps,
+      catalog: { manifest, coverage },
+    });
+
+    expect(result.kind).toBe("completed");
+    expect(deps.loadCatalog).not.toHaveBeenCalled();
+  });
 });

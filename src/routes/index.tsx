@@ -20,16 +20,15 @@ import { DesktopComparisonTable } from "../components/results/DesktopComparisonT
 import { MobileComparisonView } from "../components/results/MobileComparisonView";
 import { ResultCard } from "../components/results/ResultCard";
 import { AppHeaderCompact, AppHeaderFull } from "../components/shared/AppHeader";
-import { InfoBanner } from "../components/shared/InfoBlocks";
+import {
+  DataSourcesDisclosure,
+  InfoBanner,
+  InvestigationProblemNotice,
+} from "../components/shared/InfoBlocks";
 import { ResultLegend } from "../components/shared/Legend";
 import { MapThemeControls } from "../components/shared/MapThemeControls";
 import { RiskMap } from "../components/shared/RiskMap";
-import {
-  failedInvestigationResult,
-  KANTO_PREFECTURE_CODES,
-  outsideKantoResult,
-  toUiInvestigationResult,
-} from "../domain/investigation-adapter";
+import { KANTO_PREFECTURE_CODES, outsideKantoResult } from "../domain/investigation-adapter";
 import {
   MAX_COMPARISON_LOCATIONS,
   defaultLocationName,
@@ -42,8 +41,8 @@ import {
   mapSelectionLabel,
   type MapSelection,
 } from "../domain/map-selection";
+import { investigateLocation } from "../features/investigation/investigate-location";
 import { riskDataBaseUrl } from "../gis/config";
-import { investigateRisk } from "../gis/investigate-risk";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -53,26 +52,20 @@ function Home() {
   const [locations, setLocations] = useState<ComparisonLocation[]>([]);
   const [pendingOrder, setPendingOrder] = useState<LocationOrder | null>(1);
   const [mapSelection, setMapSelection] = useState<MapSelection>(DEFAULT_MAP_SELECTION);
+  const [retryingLocationIds, setRetryingLocationIds] = useState<string[]>([]);
   const [mapOpened, { open: openMap, close: closeMap }] = useDisclosure(false);
 
   const investigatedCount = locations.length;
   const isHome = investigatedCount === 0 && pendingOrder === 1;
 
   async function handleInvestigate(order: LocationOrder, selection: LocationSelection) {
-    let result;
-    if (!KANTO_PREFECTURE_CODES.has(selection.prefectureCode)) {
-      result = outsideKantoResult();
-    } else {
-      const investigation = await investigateRisk({
-        baseUrl: riskDataBaseUrl(),
-        prefectureCode: selection.prefectureCode,
-        location: selection.point,
-      });
-      result =
-        investigation.kind === "completed"
-          ? toUiInvestigationResult(investigation)
-          : failedInvestigationResult();
-    }
+    const result = !KANTO_PREFECTURE_CODES.has(selection.prefectureCode)
+      ? outsideKantoResult()
+      : await investigateLocation({
+          baseUrl: riskDataBaseUrl(),
+          selection,
+          storage: typeof window === "undefined" ? undefined : window.sessionStorage,
+        });
 
     setLocations((prev) => [
       ...prev,
@@ -82,6 +75,7 @@ function Home() {
         name: defaultLocationName(order),
         address: selection.address,
         point: selection.point,
+        prefectureCode: selection.prefectureCode,
         result,
       },
     ]);
@@ -98,9 +92,33 @@ function Home() {
     setLocations((prev) => prev.map((loc) => (loc.id === id ? { ...loc, name } : loc)));
   }
 
+  async function handleRetry(id: string) {
+    const location = locations.find((item) => item.id === id);
+    if (!location || retryingLocationIds.includes(id)) return;
+
+    setRetryingLocationIds((current) => [...current, id]);
+    try {
+      const result = await investigateLocation({
+        baseUrl: riskDataBaseUrl(),
+        selection: {
+          address: location.address,
+          point: location.point,
+          prefectureCode: location.prefectureCode,
+        },
+        storage: typeof window === "undefined" ? undefined : window.sessionStorage,
+      });
+      setLocations((current) =>
+        current.map((item) => (item.id === id ? { ...item, result } : item)),
+      );
+    } finally {
+      setRetryingLocationIds((current) => current.filter((item) => item !== id));
+    }
+  }
+
   function handleReset() {
     setLocations([]);
     setPendingOrder(1);
+    setRetryingLocationIds([]);
   }
 
   if (isHome) {
@@ -117,6 +135,8 @@ function Home() {
         onRename={handleRename}
         onReset={handleReset}
         onOpenMap={openMap}
+        onRetry={handleRetry}
+        retryingLocationIds={retryingLocationIds}
         mapSelection={mapSelection}
         onMapSelectionChange={setMapSelection}
       />
@@ -241,6 +261,8 @@ function ResultsView({
   onRename,
   onReset,
   onOpenMap,
+  onRetry,
+  retryingLocationIds,
   mapSelection,
   onMapSelectionChange,
 }: {
@@ -251,6 +273,8 @@ function ResultsView({
   onRename: (id: string, name: string) => void;
   onReset: () => void;
   onOpenMap: () => void;
+  onRetry: (id: string) => Promise<void>;
+  retryingLocationIds: readonly string[];
   mapSelection: MapSelection;
   onMapSelectionChange: (selection: MapSelection) => void;
 }) {
@@ -261,6 +285,7 @@ function ResultsView({
   const showAddSlot = pendingOrder === null && remaining > 0;
   const isComparing = count >= 2;
   const primary = locations[0];
+  const sources = locations.flatMap((location) => location.result?.sources ?? []);
 
   const pendingInput = pendingOrder !== null && (
     <LocationInputCard
@@ -315,6 +340,8 @@ function ResultsView({
                   address={primary.address}
                   result={primary.result!}
                   rainfallDenominator={mapSelection.rainfallDenominator}
+                  retrying={retryingLocationIds.includes(primary.id)}
+                  onRetry={() => void onRetry(primary.id)}
                   onRename={(name) => onRename(primary.id, name)}
                 />
                 {showAddSlot ? (
@@ -340,6 +367,8 @@ function ResultsView({
                   address={primary.address}
                   result={primary.result!}
                   rainfallDenominator={mapSelection.rainfallDenominator}
+                  retrying={retryingLocationIds.includes(primary.id)}
+                  onRetry={() => void onRetry(primary.id)}
                   onRename={(name) => onRename(primary.id, name)}
                 />
                 {showAddSlot ? (
@@ -372,6 +401,20 @@ function ResultsView({
                 locations={locations}
                 rainfallDenominator={mapSelection.rainfallDenominator}
               />
+              <Stack px="lg" gap="xs">
+                {locations.map((location) =>
+                  location.result && location.result.problems.length > 0 ? (
+                    <InvestigationProblemNotice
+                      key={location.id}
+                      locationName={location.name}
+                      problems={location.result.problems}
+                      retrying={retryingLocationIds.includes(location.id)}
+                      onRetry={() => void onRetry(location.id)}
+                    />
+                  ) : null,
+                )}
+                <DataSourcesDisclosure sources={sources} />
+              </Stack>
               {showAddSlot ? (
                 <Box mt="sm">
                   <AddLocationCard remaining={remaining} onClick={onAddLocation} />
@@ -388,6 +431,17 @@ function ResultsView({
                 rainfallDenominator={mapSelection.rainfallDenominator}
                 selectedIndicator={mapSelection.indicator}
               />
+              {locations.map((location) =>
+                location.result && location.result.problems.length > 0 ? (
+                  <InvestigationProblemNotice
+                    key={location.id}
+                    locationName={location.name}
+                    problems={location.result.problems}
+                    retrying={retryingLocationIds.includes(location.id)}
+                    onRetry={() => void onRetry(location.id)}
+                  />
+                ) : null,
+              )}
               {pendingOrder !== null || showAddSlot ? (
                 <SimpleGrid cols={3} spacing="2xl">
                   {pendingOrder !== null ? pendingInput : null}
@@ -399,6 +453,7 @@ function ResultsView({
               <InfoBanner variant="neutral">
                 色は各公開データ固有の階級（浸水深・東京都公式ランク1〜5）をそのまま示したもので、当サービスによる安全・危険の判定ではありません。グレーは「値のない状態」を示し、安全を意味しません。
               </InfoBanner>
+              <DataSourcesDisclosure sources={sources} />
             </Stack>
           </>
         )}
