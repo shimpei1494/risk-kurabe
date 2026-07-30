@@ -39,6 +39,7 @@ const tokyoRegionalRiskDatasetSchema = datasetBaseSchema.extend({
   townCount: z.number().int().positive(),
   artifact: artifactSchema,
   mapArtifacts: z.object({
+    overall: mapArtifactSchema,
     buildingCollapse: mapArtifactSchema,
     fire: mapArtifactSchema,
   }),
@@ -194,13 +195,14 @@ export function tokyoRegionalRiskMapArtifactUrl({
 }: {
   baseUrl: string;
   manifest: RiskDataManifest;
-  indicator: "building-collapse" | "fire";
+  indicator: "overall" | "building-collapse" | "fire";
 }): string | undefined {
   const dataset = tokyoRegionalRiskDataset(manifest);
   if (!dataset) return undefined;
-  const artifact =
-    indicator === "building-collapse"
-      ? dataset.mapArtifacts.buildingCollapse
-      : dataset.mapArtifacts.fire;
+  const artifact = {
+    overall: dataset.mapArtifacts.overall,
+    "building-collapse": dataset.mapArtifacts.buildingCollapse,
+    fire: dataset.mapArtifacts.fire,
+  }[indicator];
   return urlFromBase(baseUrl, artifact.path);
 }

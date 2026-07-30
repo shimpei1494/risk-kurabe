@@ -10,6 +10,10 @@ export function a31aPmtilesUrl(): string {
   return new URL("map/a31a.pmtiles", riskDataBaseUrl()).toString();
 }
 
+export function tokyoOverallRiskPmtilesUrl(): string {
+  return new URL("map/tokyo-overall-risk.pmtiles", riskDataBaseUrl()).toString();
+}
+
 export function tokyoBuildingCollapsePmtilesUrl(): string {
   return new URL("map/tokyo-building-collapse.pmtiles", riskDataBaseUrl()).toString();
 }

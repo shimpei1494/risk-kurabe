@@ -34,6 +34,7 @@ done < <(
   jq -r \
     '.files | keys[] | select(
       . == "query/tokyo/regional-risk.fgb"
+      or . == "map/tokyo-overall-risk.pmtiles"
       or . == "map/tokyo-building-collapse.pmtiles"
       or . == "map/tokyo-fire.pmtiles"
     )' \

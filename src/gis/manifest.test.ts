@@ -54,6 +54,7 @@ const manifest = riskDataManifestSchema.parse({
       townCount: 5_192,
       artifact: artifact("query/tokyo-regional-risk.fgb"),
       mapArtifacts: {
+        overall: mapArtifact("map/tokyo-overall-risk.pmtiles"),
         buildingCollapse: mapArtifact("map/tokyo-building-collapse.pmtiles"),
         fire: mapArtifact("map/tokyo-fire.pmtiles"),
       },
@@ -75,6 +76,9 @@ describe("risk data catalog", () => {
     );
     expect(tokyoRegionalRiskMapArtifactUrl({ baseUrl, manifest, indicator: "fire" })).toBe(
       `${baseUrl}map/tokyo-fire.pmtiles`,
+    );
+    expect(tokyoRegionalRiskMapArtifactUrl({ baseUrl, manifest, indicator: "overall" })).toBe(
+      `${baseUrl}map/tokyo-overall-risk.pmtiles`,
     );
   });
 

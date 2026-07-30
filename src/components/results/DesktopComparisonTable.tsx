@@ -119,7 +119,7 @@ export function DesktopComparisonTable({
               </Table.Td>
             ))}
           </Table.Tr>
-          <Table.Tr bg={other.risk.evidenceBg}>
+          <Table.Tr bg={selectedIndicator === "tokyo-overall" ? "teal.0" : other.risk.evidenceBg}>
             <Table.Th>
               東京都の地震地域危険度
               <Text mt="4xs" fz={10.5} fw={500} lh={1.55} c="var(--mantine-color-stone-7)">

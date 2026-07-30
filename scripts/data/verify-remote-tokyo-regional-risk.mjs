@@ -24,6 +24,9 @@ const dataset = manifest.datasets?.find(({ indicator }) => indicator === "tokyo-
 if (!dataset || dataset.townCount !== 5192) {
   throw new Error("remote manifest does not contain 5192 Tokyo towns");
 }
+if (dataset.mapArtifacts?.overall?.path !== "map/tokyo-overall-risk.pmtiles") {
+  throw new Error("remote manifest does not contain the Tokyo overall risk map");
+}
 if (coverage.tokyoRegionalRisk?.status !== "available") {
   throw new Error("remote Tokyo regional risk coverage is unavailable");
 }
@@ -45,6 +48,7 @@ for await (const feature of deserialize(artifactUrl, rect, undefined, true)) {
     typeof properties.town_key !== "string" ||
     typeof properties.municipality_name !== "string" ||
     typeof properties.town_name !== "string" ||
+    typeof properties.overall_rank !== "number" ||
     typeof properties.building_collapse_rank !== "number" ||
     typeof properties.fire_rank !== "number"
   ) {
@@ -60,6 +64,15 @@ if (requestedRanges.length === 0) {
   throw new Error("remote Tokyo regional risk query did not make HTTP Range requests");
 }
 
+const overallMapResponse = await originalFetch(new URL("map/tokyo-overall-risk.pmtiles", baseUrl), {
+  headers: { Range: "bytes=0-126" },
+});
+if (overallMapResponse.status !== 206) {
+  throw new Error(
+    `remote Tokyo overall risk map did not return HTTP 206: ${overallMapResponse.status}`,
+  );
+}
+
 console.log(
-  `verified remote Tokyo regional risk: 5192 towns, ${featureCount} bbox candidates, ${requestedRanges.length} Range requests`,
+  `verified remote Tokyo regional risk: 5192 towns, ${featureCount} bbox candidates, ${requestedRanges.length} FGB Range requests, overall PMTiles HTTP 206`,
 );

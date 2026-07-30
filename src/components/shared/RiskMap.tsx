@@ -11,6 +11,7 @@ import {
   a31aPmtilesUrl,
   tokyoBuildingCollapsePmtilesUrl,
   tokyoFirePmtilesUrl,
+  tokyoOverallRiskPmtilesUrl,
 } from "../../gis/config";
 import type { GeoPoint } from "../../gis/geometry";
 
@@ -39,6 +40,15 @@ const rankColors = {
 
 function selectedTheme(selection: MapSelection) {
   switch (selection.indicator) {
+    case "tokyo-overall":
+      return {
+        url: tokyoOverallRiskPmtilesUrl(),
+        sourceLayer: "tokyo_overall_risk",
+        valueProperty: "overall_rank",
+        palette: rankColors,
+        outline: "rgba(92, 74, 10, 0.35)",
+        attribution: "地震時の総合危険度: 東京都都市整備局",
+      };
     case "building-collapse":
       return {
         url: tokyoBuildingCollapsePmtilesUrl(),
