@@ -53,15 +53,11 @@ vp run data:sources:download
 vp run data:a31a:download
 vp run data:a31a:build
 vp run data:a31a:validate
-vp run data:a31a:upload
-vp run data:a31a:verify-remote
 ```
 
 生成物は`.data/output/risk-data/v1/`へ出力される。地点判定用FGBは都県別に生成し、
 全判定属性と都県コードを保持する。地図用PMTilesは関東7都県を1ファイルへまとめ、
-描画に必要な`depth_code`だけを保持する。`upload`は公開R2バケットの
-`risk-data/v1/`へ、FGBとPMTilesを1年immutable、マニフェスト類を5分キャッシュで
-配置する。
+描画に必要な`depth_code`だけを保持する。
 
 `data:sources:download`はA31aに加え、A53関東地方整備局版と東京都地域危険度の
 Shapefile・CSVも入力ロックに従って取得・検証する。変換処理はデータ種別ごとの
@@ -77,8 +73,6 @@ A53の水系コードを照合して対象水系だけを判定する。
 vp run data:a53:download
 vp run data:a53:build
 vp run data:a53:validate
-vp run data:a53:upload
-vp run data:a53:verify-remote
 ```
 
 入力に存在する年超過確率は1/10、1/30、1/50、1/100、1/150、1/200。未公開の
@@ -94,6 +88,40 @@ vp run data:a53:verify-remote
 vp run data:tokyo-risk:download
 vp run data:tokyo-risk:build
 vp run data:tokyo-risk:validate
+```
+
+## R2へのアップロード
+
+全データセットの生成後、次のコマンドでA31a、A53、東京都地域危険度を再検証し、
+`checksums.json`に記録された全成果物を重複なく1回ずつアップロードする。
+
+```bash
+vp run data:upload
+```
+
+アップロード先は既定でR2バケット`risk-kurabe-data`の`risk-data/v1/`。別の
+バケットを使用する場合は`RISK_DATA_BUCKET`を指定する。
+
+```bash
+RISK_DATA_BUCKET="別のバケット名" vp run data:upload
+```
+
+FGBとPMTilesは1年immutable、マニフェスト類は5分キャッシュで配置する。個別の
+データセットだけを再生成した場合は、対応するuploadコマンドを使用できる。
+
+```bash
+vp run data:a31a:upload
+vp run data:a53:upload
 vp run data:tokyo-risk:upload
+```
+
+個別uploadは対象データセットの成果物と、共有するマニフェスト類だけを更新する。
+通常の全量配置では、個別uploadを順番に実行せず`data:upload`を使用する。
+
+公開URLを有効化してベースURLをアプリへ設定した後、R2上の成果物を確認する。
+
+```bash
+vp run data:a31a:verify-remote
+vp run data:a53:verify-remote
 vp run data:tokyo-risk:verify-remote
 ```

@@ -158,6 +158,7 @@ vp build
 | `vp run cf-typegen`                    | Wrangler設定からCloudflareの型を生成         |
 | `vp run fallow`                        | 未使用ファイル・依存関係・エクスポートを検出 |
 | `vp run doctor`                        | React固有のヘルスチェック                    |
+| `vp run data:upload`                   | 全GIS成果物を検証してR2へ重複なく配置        |
 | `vp run data:a31a:verify-remote`       | R2上のA31a成果物を確認                       |
 | `vp run data:a53:verify-remote`        | R2上のA53成果物を確認                        |
 | `vp run data:tokyo-risk:verify-remote` | R2上の東京都地域危険度成果物を確認           |
