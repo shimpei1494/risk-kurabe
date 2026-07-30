@@ -11,14 +11,6 @@ const dataStateSchema = z.enum([
   "undetermined",
 ]);
 const floodCategorySchema = z.enum(["0.5m未満", "0.5〜3m", "3〜5m", "5m以上"]);
-const rainfallDenominatorSchema = z.union([
-  z.literal(10),
-  z.literal(30),
-  z.literal(50),
-  z.literal(100),
-  z.literal(150),
-  z.literal(200),
-]);
 const evidenceSchema = z.object({
   riverOrBasinName: z.string(),
   category: z.string(),
@@ -43,10 +35,8 @@ const problemSchema = z.object({
   code: z.enum([
     "catalog-unavailable",
     "a31a-artifact-unavailable",
-    "a53-artifact-unavailable",
     "tokyo-regional-risk-artifact-unavailable",
   ]),
-  rainfallDenominator: rainfallDenominatorSchema.optional(),
 });
 const sourceSchema = z.object({
   id: z.string(),
@@ -60,14 +50,6 @@ const sourceSchema = z.object({
 
 const investigationResultSchema: z.ZodType<InvestigationResult> = z.object({
   maxFloodDepth: floodValueSchema,
-  floodFrequency: floodValueSchema.extend({
-    frequencyLabel: z.string().optional(),
-    periods: z.array(
-      floodValueSchema.extend({
-        rainfallDenominator: rainfallDenominatorSchema,
-      }),
-    ),
-  }),
   tokyoEarthquakeRisk: regionalRiskSchema.extend({
     activityDifficulty: z.number().optional(),
     groundClassification: z.string().optional(),
@@ -82,7 +64,7 @@ const investigationResultSchema: z.ZodType<InvestigationResult> = z.object({
 });
 
 const cacheEntrySchema = z.object({
-  schemaVersion: z.literal(2),
+  schemaVersion: z.literal(3),
   result: investigationResultSchema,
 });
 
@@ -102,7 +84,7 @@ export function investigationCacheKey({
   logicVersion,
 }: InvestigationCacheIdentity): string {
   return [
-    "risk-kurabe:investigation:v2",
+    "risk-kurabe:investigation:v3",
     dataVersion,
     logicVersion,
     prefectureCode,
@@ -141,7 +123,7 @@ export function writeInvestigationCache(
   try {
     storage.setItem(
       investigationCacheKey(identity),
-      JSON.stringify({ schemaVersion: 2, result } satisfies z.input<typeof cacheEntrySchema>),
+      JSON.stringify({ schemaVersion: 3, result } satisfies z.input<typeof cacheEntrySchema>),
     );
   } catch {
     // 容量超過・プライベートモードでも地点判定自体は成功させる。

@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 WORK_DIR="${RISK_DATA_WORK_DIR:-"$ROOT_DIR/.data"}"
-VERSION_DIR="$WORK_DIR/output/risk-data/v1"
+VERSION_DIR="$WORK_DIR/output/risk-data/v2"
 FGB_PATH="$VERSION_DIR/query/tokyo/regional-risk.fgb"
 BUILDING_PMTILES_PATH="$VERSION_DIR/map/tokyo-building-collapse.pmtiles"
 FIRE_PMTILES_PATH="$VERSION_DIR/map/tokyo-fire.pmtiles"

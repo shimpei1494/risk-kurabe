@@ -33,15 +33,6 @@ const a31aDatasetSchema = datasetBaseSchema.extend({
   mapArtifact: mapArtifactSchema.optional(),
 });
 
-const a53DatasetSchema = datasetBaseSchema.extend({
-  indicator: z.literal("a53-frequency-flood-depth"),
-  prefectures: z.array(z.string().regex(/^\d{2}$/)).min(1),
-  basinCodes: z.array(z.string().regex(/^\d{6}$/)).min(1),
-  rainfallDenominator: z.number().int().positive(),
-  artifact: artifactSchema,
-  mapArtifact: mapArtifactSchema,
-});
-
 const tokyoRegionalRiskDatasetSchema = datasetBaseSchema.extend({
   indicator: z.literal("tokyo-regional-risk"),
   prefectures: z.tuple([z.literal("13")]),
@@ -55,7 +46,6 @@ const tokyoRegionalRiskDatasetSchema = datasetBaseSchema.extend({
 
 const datasetSchema = z.discriminatedUnion("indicator", [
   a31aDatasetSchema,
-  a53DatasetSchema,
   tokyoRegionalRiskDatasetSchema,
 ]);
 
@@ -88,25 +78,6 @@ export const riskDataCoverageSchema = z.object({
       }),
     ),
   }),
-  a53: z
-    .object({
-      basins: z.record(
-        z.string().regex(/^\d{6}$/),
-        z.object({
-          name: z.string().min(1),
-          a31aLinkStatus: z.enum(["linked", "unmatched"]),
-          a31aLinkReason: z.string().min(1).nullable().optional(),
-          returnPeriods: z.record(
-            z.string().regex(/^\d+$/),
-            z.object({
-              status: coverageStatusSchema,
-              datasetId: z.string().min(1).optional(),
-            }),
-          ),
-        }),
-      ),
-    })
-    .optional(),
   tokyoRegionalRisk: z
     .object({
       prefectureCode: z.literal("13"),
@@ -190,48 +161,6 @@ export function a31aMapArtifactUrl({
 }): string | undefined {
   const dataset = a31aDatasetForPrefecture(manifest, prefectureCode);
   return dataset?.mapArtifact ? urlFromBase(baseUrl, dataset.mapArtifact.path) : undefined;
-}
-
-type A53Dataset = Extract<
-  RiskDataManifest["datasets"][number],
-  { indicator: "a53-frequency-flood-depth" }
->;
-
-function a53DatasetForReturnPeriod(
-  manifest: RiskDataManifest,
-  rainfallDenominator: number,
-): A53Dataset | undefined {
-  return manifest.datasets.find(
-    (dataset): dataset is A53Dataset =>
-      dataset.indicator === "a53-frequency-flood-depth" &&
-      dataset.rainfallDenominator === rainfallDenominator,
-  );
-}
-
-export function a53ArtifactUrl({
-  baseUrl,
-  manifest,
-  rainfallDenominator,
-}: {
-  baseUrl: string;
-  manifest: RiskDataManifest;
-  rainfallDenominator: number;
-}): string | undefined {
-  const dataset = a53DatasetForReturnPeriod(manifest, rainfallDenominator);
-  return dataset ? urlFromBase(baseUrl, dataset.artifact.path) : undefined;
-}
-
-export function a53MapArtifactUrl({
-  baseUrl,
-  manifest,
-  rainfallDenominator,
-}: {
-  baseUrl: string;
-  manifest: RiskDataManifest;
-  rainfallDenominator: number;
-}): string | undefined {
-  const dataset = a53DatasetForReturnPeriod(manifest, rainfallDenominator);
-  return dataset ? urlFromBase(baseUrl, dataset.mapArtifact.path) : undefined;
 }
 
 type TokyoRegionalRiskDataset = Extract<

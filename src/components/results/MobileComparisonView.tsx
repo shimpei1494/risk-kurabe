@@ -1,7 +1,6 @@
 import { Box, Card, Group, SimpleGrid, Text, ThemeIcon, useMantineTheme } from "@mantine/core";
 
 import type { ComparisonLocation } from "../../domain/location";
-import { floodFrequencyAt, type RainfallDenominator } from "../../domain/risk";
 import { DataBadge } from "../shared/DataBadge";
 import { AiSummaryBox, BoundaryWarningNote, MultiRiverEvidence } from "../shared/InfoBlocks";
 import {
@@ -256,13 +255,7 @@ function MobileTokyoEarthquakeSection({ locations }: { locations: readonly Resul
  * モバイル比較ビュー（デザインの 3g）。列を横スクロールさせる代わりに、
  * 指標ごとにグルーピングして地点間の違いを縦にスキャンできるようにする。
  */
-export function MobileComparisonView({
-  locations,
-  rainfallDenominator = 30,
-}: {
-  locations: readonly ComparisonLocation[];
-  rainfallDenominator?: RainfallDenominator;
-}) {
+export function MobileComparisonView({ locations }: { locations: readonly ComparisonLocation[] }) {
   const { other } = useMantineTheme();
   const withResult = locations.filter((loc): loc is ResultLocation => loc.result !== undefined);
 
@@ -338,33 +331,6 @@ export function MobileComparisonView({
             <BoundaryWarningNote />
           </Box>
         ))}
-      </Box>
-
-      <Box mt="xs" px="lg">
-        <IndicatorGroupCard
-          icon="頻"
-          iconColor={other.risk.indicatorIcon.water}
-          label={`頻度別浸水（${rainfallDenominator}年に1回程度）`}
-          columns={withResult.length}
-        >
-          {withResult.map((loc) => (
-            <BadgeCell key={loc.id}>
-              {(() => {
-                const frequency = floodFrequencyAt(loc.result.floodFrequency, rainfallDenominator);
-                return (
-                  <DataBadge
-                    state={frequency.state}
-                    valueLabel={frequency.sourceLabel}
-                    valueColor={
-                      frequency.category ? other.risk.floodDepth[frequency.category] : undefined
-                    }
-                    notApplicableLabel="対象外（関東）"
-                  />
-                );
-              })()}
-            </BadgeCell>
-          ))}
-        </IndicatorGroupCard>
       </Box>
 
       <MobileTokyoEarthquakeSection locations={withResult} />

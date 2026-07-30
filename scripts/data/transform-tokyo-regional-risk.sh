@@ -10,7 +10,7 @@ ARCHIVE_PATH="$SOURCE_DIR/tokyo-regional-risk-all2.zip"
 CSV_SOURCE_PATH="$SOURCE_DIR/tokyo-regional-risk-all2.csv"
 EXTRACT_DIR="$WORK_DIR/extracted/tokyo-regional-risk"
 INTERMEDIATE_DIR="$WORK_DIR/intermediate"
-VERSION_DIR="$WORK_DIR/output/risk-data/v1"
+VERSION_DIR="$WORK_DIR/output/risk-data/v2"
 SHAPEFILE_PATH="$EXTRACT_DIR/regional-risk.shp"
 CSV_PATH="$EXTRACT_DIR/regional-risk.csv"
 GPKG_PATH="$INTERMEDIATE_DIR/tokyo-regional-risk.gpkg"
@@ -24,12 +24,19 @@ DATASET_ID="tokyo-regional-risk-9"
 bash "$ROOT_DIR/scripts/data/download-sources.sh" TokyoRegionalRisk
 
 if [[ ! -f "$VERSION_DIR/manifest.json" || ! -f "$VERSION_DIR/coverage.json" || ! -f "$VERSION_DIR/checksums.json" ]]; then
-  echo "A31a and A53 metadata are required before Tokyo regional risk" >&2
+  echo "A31a metadata is required before Tokyo regional risk" >&2
   exit 1
 fi
 
 rm -rf "$EXTRACT_DIR"
 mkdir -p "$EXTRACT_DIR" "$INTERMEDIATE_DIR" "$(dirname "$FGB_PATH")" "$VERSION_DIR/map"
+rm -f \
+  "$GPKG_PATH" \
+  "$FGB_PATH" \
+  "$BUILDING_MBTILES_PATH" \
+  "$BUILDING_PMTILES_PATH" \
+  "$FIRE_MBTILES_PATH" \
+  "$FIRE_PMTILES_PATH"
 
 while IFS= read -r entry_name; do
   extension="${entry_name##*.}"
@@ -84,7 +91,6 @@ if [[ "$SHAPE_COUNT" -ne 5192 || "$CSV_COUNT" -ne 5192 || "$JOINED_COUNT" -ne 51
   exit 1
 fi
 
-rm -f "$FGB_PATH"
 ogr2ogr \
   -f FlatGeobuf \
   "$FGB_PATH" \

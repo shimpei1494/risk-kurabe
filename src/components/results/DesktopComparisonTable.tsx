@@ -2,11 +2,7 @@ import { Box, Card, Group, Table, Text, ThemeIcon, useMantineTheme } from "@mant
 
 import type { ComparisonLocation } from "../../domain/location";
 import type { MapIndicator } from "../../domain/map-selection";
-import {
-  floodFrequencyAt,
-  type RainfallDenominator,
-  type RegionalRiskResult,
-} from "../../domain/risk";
+import type { RegionalRiskResult } from "../../domain/risk";
 import { DataBadge } from "../shared/DataBadge";
 import {
   RegionalRiskMeta,
@@ -44,11 +40,9 @@ function RegionalRiskCell({
 
 export function DesktopComparisonTable({
   locations,
-  rainfallDenominator,
   selectedIndicator,
 }: {
   locations: readonly ComparisonLocation[];
-  rainfallDenominator: RainfallDenominator;
   selectedIndicator: MapIndicator;
 }) {
   const { other } = useMantineTheme();
@@ -124,29 +118,6 @@ export function DesktopComparisonTable({
                 />
               </Table.Td>
             ))}
-          </Table.Tr>
-          <Table.Tr bg={selectedIndicator === "frequency-flood" ? "teal.0" : undefined}>
-            <Table.Th>
-              頻度別浸水
-              <Text fz={10.5} fw={500} c="var(--mantine-color-stone-7)">
-                {rainfallDenominator}年に1回程度
-              </Text>
-            </Table.Th>
-            {withResult.map(({ id, result }) => {
-              const frequency = floodFrequencyAt(result.floodFrequency, rainfallDenominator);
-              return (
-                <Table.Td key={id}>
-                  <DataBadge
-                    state={frequency.state}
-                    valueLabel={frequency.sourceLabel}
-                    valueColor={
-                      frequency.category ? other.risk.floodDepth[frequency.category] : undefined
-                    }
-                    notApplicableLabel="対象外（関東）"
-                  />
-                </Table.Td>
-              );
-            })}
           </Table.Tr>
           <Table.Tr bg={other.risk.evidenceBg}>
             <Table.Th>

@@ -1,7 +1,7 @@
 import { deserialize } from "flatgeobuf/lib/mjs/geojson.js";
 
 const defaultUrl =
-  "https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v1/query/a31a/tokyo.fgb";
+  "https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v2/query/a31a/tokyo.fgb";
 const url = process.env.RISK_DATA_A31A_URL ?? defaultUrl;
 const rect = {
   minX: 139.69,

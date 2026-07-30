@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 LOCK_FILE="$ROOT_DIR/data-manifest/sources.lock.json"
 WORK_DIR="${RISK_DATA_WORK_DIR:-"$ROOT_DIR/.data"}"
-VERSION_DIR="$WORK_DIR/output/risk-data/v1"
+VERSION_DIR="$WORK_DIR/output/risk-data/v2"
 PMTILES_PATH="$VERSION_DIR/map/a31a.pmtiles"
 EXPECTED_FIELDS="dataset_id,prefecture_code,source_file,river_id,river_name,manager_code,manager_name,depth_code,depth_label,depth_min_m,depth_max_m"
 

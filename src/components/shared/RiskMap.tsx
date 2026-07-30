@@ -9,7 +9,6 @@ import {
 } from "../../domain/map-selection";
 import {
   a31aPmtilesUrl,
-  a53PmtilesUrl,
   tokyoBuildingCollapsePmtilesUrl,
   tokyoFirePmtilesUrl,
 } from "../../gis/config";
@@ -40,15 +39,6 @@ const rankColors = {
 
 function selectedTheme(selection: MapSelection) {
   switch (selection.indicator) {
-    case "frequency-flood":
-      return {
-        url: a53PmtilesUrl(selection.rainfallDenominator),
-        sourceLayer: "a53",
-        valueProperty: "depth_code",
-        palette: depthColors,
-        outline: "rgba(42, 78, 128, 0.35)",
-        attribution: "頻度別洪水浸水想定区域: 国土交通省",
-      };
     case "building-collapse":
       return {
         url: tokyoBuildingCollapsePmtilesUrl(),
@@ -104,7 +94,7 @@ export function RiskMap({
     .map(({ order, point }) => `${order}:${point.longitude}:${point.latitude}`)
     .join("|");
   const theme = selectedTheme(selection);
-  const selectionKey = `${selection.indicator}:${selection.rainfallDenominator}`;
+  const selectionKey = selection.indicator;
   const selectionLabel = mapSelectionLabel(selection);
 
   useEffect(() => {
@@ -187,10 +177,7 @@ export function RiskMap({
                     theme.palette[4],
                     5,
                     theme.palette[5],
-                    ...(selection.indicator === "maximum-flood" ||
-                    selection.indicator === "frequency-flood"
-                      ? [6, depthColors[6]]
-                      : []),
+                    ...(selection.indicator === "maximum-flood" ? [6, depthColors[6]] : []),
                     "#B5B2A9",
                   ],
                   "fill-opacity": 0.78,
@@ -320,13 +307,9 @@ export function RiskMap({
             ))}
           </Box>
           <Text mt={3} fz={9.5} c="var(--mantine-color-stone-7)">
-            {selection.indicator === "maximum-flood" || selection.indicator === "frequency-flood"
-              ? "浅い"
-              : "ランク1"}
+            {selection.indicator === "maximum-flood" ? "浅い" : "ランク1"}
             <Text component="span" ml={76}>
-              {selection.indicator === "maximum-flood" || selection.indicator === "frequency-flood"
-                ? "深い"
-                : "ランク5"}
+              {selection.indicator === "maximum-flood" ? "深い" : "ランク5"}
             </Text>
           </Text>
         </Paper>

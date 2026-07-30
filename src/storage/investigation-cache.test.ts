@@ -26,7 +26,7 @@ const identity = {
 describe("investigation cache", () => {
   it("座標とデータ版・ロジック版から安定したキーを作る", () => {
     expect(investigationCacheKey(identity)).toBe(
-      "risk-kurabe:investigation:v2:risk-data-v1:risk-evaluator-v1:13:139.691647:35.689185",
+      "risk-kurabe:investigation:v3:risk-data-v1:risk-evaluator-v1:13:139.691647:35.689185",
     );
   });
 

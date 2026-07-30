@@ -1,6 +1,6 @@
 import { deserialize } from "flatgeobuf/lib/mjs/geojson.js";
 
-const defaultBaseUrl = "https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v1/";
+const defaultBaseUrl = "https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v2/";
 const baseUrl = process.env.RISK_DATA_BASE_URL ?? defaultBaseUrl;
 const artifactUrl = new URL("query/tokyo/regional-risk.fgb", baseUrl).toString();
 const rect = {

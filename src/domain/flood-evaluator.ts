@@ -28,18 +28,6 @@ export interface EvaluatedFloodResult {
   evidences: readonly FloodPolygonMatch[];
 }
 
-export interface BasinCoverage {
-  riverOrBasinId: string;
-  status: FloodCoverageStatus;
-}
-
-export interface EvaluatedFrequencyFloodResult extends EvaluatedFloodResult {
-  /** A31aで地点に一致し、A53の探索対象になった水系。 */
-  candidateBasinIds: readonly string[];
-  /** 候補水系のうち、A53が未公開だった水系。値や区域外と併記する根拠に使う。 */
-  unpublishedBasinIds: readonly string[];
-}
-
 function comparableMaxMeters(depth: NormalizedFloodDepth): number {
   return depth.maxMeters ?? Number.POSITIVE_INFINITY;
 }
@@ -106,79 +94,5 @@ export function evaluateFloodMatches(
   return {
     state: stateByCoverage[coverageStatus],
     evidences,
-  };
-}
-
-/**
- * ADR-0018に従い、A31aで地点に一致した水系だけをA53の候補にする。
- * 収録済み水系と未公開水系が混在する場合は、収録済み側の判定を優先しつつ
- * 未公開水系を根拠として残す。
- */
-export function evaluateFrequencyFloodMatches({
-  a31aMatches,
-  a53Matches,
-  basinCoverage,
-}: {
-  a31aMatches: readonly FloodPolygonMatch[];
-  a53Matches: readonly FloodPolygonMatch[];
-  basinCoverage: readonly BasinCoverage[];
-}): EvaluatedFrequencyFloodResult {
-  const candidateBasinIds = sortedCopy(
-    [...new Set(a31aMatches.map(({ riverOrBasinId }) => riverOrBasinId))],
-    (a, b) => a.localeCompare(b),
-  );
-
-  if (candidateBasinIds.length === 0) {
-    return {
-      state: "undetermined",
-      evidences: [],
-      candidateBasinIds,
-      unpublishedBasinIds: [],
-    };
-  }
-
-  const candidateBasinIdSet = new Set(candidateBasinIds);
-  const candidateCoverage = basinCoverage.filter(({ riverOrBasinId }) =>
-    candidateBasinIdSet.has(riverOrBasinId),
-  );
-  const unpublishedBasinIds: string[] = [];
-  const eligibleBasinIds = new Set<string>();
-  for (const { riverOrBasinId, status } of candidateCoverage) {
-    if (status === "unpublished") unpublishedBasinIds.push(riverOrBasinId);
-    if (status === "available") eligibleBasinIds.add(riverOrBasinId);
-  }
-  const sortedUnpublishedBasinIds = sortedCopy(unpublishedBasinIds, (a, b) => a.localeCompare(b));
-  const eligibleMatches = a53Matches.filter(({ riverOrBasinId }) =>
-    eligibleBasinIds.has(riverOrBasinId),
-  );
-
-  if (eligibleMatches.length > 0) {
-    return {
-      ...evaluateFloodMatches(eligibleMatches, "available"),
-      candidateBasinIds,
-      unpublishedBasinIds: sortedUnpublishedBasinIds,
-    };
-  }
-
-  if (eligibleBasinIds.size > 0) {
-    return {
-      state: "outOfArea",
-      evidences: [],
-      candidateBasinIds,
-      unpublishedBasinIds: sortedUnpublishedBasinIds,
-    };
-  }
-
-  const allCandidatesHaveCoverage = candidateBasinIds.every((candidateId) =>
-    candidateCoverage.some(({ riverOrBasinId }) => riverOrBasinId === candidateId),
-  );
-  const allUnpublished =
-    allCandidatesHaveCoverage && candidateCoverage.every(({ status }) => status === "unpublished");
-
-  return {
-    state: allUnpublished ? "unpublished" : "undetermined",
-    evidences: [],
-    candidateBasinIds,
-    unpublishedBasinIds: sortedUnpublishedBasinIds,
   };
 }

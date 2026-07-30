@@ -351,7 +351,6 @@ function ResultsView({
                   name={primary.name}
                   address={primary.address}
                   result={primary.result!}
-                  rainfallDenominator={mapSelection.rainfallDenominator}
                   retrying={retryingLocationIds.includes(primary.id)}
                   onRetry={() => void onRetry(primary.id)}
                   onRename={(name) => onRename(primary.id, name)}
@@ -378,7 +377,6 @@ function ResultsView({
                   name={primary.name}
                   address={primary.address}
                   result={primary.result!}
-                  rainfallDenominator={mapSelection.rainfallDenominator}
                   retrying={retryingLocationIds.includes(primary.id)}
                   onRetry={() => void onRetry(primary.id)}
                   onRename={(name) => onRename(primary.id, name)}
@@ -409,10 +407,7 @@ function ResultsView({
                   compact
                 />
               </Box>
-              <MobileComparisonView
-                locations={locations}
-                rainfallDenominator={mapSelection.rainfallDenominator}
-              />
+              <MobileComparisonView locations={locations} />
               <Stack px="lg" gap="xs">
                 {locations.map((location) =>
                   location.result && location.result.problems.length > 0 ? (
@@ -440,7 +435,6 @@ function ResultsView({
               <MapThemeControls selection={mapSelection} onChange={onMapSelectionChange} />
               <DesktopComparisonTable
                 locations={locations}
-                rainfallDenominator={mapSelection.rainfallDenominator}
                 selectedIndicator={mapSelection.indicator}
               />
               {locations.map((location) =>

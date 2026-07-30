@@ -1,11 +1,10 @@
-import { Box, Group, Paper, SegmentedControl, Stack, Text } from "@mantine/core";
+import { Box, Paper, SegmentedControl, Stack, Text } from "@mantine/core";
 
 import {
   MAP_INDICATOR_OPTIONS,
   type MapIndicator,
   type MapSelection,
 } from "../../domain/map-selection";
-import { RAINFALL_DENOMINATORS, type RainfallDenominator } from "../../domain/risk";
 
 export function MapThemeControls({
   selection,
@@ -51,41 +50,6 @@ export function MapThemeControls({
             label: { fontWeight: 700, paddingInline: compact ? 5 : 10 },
           }}
         />
-
-        {selection.indicator === "frequency-flood" ? (
-          <Group gap="4xs" wrap="wrap" aria-label="降雨規模">
-            <Text fz={10.5} fw={700} c="var(--mantine-color-stone-7)" mr="4xs">
-              降雨規模
-            </Text>
-            {RAINFALL_DENOMINATORS.map((denominator) => (
-              <Text
-                key={denominator}
-                component="button"
-                type="button"
-                aria-pressed={selection.rainfallDenominator === denominator}
-                onClick={() =>
-                  onChange({
-                    ...selection,
-                    rainfallDenominator: denominator as RainfallDenominator,
-                  })
-                }
-                fz={10.5}
-                fw={700}
-                c={selection.rainfallDenominator === denominator ? "white" : "teal.8"}
-                bg={selection.rainfallDenominator === denominator ? "teal.7" : "teal.0"}
-                px="xs"
-                py="4xs"
-                style={{
-                  border: "1px solid var(--mantine-color-teal-2)",
-                  borderRadius: 999,
-                  cursor: "pointer",
-                }}
-              >
-                {denominator}年
-              </Text>
-            ))}
-          </Group>
-        ) : null}
       </Stack>
     </Paper>
   );

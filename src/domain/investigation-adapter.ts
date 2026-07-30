@@ -1,12 +1,6 @@
-import type { EvaluatedFrequencyFloodResult, NormalizedFloodDepth } from "./flood-evaluator";
+import type { NormalizedFloodDepth } from "./flood-evaluator";
 import type { EvidenceBasedInvestigationResult } from "./investigation";
-import type {
-  DataStateKind,
-  FloodDepthCategory,
-  FloodFrequencyResult,
-  InvestigationResult,
-  RainfallDenominator,
-} from "./risk";
+import type { FloodDepthCategory, InvestigationResult } from "./risk";
 
 export const KANTO_PREFECTURE_CODES = new Set(["08", "09", "10", "11", "12", "13", "14"]);
 
@@ -30,46 +24,6 @@ function evidences(result: {
   }));
 }
 
-function summarizedFrequencyState(
-  results: readonly EvaluatedFrequencyFloodResult[],
-): DataStateKind {
-  if (results.some(({ state }) => state === "undetermined")) return "undetermined";
-  if (results.some(({ state }) => state === "outOfArea")) return "outOfArea";
-  if (results.some(({ state }) => state === "unpublished")) return "unpublished";
-  return "undetermined";
-}
-
-function frequencyResult(investigation: EvidenceBasedInvestigationResult): FloodFrequencyResult {
-  const firstValue = investigation.frequencyFloods.find(({ result }) => result.state === "value");
-  const periods = investigation.frequencyFloods.map(
-    ({ rainfallDenominator, result, boundaryWarning }) => ({
-      rainfallDenominator: rainfallDenominator as RainfallDenominator,
-      state: result.state,
-      category: result.primary ? floodCategory(result.primary.depth) : undefined,
-      sourceLabel: result.primary?.depth.sourceLabel,
-      evidences: evidences(result),
-      boundaryWarning,
-    }),
-  );
-  if (firstValue?.result.primary) {
-    return {
-      state: "value",
-      frequencyLabel: `${firstValue.rainfallDenominator}年に1回程度`,
-      category: floodCategory(firstValue.result.primary.depth),
-      sourceLabel: firstValue.result.primary.depth.sourceLabel,
-      evidences: evidences(firstValue.result),
-      boundaryWarning: firstValue.boundaryWarning,
-      periods,
-    };
-  }
-
-  return {
-    state: summarizedFrequencyState(investigation.frequencyFloods.map(({ result }) => result)),
-    boundaryWarning: investigation.frequencyFloods.some(({ boundaryWarning }) => boundaryWarning),
-    periods,
-  };
-}
-
 export function toUiInvestigationResult(
   investigation: EvidenceBasedInvestigationResult,
 ): InvestigationResult {
@@ -86,7 +40,6 @@ export function toUiInvestigationResult(
       evidences: evidences(maximum.result),
       boundaryWarning: maximum.boundaryWarning,
     },
-    floodFrequency: frequencyResult(investigation),
     tokyoEarthquakeRisk: {
       state: tokyo.result.state,
       rank: tokyoPrimary?.overall_rank,
@@ -118,10 +71,7 @@ export function toUiInvestigationResult(
     },
     dataVersion: investigation.dataVersion,
     logicVersion: investigation.logicVersion,
-    problems: investigation.issues.map(({ code, rainfallDenominator }) => ({
-      code,
-      rainfallDenominator: rainfallDenominator as RainfallDenominator | undefined,
-    })),
+    problems: investigation.issues,
     sources: investigation.sources,
     aiSummary: "",
   };
@@ -130,7 +80,6 @@ export function toUiInvestigationResult(
 export function outsideKantoResult(): InvestigationResult {
   return {
     maxFloodDepth: { state: "notApplicable" },
-    floodFrequency: { state: "notApplicable", periods: [] },
     tokyoEarthquakeRisk: { state: "notApplicable" },
     buildingCollapseRisk: { state: "notApplicable" },
     fireRisk: { state: "notApplicable" },
@@ -143,7 +92,6 @@ export function outsideKantoResult(): InvestigationResult {
 export function failedInvestigationResult(): InvestigationResult {
   return {
     maxFloodDepth: { state: "undetermined" },
-    floodFrequency: { state: "undetermined", periods: [] },
     tokyoEarthquakeRisk: { state: "undetermined" },
     buildingCollapseRisk: { state: "undetermined" },
     fireRisk: { state: "undetermined" },

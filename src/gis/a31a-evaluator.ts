@@ -32,7 +32,7 @@ function featureId(feature: A31aFeature, index: number): string {
 }
 
 /**
- * A31aの河川コード（10桁以上）を、A53が持つ水系コード（先頭6桁）へ揃える。
+ * A31aの河川コード（10桁以上）から、根拠表示用の水系コード（先頭6桁）を得る。
  * 数字6桁未満の値はテストfixtureや将来の対応表を壊さないよう、そのまま返す。
  */
 export function a31aBasinCode(riverId: string): string {
