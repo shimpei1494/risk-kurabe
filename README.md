@@ -106,7 +106,7 @@ vp exec wrangler secret put YAHOO_CLIENT_ID
 R2バケット`risk-kurabe-data`で、少なくとも次のOriginからのGET・Range取得を許可します。
 
 - `http://localhost:5173`
-- `https://risk-kurabe.peishim.workers.dev`
+- `https://risk-kurabe.tokyo-odh-044.workers.dev`
 
 FlatGeobufとPMTilesはHTTP Rangeリクエストを使用します。CORS設定では`Range`リクエストヘッダーと、`Content-Range`、`Accept-Ranges`、`Content-Length`など、ブラウザで必要なレスポンスヘッダーも確認してください。
 
@@ -119,7 +119,7 @@ vp run deploy
 配置先:
 
 ```text
-https://risk-kurabe.peishim.workers.dev
+https://risk-kurabe.tokyo-odh-044.workers.dev
 ```
 
 `wrangler.jsonc`では`YAHOO_CLIENT_ID`を必須Secretとして宣言しています。未設定の場合、開発時には警告が出て、本番デプロイは失敗します。
