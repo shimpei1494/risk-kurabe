@@ -190,6 +190,7 @@
       "fileSize": 8711643,
       "url": "https://www.funenka.metro.tokyo.lg.jp/2024/01/all2.zip",
       "downloadPageUrl": "https://www.funenka.metro.tokyo.lg.jp/area-hazard-level/regional-risk-list/",
+      "catalogPageUrl": "https://catalog.data.metro.tokyo.lg.jp/dataset/t000008d0000000012",
       "license": "CC BY 4.0",
       "sha256": "07ed588ccbd8b060d255d82754c35442bf17e6b3a2eb21caab7e5e8c2da732b5"
     },
@@ -204,6 +205,7 @@
       "fileSize": 355915,
       "url": "https://www.funenka.metro.tokyo.lg.jp/2024/01/all2.csv",
       "downloadPageUrl": "https://www.funenka.metro.tokyo.lg.jp/area-hazard-level/regional-risk-list/",
+      "catalogPageUrl": "https://catalog.data.metro.tokyo.lg.jp/dataset/t000008d0000000012",
       "license": "CC BY 4.0",
       "sha256": "62ad9f4479f43ea254ed89bdfbc289ee9ccf7f18546a3713c29e6d63bbabbfb9"
     }
