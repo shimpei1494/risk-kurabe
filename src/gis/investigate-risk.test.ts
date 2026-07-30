@@ -230,7 +230,13 @@ describe("investigateRisk", () => {
       { rainfallDenominator: 30, result: { state: "unpublished" } },
     ]);
     expect(result.tokyoRegionalRisk.result.primary?.building_collapse_rank).toBe(2);
+    expect(result.tokyoRegionalRisk.boundaryWarnings).toEqual({
+      overall: false,
+      buildingCollapse: false,
+      fire: false,
+    });
     expect(result.dataVersion).toBe("risk-data-v1");
+    expect(result.logicVersion).toBe("risk-evaluator-v2");
     expect(result.issues).toEqual([]);
     expect(deps.fetchA53Candidates).toHaveBeenCalledTimes(1);
     expect(deps.fetchA53Candidates).toHaveBeenCalledWith({

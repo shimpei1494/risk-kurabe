@@ -6,6 +6,8 @@ import type {
 import type { EvaluatedFloodResult, EvaluatedFrequencyFloodResult } from "./flood-evaluator";
 import type { RiskDataSourceInfo } from "./risk";
 
+export const INVESTIGATION_LOGIC_VERSION = "risk-evaluator-v2";
+
 export interface FloodIndicatorInvestigation {
   result: EvaluatedFloodResult;
   boundaryWarning: boolean;

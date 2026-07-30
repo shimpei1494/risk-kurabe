@@ -13,11 +13,13 @@ function properties({
   townKey = "千代田区:丸の内一丁目",
   buildingRank = 2,
   fireRank = 3,
+  overallRank = 3,
   sourceId = 1,
 }: {
   townKey?: string;
   buildingRank?: 1 | 2 | 3 | 4 | 5;
   fireRank?: 1 | 2 | 3 | 4 | 5;
+  overallRank?: 1 | 2 | 3 | 4 | 5;
   sourceId?: number;
 } = {}): TokyoRegionalRiskProperties {
   const [municipalityName = "", townName = ""] = townKey.split(":");
@@ -37,7 +39,7 @@ function properties({
     activity_difficulty: 0.2,
     overall_score: 1.3,
     overall_order: 150,
-    overall_rank: 3,
+    overall_rank: overallRank,
   };
 }
 
@@ -113,6 +115,7 @@ describe("tokyoBoundaryWarnings", () => {
         townKey: "千代田区:丸の内二丁目",
         buildingRank: 4,
         fireRank: 3,
+        overallRank: 4,
         sourceId: 2,
       }),
     );
@@ -122,6 +125,6 @@ describe("tokyoBoundaryWarnings", () => {
       candidates: [west, east],
       coverageStatus: "available",
     });
-    expect(warnings).toEqual({ buildingCollapse: true, fire: false });
+    expect(warnings).toEqual({ overall: true, buildingCollapse: true, fire: false });
   });
 });

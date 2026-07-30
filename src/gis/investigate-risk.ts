@@ -8,6 +8,7 @@ import type {
   FrequencyFloodInvestigation,
   InvestigationIssue,
 } from "../domain/investigation";
+import { INVESTIGATION_LOGIC_VERSION } from "../domain/investigation";
 import type { RiskDataSourceInfo } from "../domain/risk";
 import { evaluateA31aAtPoint, hasA31aBoundaryWarning, type A31aFeature } from "./a31a-evaluator";
 import { evaluateA53AtPoint, hasA53BoundaryWarning, type A53Feature } from "./a53-evaluator";
@@ -306,7 +307,7 @@ export async function investigateRisk({
           coverageStatus: effectiveTokyoCoverage,
           radiusMeters,
         })
-      : { buildingCollapse: false, fire: false };
+      : { overall: false, buildingCollapse: false, fire: false };
 
   const sources: RiskDataSourceInfo[] = [];
   for (const dataset of catalog.manifest.datasets) {
@@ -330,7 +331,7 @@ export async function investigateRisk({
     location,
     prefectureCode,
     dataVersion: catalog.manifest.dataVersion,
-    logicVersion: catalog.manifest.logicVersion,
+    logicVersion: INVESTIGATION_LOGIC_VERSION,
     sources,
     maximumFlood,
     frequencyFloods,

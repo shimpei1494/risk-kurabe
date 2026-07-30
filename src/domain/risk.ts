@@ -76,14 +76,22 @@ export type RainfallDenominator = (typeof RAINFALL_DENOMINATORS)[number];
 export interface RegionalRiskResult {
   state: DataStateKind;
   rank?: RegionalRiskRank;
+  score?: number;
+  order?: number;
   boundaryWarning?: boolean;
   municipalityName?: string;
   townName?: string;
 }
 
+export interface TokyoEarthquakeRiskResult extends RegionalRiskResult {
+  activityDifficulty?: number;
+  groundClassification?: string;
+}
+
 export interface InvestigationResult {
   maxFloodDepth: MaxFloodDepthResult;
   floodFrequency: FloodFrequencyResult;
+  tokyoEarthquakeRisk: TokyoEarthquakeRiskResult;
   buildingCollapseRisk: RegionalRiskResult;
   fireRisk: RegionalRiskResult;
   dataVersion?: string;

@@ -33,6 +33,8 @@ const floodValueSchema = z.object({
 const regionalRiskSchema = z.object({
   state: dataStateSchema,
   rank: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]).optional(),
+  score: z.number().optional(),
+  order: z.number().int().positive().optional(),
   boundaryWarning: z.boolean().optional(),
   municipalityName: z.string().optional(),
   townName: z.string().optional(),
@@ -66,6 +68,10 @@ const investigationResultSchema: z.ZodType<InvestigationResult> = z.object({
       }),
     ),
   }),
+  tokyoEarthquakeRisk: regionalRiskSchema.extend({
+    activityDifficulty: z.number().optional(),
+    groundClassification: z.string().optional(),
+  }),
   buildingCollapseRisk: regionalRiskSchema,
   fireRisk: regionalRiskSchema,
   dataVersion: z.string().optional(),
@@ -76,7 +82,7 @@ const investigationResultSchema: z.ZodType<InvestigationResult> = z.object({
 });
 
 const cacheEntrySchema = z.object({
-  schemaVersion: z.literal(1),
+  schemaVersion: z.literal(2),
   result: investigationResultSchema,
 });
 
@@ -96,7 +102,7 @@ export function investigationCacheKey({
   logicVersion,
 }: InvestigationCacheIdentity): string {
   return [
-    "risk-kurabe:investigation:v1",
+    "risk-kurabe:investigation:v2",
     dataVersion,
     logicVersion,
     prefectureCode,
@@ -135,7 +141,7 @@ export function writeInvestigationCache(
   try {
     storage.setItem(
       investigationCacheKey(identity),
-      JSON.stringify({ schemaVersion: 1, result } satisfies z.input<typeof cacheEntrySchema>),
+      JSON.stringify({ schemaVersion: 2, result } satisfies z.input<typeof cacheEntrySchema>),
     );
   } catch {
     // 容量超過・プライベートモードでも地点判定自体は成功させる。

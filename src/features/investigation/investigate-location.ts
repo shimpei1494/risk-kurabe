@@ -1,3 +1,4 @@
+import { INVESTIGATION_LOGIC_VERSION } from "../../domain/investigation";
 import {
   failedInvestigationResult,
   toUiInvestigationResult,
@@ -28,7 +29,7 @@ export async function investigateLocation({
     location: selection.point,
     prefectureCode: selection.prefectureCode,
     dataVersion: catalog.manifest.dataVersion,
-    logicVersion: catalog.manifest.logicVersion,
+    logicVersion: INVESTIGATION_LOGIC_VERSION,
   };
   const cached = storage ? readInvestigationCache(storage, identity) : null;
   if (cached) return cached;

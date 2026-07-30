@@ -87,9 +87,22 @@ export function toUiInvestigationResult(
       boundaryWarning: maximum.boundaryWarning,
     },
     floodFrequency: frequencyResult(investigation),
+    tokyoEarthquakeRisk: {
+      state: tokyo.result.state,
+      rank: tokyoPrimary?.overall_rank,
+      score: tokyoPrimary?.overall_score,
+      order: tokyoPrimary?.overall_order,
+      activityDifficulty: tokyoPrimary?.activity_difficulty,
+      groundClassification: tokyoPrimary?.ground_classification,
+      boundaryWarning: tokyo.boundaryWarnings.overall,
+      municipalityName: tokyoPrimary?.municipality_name,
+      townName: tokyoPrimary?.town_name,
+    },
     buildingCollapseRisk: {
       state: tokyo.result.state,
       rank: tokyoPrimary?.building_collapse_rank,
+      score: tokyoPrimary?.building_collapse_score,
+      order: tokyoPrimary?.building_collapse_order,
       boundaryWarning: tokyo.boundaryWarnings.buildingCollapse,
       municipalityName: tokyoPrimary?.municipality_name,
       townName: tokyoPrimary?.town_name,
@@ -97,6 +110,8 @@ export function toUiInvestigationResult(
     fireRisk: {
       state: tokyo.result.state,
       rank: tokyoPrimary?.fire_rank,
+      score: tokyoPrimary?.fire_score,
+      order: tokyoPrimary?.fire_order,
       boundaryWarning: tokyo.boundaryWarnings.fire,
       municipalityName: tokyoPrimary?.municipality_name,
       townName: tokyoPrimary?.town_name,
@@ -116,6 +131,7 @@ export function outsideKantoResult(): InvestigationResult {
   return {
     maxFloodDepth: { state: "notApplicable" },
     floodFrequency: { state: "notApplicable", periods: [] },
+    tokyoEarthquakeRisk: { state: "notApplicable" },
     buildingCollapseRisk: { state: "notApplicable" },
     fireRisk: { state: "notApplicable" },
     problems: [],
@@ -128,6 +144,7 @@ export function failedInvestigationResult(): InvestigationResult {
   return {
     maxFloodDepth: { state: "undetermined" },
     floodFrequency: { state: "undetermined", periods: [] },
+    tokyoEarthquakeRisk: { state: "undetermined" },
     buildingCollapseRisk: { state: "undetermined" },
     fireRisk: { state: "undetermined" },
     problems: [{ code: "catalog-unavailable" }],
