@@ -3,3 +3,52 @@ body {
   margin: 0;
   background: #f0eee9;
 }
+
+:where(button, a, input, summary, [tabindex]):focus-visible {
+  outline: 3px solid #25776f;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+.risk-map-marker {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 3px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  background: var(--marker-accent);
+  box-shadow: 0 3px 10px rgb(0 0 0 / 28%);
+  color: #fff;
+  font:
+    700 12px/1 "Noto Sans JP",
+    sans-serif;
+  transform: rotate(-45deg);
+}
+
+.risk-map-marker > span {
+  display: block;
+  transform: rotate(45deg);
+}
+
+.maplibregl-ctrl-group {
+  overflow: hidden;
+  border: 1px solid rgb(181 178 169 / 80%);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgb(68 66 60 / 12%);
+}
+
+.maplibregl-ctrl-attrib {
+  color: #55524a;
+  font-size: 9px;
+}

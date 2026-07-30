@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "risk-kurabe",
+  "compatibility_date": "2026-07-17",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+  "observability": {
+    "enabled": true,
+  },
+  "secrets": {
+    "required": ["YAHOO_CLIENT_ID"],
+  },
+  "r2_buckets": [
+    {
+      "bucket_name": "risk-kurabe-data",
+      "binding": "risk_kurabe_data",
+      "remote": true,
+    },
+  ],
+}

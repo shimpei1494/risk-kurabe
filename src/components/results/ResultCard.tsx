@@ -10,9 +10,19 @@ import {
 } from "@mantine/core";
 import { useState } from "react";
 
-import type { InvestigationResult } from "../../domain/risk";
+import {
+  floodFrequencyAt,
+  type InvestigationResult,
+  type RainfallDenominator,
+} from "../../domain/risk";
 import { DataBadge } from "../shared/DataBadge";
-import { AiSummaryBox, BoundaryWarningNote, MultiRiverEvidence } from "../shared/InfoBlocks";
+import {
+  AiSummaryBox,
+  BoundaryWarningNote,
+  DataSourcesDisclosure,
+  InvestigationProblemNotice,
+  MultiRiverEvidence,
+} from "../shared/InfoBlocks";
 
 interface IndicatorRowProps {
   icon: string;
@@ -137,6 +147,9 @@ export function ResultCard({
   result,
   accentColor,
   compact = false,
+  rainfallDenominator = 30,
+  retrying = false,
+  onRetry,
   onRename,
 }: {
   order: number;
@@ -146,10 +159,14 @@ export function ResultCard({
   accentColor?: string;
   /** 3列比較グリッドなど横幅が狭い文脈では、名前編集を「✎」アイコンのみで表示する */
   compact?: boolean;
+  rainfallDenominator?: RainfallDenominator;
+  retrying?: boolean;
+  onRetry?: () => void;
   onRename: (name: string) => void;
 }) {
   const { other } = useMantineTheme();
   const { maxFloodDepth, floodFrequency, buildingCollapseRisk, fireRisk, aiSummary } = result;
+  const selectedFrequency = floodFrequencyAt(floodFrequency, rainfallDenominator);
   const showOutOfAreaFootnote =
     maxFloodDepth.state === "outOfArea" || floodFrequency.state === "outOfArea";
 
@@ -175,6 +192,15 @@ export function ResultCard({
       </Card.Section>
 
       <Card.Section inheritPadding px="xl">
+        {result.problems.length > 0 ? (
+          <Box pt="md">
+            <InvestigationProblemNotice
+              problems={result.problems}
+              retrying={retrying}
+              onRetry={onRetry}
+            />
+          </Box>
+        ) : null}
         <Box py="3xs">
           <Box pb="md" style={{ borderBottom: "1px solid var(--mantine-color-stone-1)" }}>
             <IndicatorRow
@@ -185,11 +211,12 @@ export function ResultCard({
             >
               <DataBadge
                 state={maxFloodDepth.state}
-                valueLabel={maxFloodDepth.category}
+                valueLabel={maxFloodDepth.sourceLabel ?? maxFloodDepth.category}
                 valueColor={
                   maxFloodDepth.category ? other.risk.floodDepth[maxFloodDepth.category] : undefined
                 }
                 outOfAreaSuffix="※"
+                notApplicableLabel="対象外（関東1都6県）"
               />
             </IndicatorRow>
             {maxFloodDepth.state === "value" &&
@@ -206,15 +233,31 @@ export function ResultCard({
             ) : null}
           </Box>
 
-          <IndicatorRow icon="頻" iconColor={other.risk.indicatorIcon.water} label="頻度別浸水">
+          <IndicatorRow
+            icon="頻"
+            iconColor={other.risk.indicatorIcon.water}
+            label={`頻度別浸水（${rainfallDenominator}年）`}
+          >
             <DataBadge
-              state={floodFrequency.state}
-              valueLabel={floodFrequency.frequencyLabel}
-              valueColor={
-                floodFrequency.category ? other.risk.floodDepth[floodFrequency.category] : undefined
+              state={selectedFrequency.state}
+              valueLabel={
+                selectedFrequency.sourceLabel
+                  ? `${rainfallDenominator}年に1回程度・${selectedFrequency.sourceLabel}`
+                  : undefined
               }
+              valueColor={
+                selectedFrequency.category
+                  ? other.risk.floodDepth[selectedFrequency.category]
+                  : undefined
+              }
+              notApplicableLabel="対象外（関東1都6県）"
             />
           </IndicatorRow>
+          {selectedFrequency.boundaryWarning ? (
+            <Box mb="2xs">
+              <BoundaryWarningNote />
+            </Box>
+          ) : null}
 
           <IndicatorRow
             icon="倒"
@@ -233,6 +276,11 @@ export function ResultCard({
               }
             />
           </IndicatorRow>
+          {buildingCollapseRisk.boundaryWarning ? (
+            <Box mb="2xs">
+              <BoundaryWarningNote />
+            </Box>
+          ) : null}
 
           <IndicatorRow
             icon="火"
@@ -246,6 +294,17 @@ export function ResultCard({
               valueColor={fireRisk.rank ? other.risk.regionalRiskRank[fireRisk.rank] : undefined}
             />
           </IndicatorRow>
+          {fireRisk.boundaryWarning ? (
+            <Box mt="2xs">
+              <BoundaryWarningNote />
+            </Box>
+          ) : null}
+          {buildingCollapseRisk.municipalityName && buildingCollapseRisk.townName ? (
+            <Text mt="xs" fz={11} c="var(--mantine-color-stone-7)">
+              地域危険度の根拠：{buildingCollapseRisk.municipalityName}
+              {buildingCollapseRisk.townName}
+            </Text>
+          ) : null}
         </Box>
       </Card.Section>
 
@@ -255,9 +314,17 @@ export function ResultCard({
         </Text>
       ) : null}
 
-      <Card.Section inheritPadding pt={showOutOfAreaFootnote ? 0 : "3xs"} pb="md" px="md">
-        <AiSummaryBox text={aiSummary} />
-      </Card.Section>
+      {aiSummary.trim().length > 0 ? (
+        <Card.Section inheritPadding pt={showOutOfAreaFootnote ? 0 : "3xs"} pb="md" px="md">
+          <AiSummaryBox text={aiSummary} />
+        </Card.Section>
+      ) : null}
+
+      {result.sources.length > 0 ? (
+        <Card.Section inheritPadding pb="md" px="md">
+          <DataSourcesDisclosure sources={result.sources} />
+        </Card.Section>
+      ) : null}
     </Card>
   );
 }

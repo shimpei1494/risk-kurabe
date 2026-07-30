@@ -10,25 +10,40 @@ import {
   Title,
   useMantineTheme,
 } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { LocationInputCard } from "../components/location-input/LocationInputCard";
 import { AddLocationCard } from "../components/results/AddLocationCard";
+import { DesktopComparisonTable } from "../components/results/DesktopComparisonTable";
 import { MobileComparisonView } from "../components/results/MobileComparisonView";
 import { ResultCard } from "../components/results/ResultCard";
 import { AppHeaderCompact, AppHeaderFull } from "../components/shared/AppHeader";
-import { InfoBanner } from "../components/shared/InfoBlocks";
+import {
+  DataSourcesDisclosure,
+  InfoBanner,
+  InvestigationProblemNotice,
+} from "../components/shared/InfoBlocks";
 import { ResultLegend } from "../components/shared/Legend";
-import { MapPlaceholder } from "../components/shared/MapPlaceholder";
+import { MapThemeControls } from "../components/shared/MapThemeControls";
+import { RiskMap } from "../components/shared/RiskMap";
+import { KANTO_PREFECTURE_CODES, outsideKantoResult } from "../domain/investigation-adapter";
 import {
   MAX_COMPARISON_LOCATIONS,
   defaultLocationName,
   type ComparisonLocation,
   type LocationOrder,
+  type LocationSelection,
 } from "../domain/location";
-import { investigate } from "../domain/mock-data";
+import {
+  DEFAULT_MAP_SELECTION,
+  mapSelectionLabel,
+  type MapSelection,
+} from "../domain/map-selection";
+import { investigateLocation } from "../features/investigation/investigate-location";
+import { riskDataBaseUrl } from "../gis/config";
+import { rememberLocation } from "../storage/recent-locations";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -37,16 +52,44 @@ export const Route = createFileRoute("/")({
 function Home() {
   const [locations, setLocations] = useState<ComparisonLocation[]>([]);
   const [pendingOrder, setPendingOrder] = useState<LocationOrder | null>(1);
+  const [mapSelection, setMapSelection] = useState<MapSelection>(DEFAULT_MAP_SELECTION);
+  const [retryingLocationIds, setRetryingLocationIds] = useState<string[]>([]);
   const [mapOpened, { open: openMap, close: closeMap }] = useDisclosure(false);
 
   const investigatedCount = locations.length;
   const isHome = investigatedCount === 0 && pendingOrder === 1;
 
-  function handleInvestigate(order: LocationOrder, address: string) {
-    const result = investigate(order);
+  async function handleInvestigate(order: LocationOrder, selection: LocationSelection) {
+    const result = !KANTO_PREFECTURE_CODES.has(selection.prefectureCode)
+      ? outsideKantoResult()
+      : await investigateLocation({
+          baseUrl: riskDataBaseUrl(),
+          selection,
+          storage: typeof window === "undefined" ? undefined : window.sessionStorage,
+        });
+
+    if (typeof window !== "undefined") {
+      try {
+        rememberLocation(window.localStorage, {
+          address: selection.address,
+          point: selection.point,
+        });
+      } catch {
+        // 端末内保存が使えなくても調査結果は表示する。
+      }
+    }
+
     setLocations((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), order, name: defaultLocationName(order), address, result },
+      {
+        id: crypto.randomUUID(),
+        order,
+        name: defaultLocationName(order),
+        address: selection.address,
+        point: selection.point,
+        prefectureCode: selection.prefectureCode,
+        result,
+      },
     ]);
     setPendingOrder(null);
   }
@@ -61,9 +104,33 @@ function Home() {
     setLocations((prev) => prev.map((loc) => (loc.id === id ? { ...loc, name } : loc)));
   }
 
+  async function handleRetry(id: string) {
+    const location = locations.find((item) => item.id === id);
+    if (!location || retryingLocationIds.includes(id)) return;
+
+    setRetryingLocationIds((current) => [...current, id]);
+    try {
+      const result = await investigateLocation({
+        baseUrl: riskDataBaseUrl(),
+        selection: {
+          address: location.address,
+          point: location.point,
+          prefectureCode: location.prefectureCode,
+        },
+        storage: typeof window === "undefined" ? undefined : window.sessionStorage,
+      });
+      setLocations((current) =>
+        current.map((item) => (item.id === id ? { ...item, result } : item)),
+      );
+    } finally {
+      setRetryingLocationIds((current) => current.filter((item) => item !== id));
+    }
+  }
+
   function handleReset() {
     setLocations([]);
     setPendingOrder(1);
+    setRetryingLocationIds([]);
   }
 
   if (isHome) {
@@ -80,6 +147,10 @@ function Home() {
         onRename={handleRename}
         onReset={handleReset}
         onOpenMap={openMap}
+        onRetry={handleRetry}
+        retryingLocationIds={retryingLocationIds}
+        mapSelection={mapSelection}
+        onMapSelectionChange={setMapSelection}
       />
       <Modal
         opened={mapOpened}
@@ -91,12 +162,17 @@ function Home() {
       >
         <Stack gap="sm">
           <Text fz={12.5} c="var(--mantine-color-stone-8)">
-            全地点のピンと選択中指標のレイヤーを表示する地図は今後実装します。ここでは配置イメージのみ確認できます。
+            各地点の位置と、{mapSelectionLabel(mapSelection)}を重ねて表示しています。
           </Text>
-          <MapPlaceholder
-            order={locations[0]?.order ?? 1}
-            label={locations[0]?.name ?? "地点1"}
+          <MapThemeControls selection={mapSelection} onChange={setMapSelection} compact />
+          <RiskMap
+            locations={locations.map(({ order, name, point }) => ({
+              order,
+              label: name,
+              point,
+            }))}
             height={320}
+            selection={mapSelection}
           />
         </Stack>
       </Modal>
@@ -107,13 +183,24 @@ function Home() {
 function PageShell({ children }: { children: React.ReactNode }) {
   const { other } = useMantineTheme();
   return (
-    <Box mih="100vh" bg={other.risk.appBg}>
-      {children}
+    <Box mih="100vh" bg={other.risk.appBg} style={{ display: "flex", flexDirection: "column" }}>
+      <Box style={{ flex: 1 }}>{children}</Box>
+      {/* Begin Yahoo! JAPAN Web Services Attribution Snippet */}
+      <Box component="footer" ta="center">
+        <span style={{ margin: "15px 15px 15px 15px" }}>
+          <a href="https://developer.yahoo.co.jp/sitemap/">Webサービス by Yahoo! JAPAN</a>
+        </span>
+      </Box>
+      {/* End Yahoo! JAPAN Web Services Attribution Snippet */}
     </Box>
   );
 }
 
-function HomeInitialView({ onSubmit }: { onSubmit: (address: string) => void }) {
+function HomeInitialView({
+  onSubmit,
+}: {
+  onSubmit: (selection: LocationSelection) => Promise<void>;
+}) {
   return (
     <PageShell>
       <AppHeaderFull />
@@ -186,29 +273,38 @@ function ResultsView({
   onRename,
   onReset,
   onOpenMap,
+  onRetry,
+  retryingLocationIds,
+  mapSelection,
+  onMapSelectionChange,
 }: {
   locations: ComparisonLocation[];
   pendingOrder: LocationOrder | null;
-  onInvestigate: (order: LocationOrder, address: string) => void;
+  onInvestigate: (order: LocationOrder, selection: LocationSelection) => Promise<void>;
   onAddLocation: () => void;
   onRename: (id: string, name: string) => void;
   onReset: () => void;
   onOpenMap: () => void;
+  onRetry: (id: string) => Promise<void>;
+  retryingLocationIds: readonly string[];
+  mapSelection: MapSelection;
+  onMapSelectionChange: (selection: MapSelection) => void;
 }) {
-  const { other } = useMantineTheme();
+  const isDesktop = useMediaQuery("(min-width: 48em)");
   const count = locations.length;
   const remaining = MAX_COMPARISON_LOCATIONS - count;
   const crumb = count <= 1 ? "調査結果" : `比較結果（${count}地点）`;
   const showAddSlot = pendingOrder === null && remaining > 0;
   const isComparing = count >= 2;
   const primary = locations[0];
+  const sources = locations.flatMap((location) => location.result?.sources ?? []);
 
   const pendingInput = pendingOrder !== null && (
     <LocationInputCard
       order={pendingOrder}
       defaultName={defaultLocationName(pendingOrder)}
       submitLabel="この地点を調べる"
-      onSubmit={(address) => onInvestigate(pendingOrder, address)}
+      onSubmit={(selection) => onInvestigate(pendingOrder, selection)}
     />
   );
 
@@ -238,12 +334,26 @@ function ResultsView({
             {/* モバイル: 地図（コンパクト）→ カード → 追加CTA（デザイン 3f） */}
             <Box hiddenFrom="sm">
               <Stack gap="md">
-                <MapPlaceholder order={primary.order} label={primary.name} height={150} compact />
+                <RiskMap
+                  locations={[{ order: primary.order, label: primary.name, point: primary.point }]}
+                  height={150}
+                  compact
+                  active={!isDesktop}
+                  selection={mapSelection}
+                />
+                <MapThemeControls
+                  selection={mapSelection}
+                  onChange={onMapSelectionChange}
+                  compact
+                />
                 <ResultCard
                   order={primary.order}
                   name={primary.name}
                   address={primary.address}
                   result={primary.result!}
+                  rainfallDenominator={mapSelection.rainfallDenominator}
+                  retrying={retryingLocationIds.includes(primary.id)}
+                  onRetry={() => void onRetry(primary.id)}
                   onRename={(name) => onRename(primary.id, name)}
                 />
                 {showAddSlot ? (
@@ -268,6 +378,9 @@ function ResultsView({
                   name={primary.name}
                   address={primary.address}
                   result={primary.result!}
+                  rainfallDenominator={mapSelection.rainfallDenominator}
+                  retrying={retryingLocationIds.includes(primary.id)}
+                  onRetry={() => void onRetry(primary.id)}
                   onRename={(name) => onRename(primary.id, name)}
                 />
                 {showAddSlot ? (
@@ -275,14 +388,45 @@ function ResultsView({
                 ) : null}
                 {pendingInput}
               </Stack>
-              <MapPlaceholder order={primary.order} label={primary.name} />
+              <Stack gap="sm">
+                <MapThemeControls selection={mapSelection} onChange={onMapSelectionChange} />
+                <RiskMap
+                  locations={[{ order: primary.order, label: primary.name, point: primary.point }]}
+                  active={isDesktop}
+                  selection={mapSelection}
+                />
+              </Stack>
             </Box>
           </>
         ) : (
           <>
             {/* モバイル: 指標別グルーピング比較（デザイン 3g） */}
             <Box hiddenFrom="sm">
-              <MobileComparisonView locations={locations} />
+              <Box px="lg">
+                <MapThemeControls
+                  selection={mapSelection}
+                  onChange={onMapSelectionChange}
+                  compact
+                />
+              </Box>
+              <MobileComparisonView
+                locations={locations}
+                rainfallDenominator={mapSelection.rainfallDenominator}
+              />
+              <Stack px="lg" gap="xs">
+                {locations.map((location) =>
+                  location.result && location.result.problems.length > 0 ? (
+                    <InvestigationProblemNotice
+                      key={location.id}
+                      locationName={location.name}
+                      problems={location.result.problems}
+                      retrying={retryingLocationIds.includes(location.id)}
+                      onRetry={() => void onRetry(location.id)}
+                    />
+                  ) : null,
+                )}
+                <DataSourcesDisclosure sources={sources} />
+              </Stack>
               {showAddSlot ? (
                 <Box mt="sm">
                   <AddLocationCard remaining={remaining} onClick={onAddLocation} />
@@ -291,33 +435,38 @@ function ResultsView({
               {pendingOrder !== null ? <Box mt="sm">{pendingInput}</Box> : null}
             </Box>
 
-            {/* デスクトップ: 地点ごとの列比較（デザイン 3c / 3e） */}
-            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="2xl" visibleFrom="sm">
-              {locations.map((loc) => (
-                <ResultCard
-                  key={loc.id}
-                  order={loc.order}
-                  name={loc.name}
-                  address={loc.address}
-                  result={loc.result!}
-                  accentColor={
-                    other.risk.locationAccents[(loc.order - 1) % other.risk.locationAccents.length]
-                  }
-                  compact
-                  onRename={(name) => onRename(loc.id, name)}
-                />
-              ))}
-              {pendingOrder !== null ? pendingInput : null}
-              {showAddSlot ? (
-                <AddLocationCard remaining={remaining} variant="slot" onClick={onAddLocation} />
+            {/* デスクトップ: 指標を行、地点を列に揃えた比較表 */}
+            <Stack visibleFrom="sm" gap="md">
+              <MapThemeControls selection={mapSelection} onChange={onMapSelectionChange} />
+              <DesktopComparisonTable
+                locations={locations}
+                rainfallDenominator={mapSelection.rainfallDenominator}
+                selectedIndicator={mapSelection.indicator}
+              />
+              {locations.map((location) =>
+                location.result && location.result.problems.length > 0 ? (
+                  <InvestigationProblemNotice
+                    key={location.id}
+                    locationName={location.name}
+                    problems={location.result.problems}
+                    retrying={retryingLocationIds.includes(location.id)}
+                    onRetry={() => void onRetry(location.id)}
+                  />
+                ) : null,
+              )}
+              {pendingOrder !== null || showAddSlot ? (
+                <SimpleGrid cols={3} spacing="2xl">
+                  {pendingOrder !== null ? pendingInput : null}
+                  {showAddSlot ? (
+                    <AddLocationCard remaining={remaining} variant="slot" onClick={onAddLocation} />
+                  ) : null}
+                </SimpleGrid>
               ) : null}
-            </SimpleGrid>
-
-            <Box visibleFrom="sm" mt="2xs">
               <InfoBanner variant="neutral">
                 色は各公開データ固有の階級（浸水深・東京都公式ランク1〜5）をそのまま示したもので、当サービスによる安全・危険の判定ではありません。グレーは「値のない状態」を示し、安全を意味しません。
               </InfoBanner>
-            </Box>
+              <DataSourcesDisclosure sources={sources} />
+            </Stack>
           </>
         )}
       </Box>

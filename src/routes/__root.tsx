@@ -7,6 +7,7 @@ import { theme } from "../theme";
 
 import appCss from "../styles.css?url";
 import mantineCss from "@mantine/core/styles.css?url";
+import maplibreCss from "maplibre-gl/dist/maplibre-gl.css?url";
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -14,6 +15,7 @@ export const Route = createRootRoute({
   head: () => ({
     links: [
       { href: mantineCss, rel: "stylesheet" },
+      { href: maplibreCss, rel: "stylesheet" },
       { href: appCss, rel: "stylesheet" },
       { href: "https://fonts.googleapis.com", rel: "preconnect" },
       {
@@ -33,7 +35,7 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   return (
-    <html lang="ja">
+    <html lang="ja" suppressHydrationWarning>
       <head>
         <HeadContent />
         <ColorSchemeScript />
@@ -42,7 +44,7 @@ function RootComponent() {
         <MantineProvider theme={theme}>
           <Outlet />
         </MantineProvider>
-        <TanStackRouterDevtools position="bottom-right" />
+        {import.meta.env.DEV ? <TanStackRouterDevtools position="bottom-right" /> : null}
         <Scripts />
       </body>
     </html>
@@ -58,12 +60,37 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error }: { error: Error }) {
+function ErrorComponent() {
   return (
-    <div style={{ padding: "1rem" }}>
-      <h1 style={{ color: "red" }}>エラー</h1>
-      <p>{error.message}</p>
-    </div>
+    <main
+      style={{
+        maxWidth: 560,
+        margin: "8vh auto",
+        padding: "2rem",
+        fontFamily: "'Noto Sans JP', system-ui, sans-serif",
+      }}
+    >
+      <p style={{ color: "#25776f", fontWeight: 700 }}>リスクくらべ</p>
+      <h1 style={{ color: "#55524a", fontSize: "1.5rem" }}>画面を表示できませんでした</h1>
+      <p style={{ color: "#75726a", lineHeight: 1.8 }}>
+        通信状況を確認して再読み込みしてください。入力した住所や地点はサーバーに保存されていません。
+      </p>
+      <button
+        type="button"
+        onClick={() => window.location.reload()}
+        style={{
+          border: 0,
+          borderRadius: 12,
+          background: "#2f8f87",
+          color: "white",
+          padding: "0.75rem 1rem",
+          fontWeight: 700,
+          cursor: "pointer",
+        }}
+      >
+        再読み込み
+      </button>
+    </main>
   );
 }
 

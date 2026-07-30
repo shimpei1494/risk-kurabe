@@ -1,6 +1,7 @@
 import { Box, Card, Group, SimpleGrid, Text, ThemeIcon, useMantineTheme } from "@mantine/core";
 
 import type { ComparisonLocation } from "../../domain/location";
+import { floodFrequencyAt, type RainfallDenominator } from "../../domain/risk";
 import { DataBadge } from "../shared/DataBadge";
 import { AiSummaryBox, BoundaryWarningNote, MultiRiverEvidence } from "../shared/InfoBlocks";
 
@@ -50,7 +51,13 @@ function BadgeCell({ children }: { children: React.ReactNode }) {
  * モバイル比較ビュー（デザインの 3g）。列を横スクロールさせる代わりに、
  * 指標ごとにグルーピングして地点間の違いを縦にスキャンできるようにする。
  */
-export function MobileComparisonView({ locations }: { locations: readonly ComparisonLocation[] }) {
+export function MobileComparisonView({
+  locations,
+  rainfallDenominator = 30,
+}: {
+  locations: readonly ComparisonLocation[];
+  rainfallDenominator?: RainfallDenominator;
+}) {
   const { other } = useMantineTheme();
   const withResult = locations.filter(
     (loc): loc is ComparisonLocation & { result: NonNullable<ComparisonLocation["result"]> } =>
@@ -98,7 +105,9 @@ export function MobileComparisonView({ locations }: { locations: readonly Compar
             <BadgeCell key={loc.id}>
               <DataBadge
                 state={loc.result.maxFloodDepth.state}
-                valueLabel={loc.result.maxFloodDepth.category}
+                valueLabel={
+                  loc.result.maxFloodDepth.sourceLabel ?? loc.result.maxFloodDepth.category
+                }
                 valueColor={
                   loc.result.maxFloodDepth.category
                     ? other.risk.floodDepth[loc.result.maxFloodDepth.category]
@@ -106,6 +115,7 @@ export function MobileComparisonView({ locations }: { locations: readonly Compar
                 }
                 outOfAreaLabel="区域外"
                 outOfAreaSuffix="※"
+                notApplicableLabel="対象外（関東）"
               />
             </BadgeCell>
           ))}
@@ -128,18 +138,26 @@ export function MobileComparisonView({ locations }: { locations: readonly Compar
       </Box>
 
       <Box mt="xs" px="lg">
-        <IndicatorGroupCard icon="頻" iconColor={other.risk.indicatorIcon.water} label="頻度別浸水">
+        <IndicatorGroupCard
+          icon="頻"
+          iconColor={other.risk.indicatorIcon.water}
+          label={`頻度別浸水（${rainfallDenominator}年に1回程度）`}
+        >
           {withResult.map((loc) => (
             <BadgeCell key={loc.id}>
-              <DataBadge
-                state={loc.result.floodFrequency.state}
-                valueLabel={loc.result.floodFrequency.frequencyLabel}
-                valueColor={
-                  loc.result.floodFrequency.category
-                    ? other.risk.floodDepth[loc.result.floodFrequency.category]
-                    : undefined
-                }
-              />
+              {(() => {
+                const frequency = floodFrequencyAt(loc.result.floodFrequency, rainfallDenominator);
+                return (
+                  <DataBadge
+                    state={frequency.state}
+                    valueLabel={frequency.sourceLabel}
+                    valueColor={
+                      frequency.category ? other.risk.floodDepth[frequency.category] : undefined
+                    }
+                    notApplicableLabel="対象外（関東）"
+                  />
+                );
+              })()}
             </BadgeCell>
           ))}
         </IndicatorGroupCard>
@@ -204,14 +222,16 @@ export function MobileComparisonView({ locations }: { locations: readonly Compar
         px="lg"
         style={{ display: "flex", flexDirection: "column", gap: "var(--mantine-spacing-2xs)" }}
       >
-        {withResult.map((loc) => (
-          <div key={loc.id}>
-            <Text fz={10.5} fw={700} c="var(--mantine-color-stone-7)" mb="4xs">
-              {loc.name}
-            </Text>
-            <AiSummaryBox text={loc.result.aiSummary} />
-          </div>
-        ))}
+        {withResult.map((loc) =>
+          loc.result.aiSummary.trim().length > 0 ? (
+            <div key={loc.id}>
+              <Text fz={10.5} fw={700} c="var(--mantine-color-stone-7)" mb="4xs">
+                {loc.name}
+              </Text>
+              <AiSummaryBox text={loc.result.aiSummary} />
+            </div>
+          ) : null,
+        )}
       </Box>
 
       <Text mt="sm" px="lg" pb="lg" fz={11} lh={1.7} c="var(--mantine-color-stone-8)" ta="center">
