@@ -8,6 +8,8 @@ VERSION_DIR="$WORK_DIR/output/risk-data/v1"
 BUCKET_NAME="${RISK_DATA_BUCKET:-risk-kurabe-data}"
 
 bash "$ROOT_DIR/scripts/data/validate-a31a-kanto.sh"
+bash "$ROOT_DIR/scripts/data/validate-a53-kanto.sh"
+bash "$ROOT_DIR/scripts/data/validate-tokyo-regional-risk.sh"
 
 while IFS= read -r artifact_path; do
   case "$artifact_path" in
@@ -30,11 +32,7 @@ while IFS= read -r artifact_path; do
     --cache-control 'public, max-age=31536000, immutable' \
     --remote \
     --force
-done < <(
-  jq -r \
-    '.files | keys[] | select(startswith("query/a31a/") or . == "map/a31a.pmtiles")' \
-    "$VERSION_DIR/checksums.json"
-)
+done < <(jq -r '.files | keys[]' "$VERSION_DIR/checksums.json")
 
 for metadata_file in manifest.json coverage.json checksums.json; do
   vp exec wrangler r2 object put \
@@ -46,4 +44,4 @@ for metadata_file in manifest.json coverage.json checksums.json; do
     --force
 done
 
-echo "uploaded A31a Kanto artifacts to R2 bucket: $BUCKET_NAME"
+echo "uploaded all risk data artifacts to R2 bucket: $BUCKET_NAME"

@@ -22,6 +22,7 @@
     "data:tokyo-risk:upload": "bash scripts/data/upload-tokyo-regional-risk.sh",
     "data:tokyo-risk:validate": "bash scripts/data/validate-tokyo-regional-risk.sh",
     "data:tokyo-risk:verify-remote": "node scripts/data/verify-remote-tokyo-regional-risk.mjs",
+    "data:upload": "bash scripts/data/upload-risk-data.sh",
     "deploy": "vp build && vp exec wrangler deploy",
     "dev": "vp dev",
     "doctor": "react-doctor . --verbose --yes --no-lint",

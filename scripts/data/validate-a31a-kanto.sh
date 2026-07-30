@@ -73,20 +73,30 @@ while IFS= read -r source_json; do
   echo "validated $PREFECTURE_NAME: $FEATURE_COUNT features"
 done < <(jq -c '.sources[] | select(.dataset == "A31a")' "$LOCK_FILE")
 
-MANIFEST_DATASET_COUNT="$(jq '.datasets | length' "$VERSION_DIR/manifest.json")"
+A31A_DATASET_COUNT="$(
+  jq '[.datasets[] | select(.indicator == "a31a-maximum-flood-depth")] | length' \
+    "$VERSION_DIR/manifest.json"
+)"
 COVERAGE_PREFECTURE_COUNT="$(jq '.a31a.prefectures | length' "$VERSION_DIR/coverage.json")"
-CHECKSUM_FILE_COUNT="$(jq '.files | length' "$VERSION_DIR/checksums.json")"
+A31A_CHECKSUM_COUNT="$(
+  jq '[
+    .files
+    | keys[]
+    | select(startswith("query/a31a/") or . == "map/a31a.pmtiles")
+  ] | length' \
+    "$VERSION_DIR/checksums.json"
+)"
 
-if [[ "$MANIFEST_DATASET_COUNT" -ne 7 ]]; then
-  echo "unexpected manifest dataset count: $MANIFEST_DATASET_COUNT" >&2
+if [[ "$A31A_DATASET_COUNT" -ne 7 ]]; then
+  echo "unexpected A31a dataset count: $A31A_DATASET_COUNT" >&2
   exit 1
 fi
 if [[ "$COVERAGE_PREFECTURE_COUNT" -ne 7 ]]; then
   echo "unexpected coverage prefecture count: $COVERAGE_PREFECTURE_COUNT" >&2
   exit 1
 fi
-if [[ "$CHECKSUM_FILE_COUNT" -ne 8 ]]; then
-  echo "unexpected checksum file count: $CHECKSUM_FILE_COUNT" >&2
+if [[ "$A31A_CHECKSUM_COUNT" -ne 8 ]]; then
+  echo "unexpected A31a checksum count: $A31A_CHECKSUM_COUNT" >&2
   exit 1
 fi
 

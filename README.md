@@ -70,7 +70,7 @@ R2の開発用CORSはこのOriginを許可しています。`http://127.0.0.1:51
 通常は次のR2公開URLにある固定スナップショットを使用するため、GDALやローカルの`.data`ディレクトリがなくてもアプリを起動できます。
 
 ```text
-https://pub-693bf287b1de440db5698e0b65ff13c7.r2.dev/risk-data/v1/
+https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v1/
 ```
 
 別のスナップショットを使う場合は、開発サーバー起動時にベースURLを指定できます。
@@ -83,34 +83,70 @@ URL末尾には`/`を付けてください。
 
 データの取得・変換・検証・R2アップロードを再実行する場合は、[scripts/data/README.md](scripts/data/README.md)を参照してください。これらの処理にはGDAL、Tippecanoe、PMTiles CLIなどが別途必要です。
 
-## Cloudflare本番設定
+## Cloudflare本番環境
 
-### 1. Cloudflareへログインする
+| リソース             | 設定                                                                |
+| -------------------- | ------------------------------------------------------------------- |
+| Cloudflareアカウント | `tokyo_odh_044`                                                     |
+| Account ID           | `53af804e239e6294ad9a766add0c6e00`                                  |
+| Worker               | `https://risk-kurabe.tokyo-odh-044.workers.dev`                     |
+| R2バケット           | `risk-kurabe-data`                                                  |
+| R2公開データ         | `https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v1/` |
 
-未ログインの場合:
+`wrangler.jsonc`の`account_id`で配置先を固定しています。認証情報は各開発者のローカル環境で管理し、Gitへ保存しません。
+
+### 1. 接続先を確認する
 
 ```bash
-vp exec wrangler login
+vp exec wrangler whoami
 ```
 
-### 2. Yahoo Client IDをWorker Secretへ登録する
+Cloudflare側を変更する前に、アカウント名とAccount IDが上表と一致することを確認してください。未認証の場合は`vp exec wrangler login`を実行します。複数アカウントを使い分ける場合は、Wranglerの認証プロファイルをこのリポジトリへ紐付けます。
+
+### 2. R2を初期構築する
+
+次は新しいCloudflareアカウントへ初めて配置するときだけ実行します。バケットがすでに存在する場合、再作成は不要です。
+
+```bash
+vp exec wrangler r2 bucket create risk-kurabe-data
+vp run data:upload
+vp exec wrangler r2 bucket dev-url enable risk-kurabe-data
+vp exec wrangler r2 bucket dev-url get risk-kurabe-data
+vp exec wrangler r2 bucket cors set risk-kurabe-data --file config/r2-cors.json
+vp exec wrangler r2 bucket cors list risk-kurabe-data
+```
+
+公開URLが変わった場合は、`src/gis/config.ts`、リモート検証スクリプトおよびこのREADMEを更新します。アップロード後は全データセットを確認します。
+
+```bash
+vp run data:a31a:verify-remote
+vp run data:a53:verify-remote
+vp run data:tokyo-risk:verify-remote
+```
+
+R2のPublic Development URLは開発用途の`r2.dev`エンドポイントです。ハッカソン版では固定GISデータの公開に使用しますが、長期運用時はレート制限を考慮してカスタムドメインへの移行を検討します。
+
+### 3. Yahoo Client IDをWorker Secretへ登録する
 
 ```bash
 vp exec wrangler secret put YAHOO_CLIENT_ID
+vp exec wrangler secret list
 ```
 
-対話プロンプトへClient IDを入力します。Secretは暗号化して保存され、`wrangler.jsonc`やGitには書き込まれません。
+対話プロンプトへClient IDを入力します。`secret list`では`YAHOO_CLIENT_ID`という名前だけを確認し、値は表示されません。Secretは`wrangler.jsonc`やGitには書き込みません。
 
-### 3. R2 CORSを確認する
+### 4. R2 CORSを確認する
 
 R2バケット`risk-kurabe-data`で、少なくとも次のOriginからのGET・Range取得を許可します。
 
 - `http://localhost:5173`
-- `https://risk-kurabe.peishim.workers.dev`
+- `https://risk-kurabe.tokyo-odh-044.workers.dev`
 
 FlatGeobufとPMTilesはHTTP Rangeリクエストを使用します。CORS設定では`Range`リクエストヘッダーと、`Content-Range`、`Accept-Ranges`、`Content-Length`など、ブラウザで必要なレスポンスヘッダーも確認してください。
 
-### 4. デプロイする
+設定の正本は[config/r2-cors.json](config/r2-cors.json)です。WorkerのOriginが変わった場合は、このファイルを更新してから再適用します。
+
+### 5. デプロイする
 
 ```bash
 vp run deploy
@@ -119,10 +155,12 @@ vp run deploy
 配置先:
 
 ```text
-https://risk-kurabe.peishim.workers.dev
+https://risk-kurabe.tokyo-odh-044.workers.dev
 ```
 
 `wrangler.jsonc`では`YAHOO_CLIENT_ID`を必須Secretとして宣言しています。未設定の場合、開発時には警告が出て、本番デプロイは失敗します。
+
+通常のコード更新ではR2の初期構築を繰り返す必要はありません。`vp check`、`vp test`、`vp build`を通してから`vp run deploy`を実行します。
 
 ## 動作確認
 
@@ -158,6 +196,7 @@ vp build
 | `vp run cf-typegen`                    | Wrangler設定からCloudflareの型を生成         |
 | `vp run fallow`                        | 未使用ファイル・依存関係・エクスポートを検出 |
 | `vp run doctor`                        | React固有のヘルスチェック                    |
+| `vp run data:upload`                   | 全GIS成果物を検証してR2へ重複なく配置        |
 | `vp run data:a31a:verify-remote`       | R2上のA31a成果物を確認                       |
 | `vp run data:a53:verify-remote`        | R2上のA53成果物を確認                        |
 | `vp run data:tokyo-risk:verify-remote` | R2上の東京都地域危険度成果物を確認           |

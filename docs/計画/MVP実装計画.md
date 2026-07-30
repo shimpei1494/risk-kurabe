@@ -172,7 +172,7 @@ data-manifest/
 - `zod`: マニフェスト、外部API入力、キャッシュおよび共有フラグメントの実行時検証
 - OpenAI公式SDKまたは小さな`fetch`ラッパー: Worker互換性を技術検証して小さい方を選択
 
-データ加工ではGDAL、Tippecanoe、PMTiles CLIを候補とする。現在のローカル環境では検出できていないため、Day 1で導入方法と版を`data-manifest/sources.lock.json`および`scripts/data/README.md`へ固定する。
+データ加工にはGDAL、Tippecanoe、PMTiles CLIを使用する。必要な最低バージョンと導入手順は`scripts/data/README.md`、入力データの版とチェックサムは`data-manifest/sources.lock.json`で固定する。
 
 ## 6. 公開データ加工パイプライン
 
@@ -389,10 +389,10 @@ risk-data/v1/
 ### 完了時コマンド
 
 - コード変更ごとに関連テスト
-- 毎日の終了時に`rtk vp check`と`rtk vp test`
-- デプロイ候補では`rtk vp check`、`rtk vp test`、`rtk vp build`
-- 依存関係整理時に`rtk vp run fallow`
-- UI完成時に`rtk vp run doctor`
+- 毎日の終了時に`vp check`と`vp test`
+- デプロイ候補では`vp check`、`vp test`、`vp build`
+- 依存関係整理時に`vp run fallow`
+- UI完成時に`vp run doctor`
 
 ## 12. 2週間スケジュール
 
@@ -479,7 +479,7 @@ risk-data/v1/
 - Cloudflare Web Analytics
 - キャッシュヘッダー、CORS、Secret、環境変数の確認
 - 本番スマートフォンで主要7経路を確認
-- `rtk vp check`、`rtk vp test`、`rtk vp build`、fallow、doctor
+- `vp check`、`vp test`、`vp build`、`vp run fallow`、`vp run doctor`
 - 二択フィードバックは余裕がある場合のみ
 
 完了条件: 新しいブラウザ・共有リンク・低速回線でデモ経路が再現する。
