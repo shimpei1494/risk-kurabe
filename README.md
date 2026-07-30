@@ -70,7 +70,7 @@ R2の開発用CORSはこのOriginを許可しています。`http://127.0.0.1:51
 通常は次のR2公開URLにある固定スナップショットを使用するため、GDALやローカルの`.data`ディレクトリがなくてもアプリを起動できます。
 
 ```text
-https://pub-693bf287b1de440db5698e0b65ff13c7.r2.dev/risk-data/v1/
+https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v1/
 ```
 
 別のスナップショットを使う場合は、開発サーバー起動時にベースURLを指定できます。
