@@ -30,3 +30,21 @@ export interface ComparisonLocation {
 export function defaultLocationName(order: LocationOrder): string {
   return `地点${order}`;
 }
+
+const KANTO_PREFECTURE_NAMES = {
+  茨城県: "08",
+  栃木県: "09",
+  群馬県: "10",
+  埼玉県: "11",
+  千葉県: "12",
+  東京都: "13",
+  神奈川県: "14",
+} as const;
+
+/** Yahooの表示住所から関東の都県コードを復元する。関東外は対象外判定用の"00"とする。 */
+export function prefectureCodeFromAddress(address: string): string {
+  for (const [prefectureName, prefectureCode] of Object.entries(KANTO_PREFECTURE_NAMES)) {
+    if (address.startsWith(prefectureName)) return prefectureCode;
+  }
+  return "00";
+}

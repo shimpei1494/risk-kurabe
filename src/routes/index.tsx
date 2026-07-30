@@ -43,6 +43,7 @@ import {
 } from "../domain/map-selection";
 import { investigateLocation } from "../features/investigation/investigate-location";
 import { riskDataBaseUrl } from "../gis/config";
+import { rememberLocation } from "../storage/recent-locations";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -66,6 +67,17 @@ function Home() {
           selection,
           storage: typeof window === "undefined" ? undefined : window.sessionStorage,
         });
+
+    if (typeof window !== "undefined") {
+      try {
+        rememberLocation(window.localStorage, {
+          address: selection.address,
+          point: selection.point,
+        });
+      } catch {
+        // 端末内保存が使えなくても調査結果は表示する。
+      }
+    }
 
     setLocations((prev) => [
       ...prev,

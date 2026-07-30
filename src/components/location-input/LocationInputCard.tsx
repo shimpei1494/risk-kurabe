@@ -1,5 +1,7 @@
 import {
   Alert,
+  ActionIcon,
+  Box,
   Button,
   Card,
   Group,
@@ -12,12 +14,18 @@ import {
   UnstyledButton,
 } from "@mantine/core";
 import { useServerFn } from "@tanstack/react-start";
-import { useId, useReducer } from "react";
+import { useEffect, useId, useReducer } from "react";
 
 import { KANTO_PREFECTURE_CODES } from "../../domain/investigation-adapter";
-import type { LocationSelection } from "../../domain/location";
+import { prefectureCodeFromAddress, type LocationSelection } from "../../domain/location";
 import { searchAddress } from "../../features/geocoding/search-address";
 import type { AddressCandidate } from "../../features/geocoding/yahoo-geocoder";
+import {
+  clearRecentLocations,
+  loadRecentLocations,
+  removeRecentLocation,
+  type RecentLocation,
+} from "../../storage/recent-locations";
 import { LocationConfirmMap } from "./LocationConfirmMap";
 
 type RequestState = "idle" | "searching" | "investigating";
@@ -29,6 +37,7 @@ interface InputState {
   point: AddressCandidate["point"] | null;
   requestState: RequestState;
   message: string | null;
+  recentLocations: readonly RecentLocation[];
 }
 
 const initialInputState: InputState = {
@@ -38,7 +47,72 @@ const initialInputState: InputState = {
   point: null,
   requestState: "idle",
   message: null,
+  recentLocations: [],
 };
+
+function RecentLocationsPanel({
+  locations,
+  onSelect,
+  onChange,
+}: {
+  locations: readonly RecentLocation[];
+  onSelect: (location: RecentLocation) => void;
+  onChange: (locations: readonly RecentLocation[]) => void;
+}) {
+  return (
+    <Paper withBorder radius="md" p="2xs" aria-label="最近使った地点">
+      <Group justify="space-between" px="xs" py="2xs">
+        <Box>
+          <Text fz={11.5} fw={800} c="var(--mantine-color-stone-8)">
+            この端末で最近使った地点
+          </Text>
+          <Text fz={10.5} c="var(--mantine-color-stone-7)">
+            住所とピン位置だけを端末内に保存しています
+          </Text>
+        </Box>
+        <Button
+          variant="subtle"
+          color="gray"
+          size="compact-xs"
+          onClick={() => {
+            clearRecentLocations(window.localStorage);
+            onChange([]);
+          }}
+        >
+          すべて削除
+        </Button>
+      </Group>
+      <Stack gap={2}>
+        {locations.map((recent) => (
+          <Group key={`${recent.point.longitude}:${recent.point.latitude}`} gap="4xs" wrap="nowrap">
+            <UnstyledButton
+              onClick={() => onSelect(recent)}
+              px="xs"
+              py="sm"
+              style={{
+                flex: 1,
+                borderRadius: "var(--mantine-radius-sm)",
+                borderTop: "1px solid var(--mantine-color-stone-2)",
+              }}
+            >
+              <Text fz={12.5} fw={700} c="var(--mantine-color-stone-9)">
+                {recent.address}
+              </Text>
+            </UnstyledButton>
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              aria-label={`${recent.address}を最近使った地点から削除`}
+              onClick={() => onChange(removeRecentLocation(window.localStorage, recent.point))}
+            >
+              ×
+            </ActionIcon>
+          </Group>
+        ))}
+      </Stack>
+    </Paper>
+  );
+}
 
 export function LocationInputCard({
   order,
@@ -57,9 +131,13 @@ export function LocationInputCard({
     (current: InputState, update: Partial<InputState>) => ({ ...current, ...update }),
     initialInputState,
   );
-  const { query, candidates, selected, point, requestState, message } = state;
+  const { query, candidates, selected, point, requestState, message, recentLocations } = state;
   const searchAddressFn = useServerFn(searchAddress);
   const inputId = useId();
+
+  useEffect(() => {
+    updateState({ recentLocations: loadRecentLocations(window.localStorage) });
+  }, []);
 
   async function handleSearch() {
     const normalizedQuery = query.trim();
@@ -125,6 +203,27 @@ export function LocationInputCard({
       </Group>
 
       <Stack gap="sm">
+        {recentLocations.length > 0 && !selected && candidates.length === 0 ? (
+          <RecentLocationsPanel
+            locations={recentLocations}
+            onChange={(nextLocations) => updateState({ recentLocations: nextLocations })}
+            onSelect={(recent) => {
+              const candidate: AddressCandidate = {
+                id: `recent:${recent.point.longitude}:${recent.point.latitude}`,
+                address: recent.address,
+                point: recent.point,
+                prefectureCode: prefectureCodeFromAddress(recent.address),
+                addressMatchingLevel: null,
+              };
+              updateState({
+                query: recent.address,
+                selected: candidate,
+                point: recent.point,
+              });
+            }}
+          />
+        ) : null}
+
         <Group gap="xs" wrap="nowrap" align="stretch">
           <TextInput
             id={inputId}
