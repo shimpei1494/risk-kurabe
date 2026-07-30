@@ -24,6 +24,9 @@ dist
 # generated and downloaded GIS data
 .data
 
+# personal Cloudflare/Wrangler account-switching notes
+docs/local/cloudflare-account-switching.md
+
 # IntelliJ based IDEs
 .idea
 
