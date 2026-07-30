@@ -81,7 +81,7 @@ VITE_RISK_DATA_BASE_URL="https://example.com/risk-data/v1/" vp dev
 
 URL末尾には`/`を付けてください。
 
-データの取得・変換・検証・R2アップロードを再実行する場合は、[scripts/data/README.md](scripts/data/README.md)を参照してください。これらの処理にはGDAL、Tippecanoe、PMTiles CLIなどが別途必要です。
+データの出典、収録範囲、加工内容および既知の制約は[公開GISデータの来歴と生成](docs/データ/公開GISデータの来歴と生成.md)にまとめています。取得・変換・検証・R2アップロードを再実行する場合は、[scripts/data/README.md](scripts/data/README.md)を参照してください。これらの処理にはGDAL、Tippecanoe、PMTiles CLIなどが別途必要です。
 
 ## Cloudflare本番環境
 
