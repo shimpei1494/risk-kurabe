@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <title>TOKYOりすくらべ OGP</title>
+  <image href="ogp-background.png" width="1200" height="630" />
+  <g font-family="'Zen Maru Gothic', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif">
+    <text x="72" y="226" fill="#2F8F87" font-size="22" font-weight="700" letter-spacing="0.04em">
+      気になるまちを、ちゃんと見くらべる。
+    </text>
+    <text x="70" y="310" fill="#134540" font-size="58" font-weight="900" letter-spacing="-0.025em">
+      TOKYO<tspan fill="#55524A">りすくらべ</tspan>
+    </text>
+    <text x="73" y="366" fill="#55524A" font-size="24" font-weight="700" letter-spacing="0.03em">
+      関東の災害リスク比較サービス
+    </text>
+    <g transform="translate(73 404)">
+      <circle cx="6" cy="6" r="6" fill="#2F8F87" />
+      <text x="24" y="13" fill="#75726A" font-size="17" font-weight="500">
+        公開データをもとに1〜3地点を比較
+      </text>
+    </g>
+  </g>
+</svg>

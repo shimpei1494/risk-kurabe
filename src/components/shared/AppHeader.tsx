@@ -1,6 +1,8 @@
 import { Anchor, Button, Group, Text, ThemeIcon } from "@mantine/core";
 import type { ReactNode } from "react";
 
+import { APP_DESCRIPTION, APP_NAME } from "../../brand";
+
 function Logo({ size = 38 }: { size?: number }) {
   return (
     <ThemeIcon
@@ -39,10 +41,10 @@ export function AppHeaderFull() {
             lh={1.1}
             style={{ fontFamily: "'Zen Maru Gothic', sans-serif" }}
           >
-            リスクくらべ
+            {APP_NAME}
           </Text>
           <Text fz={11.5} c="var(--mantine-color-stone-7)" style={{ letterSpacing: "0.04em" }}>
-            災害リスク比較サービス
+            {APP_DESCRIPTION}
           </Text>
         </div>
       </Group>
@@ -102,7 +104,7 @@ export function AppHeaderCompact({
           style={{ fontFamily: "'Zen Maru Gothic', sans-serif" }}
           visibleFrom="sm"
         >
-          リスクくらべ
+          {APP_NAME}
         </Text>
         <Text fz={12} c="var(--mantine-color-stone-6)" visibleFrom="sm">
           ／
