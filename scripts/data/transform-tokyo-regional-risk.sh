@@ -33,7 +33,7 @@ if [[ ! -f "$VERSION_DIR/manifest.json" ]]; then
 {
   "schemaVersion": 1,
   "dataVersion": "v3",
-  "logicVersion": "risk-evaluator-v4-official-flood-tile",
+  "logicVersion": "risk-evaluator-v5-official-flood-legend",
   "datasets": []
 }
 JSON

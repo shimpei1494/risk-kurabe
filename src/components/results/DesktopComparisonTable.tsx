@@ -1,4 +1,15 @@
-import { Box, Card, Group, Table, Text, ThemeIcon, useMantineTheme } from "@mantine/core";
+import {
+  Box,
+  Card,
+  Group,
+  Table,
+  Text,
+  ThemeIcon,
+  Tooltip,
+  UnstyledButton,
+  useMantineTheme,
+} from "@mantine/core";
+import { useEffect, useRef } from "react";
 
 import type { ComparisonLocation } from "../../domain/location";
 import type { MapIndicator } from "../../domain/map-selection";
@@ -41,11 +52,14 @@ function RegionalRiskCell({
 export function DesktopComparisonTable({
   locations,
   selectedIndicator,
+  onConfigureLocation,
 }: {
   locations: readonly ComparisonLocation[];
   selectedIndicator: MapIndicator;
+  onConfigureLocation: (id: string) => void;
 }) {
   const { other } = useMantineTheme();
+  const detailsRef = useRef<HTMLDetailsElement>(null);
   const withResult = locations.filter(
     (
       location,
@@ -53,6 +67,15 @@ export function DesktopComparisonTable({
       result: NonNullable<ComparisonLocation["result"]>;
     } => location.result !== undefined,
   );
+
+  useEffect(() => {
+    if (
+      detailsRef.current &&
+      (selectedIndicator === "building-collapse" || selectedIndicator === "fire")
+    ) {
+      detailsRef.current.open = true;
+    }
+  }, [selectedIndicator]);
 
   return (
     <Card withBorder radius="xl" shadow="xs" p={0}>
@@ -71,31 +94,43 @@ export function DesktopComparisonTable({
             </Table.Th>
             {withResult.map((location) => (
               <Table.Th key={location.id}>
-                <Group gap="xs" wrap="nowrap">
-                  <ThemeIcon
-                    radius="xl"
-                    size={28}
-                    fz={12}
-                    styles={{
-                      root: {
-                        background:
-                          other.risk.locationAccents[
-                            (location.order - 1) % other.risk.locationAccents.length
-                          ],
-                      },
-                    }}
+                <Tooltip label={`${location.name}の設定`} openDelay={400} withArrow>
+                  <UnstyledButton
+                    className="location-settings-trigger"
+                    aria-label={`${location.address}の設定を開く`}
+                    onClick={() => onConfigureLocation(location.id)}
                   >
-                    {location.order}
-                  </ThemeIcon>
-                  <Box miw={0}>
-                    <Text fz={13} fw={800} c="var(--mantine-color-stone-9)" truncate>
-                      {location.name}
-                    </Text>
-                    <Text fz={10.5} fw={500} c="var(--mantine-color-stone-7)" truncate>
-                      {location.address}
-                    </Text>
-                  </Box>
-                </Group>
+                    <Group gap="xs" wrap="nowrap">
+                      <ThemeIcon
+                        className="location-settings-marker"
+                        radius="xl"
+                        size={28}
+                        fz={12}
+                        styles={{
+                          root: {
+                            background:
+                              other.risk.locationAccents[
+                                (location.order - 1) % other.risk.locationAccents.length
+                              ],
+                          },
+                        }}
+                      >
+                        {location.order}
+                      </ThemeIcon>
+                      <Box miw={0}>
+                        <Text
+                          fz={12.5}
+                          fw={800}
+                          c="var(--mantine-color-stone-9)"
+                          truncate
+                          title={location.address}
+                        >
+                          {location.address}
+                        </Text>
+                      </Box>
+                    </Group>
+                  </UnstyledButton>
+                </Tooltip>
               </Table.Th>
             ))}
           </Table.Tr>
@@ -145,7 +180,7 @@ export function DesktopComparisonTable({
                 {TOKYO_EARTHQUAKE_EXPLANATION}
               </Text>
               {withResult.some(({ result }) => result.tokyoEarthquakeRisk.state === "value") ? (
-                <Box component="details" mt="sm">
+                <Box component="details" ref={detailsRef} mt="sm">
                   <Text
                     component="summary"
                     fz={11.5}
@@ -155,7 +190,16 @@ export function DesktopComparisonTable({
                   >
                     内訳と根拠を表示
                   </Text>
-                  <Table mt="xs" horizontalSpacing="xl" verticalSpacing="sm" layout="fixed">
+                  <Table
+                    mt="xs"
+                    horizontalSpacing="xl"
+                    verticalSpacing="sm"
+                    layout="fixed"
+                    style={{
+                      marginInline: "calc(-1 * var(--mantine-spacing-xl))",
+                      width: "calc(100% + 2 * var(--mantine-spacing-xl))",
+                    }}
+                  >
                     <Table.Tbody>
                       <Table.Tr
                         bg={selectedIndicator === "building-collapse" ? "teal.0" : undefined}

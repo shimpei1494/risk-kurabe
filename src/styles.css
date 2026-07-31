@@ -4,9 +4,105 @@ body {
   background: #f0eee9;
 }
 
+.comparison-sticky-toolbar {
+  position: sticky;
+  z-index: 10;
+  top: 0;
+  margin-inline: calc(-1 * var(--mantine-spacing-lg));
+  padding: 10px var(--mantine-spacing-lg);
+  background: rgb(242 240 235 / 96%);
+  backdrop-filter: blur(12px);
+}
+
+@media (min-width: 48em) {
+  .comparison-sticky-toolbar {
+    margin-inline: calc(-1 * var(--mantine-spacing-5xl));
+    padding-inline: var(--mantine-spacing-5xl);
+  }
+}
+
+.app-brand-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.app-header-link,
+.app-mobile-nav-link {
+  color: var(--mantine-color-stone-8);
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 140ms ease;
+}
+
+.app-header-link:hover,
+.app-mobile-nav-link:hover {
+  color: var(--mantine-color-teal-8);
+}
+
+.app-mobile-nav-link {
+  display: block;
+  padding: 12px 14px;
+  border-radius: var(--mantine-radius-md);
+}
+
+.app-mobile-nav-link:hover {
+  background: var(--mantine-color-teal-0);
+}
+
+.app-menu-icon {
+  display: grid;
+  width: 18px;
+  height: 14px;
+  align-content: space-between;
+}
+
+.app-menu-icon > span {
+  display: block;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--mantine-color-teal-7);
+  transition: transform 160ms ease;
+}
+
+.app-menu-icon.is-open > span:first-child {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.app-menu-icon.is-open > span:last-child {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
 :where(button, a, input, summary, [tabindex]):focus-visible {
   outline: 3px solid #25776f;
   outline-offset: 3px;
+}
+
+.location-settings-trigger {
+  width: 100%;
+  padding: 6px;
+  border-radius: var(--mantine-radius-md);
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+.location-settings-trigger:hover {
+  background: var(--mantine-color-teal-0);
+}
+
+.location-settings-trigger:active {
+  transform: translateY(1px);
+}
+
+.location-settings-marker {
+  transition: box-shadow 140ms ease;
+}
+
+.location-settings-trigger:hover .location-settings-marker,
+.location-settings-trigger:focus-visible .location-settings-marker {
+  box-shadow: 0 0 0 3px var(--mantine-color-teal-2);
 }
 
 @media (prefers-reduced-motion: reduce) {

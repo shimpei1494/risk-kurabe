@@ -1,4 +1,14 @@
-import { Box, Card, Group, SimpleGrid, Text, ThemeIcon, useMantineTheme } from "@mantine/core";
+import {
+  Box,
+  Card,
+  Group,
+  SimpleGrid,
+  Text,
+  ThemeIcon,
+  Tooltip,
+  UnstyledButton,
+  useMantineTheme,
+} from "@mantine/core";
 
 import type { ComparisonLocation } from "../../domain/location";
 import { DataBadge } from "../shared/DataBadge";
@@ -255,7 +265,13 @@ function MobileTokyoEarthquakeSection({ locations }: { locations: readonly Resul
  * モバイル比較ビュー（デザインの 3g）。列を横スクロールさせる代わりに、
  * 指標ごとにグルーピングして地点間の違いを縦にスキャンできるようにする。
  */
-export function MobileComparisonView({ locations }: { locations: readonly ComparisonLocation[] }) {
+export function MobileComparisonView({
+  locations,
+  onConfigureLocation,
+}: {
+  locations: readonly ComparisonLocation[];
+  onConfigureLocation: (id: string) => void;
+}) {
   const { other } = useMantineTheme();
   const withResult = locations.filter((loc): loc is ResultLocation => loc.result !== undefined);
 
@@ -264,24 +280,42 @@ export function MobileComparisonView({ locations }: { locations: readonly Compar
     <div>
       <SimpleGrid cols={withResult.length} spacing="2xs" px="lg" pt="sm">
         {withResult.map((loc) => (
-          <Box key={loc.id} style={{ textAlign: "center" }}>
-            <ThemeIcon
-              radius="xl"
-              size={26}
-              fz={11}
-              styles={{
-                root: {
-                  background:
-                    other.risk.locationAccents[(loc.order - 1) % other.risk.locationAccents.length],
-                },
-              }}
+          <Tooltip key={loc.id} label={`${loc.name}の設定`} openDelay={400} withArrow>
+            <UnstyledButton
+              className="location-settings-trigger"
+              aria-label={`${loc.address}の設定を開く`}
+              onClick={() => onConfigureLocation(loc.id)}
             >
-              {loc.order}
-            </ThemeIcon>
-            <Text fz={11} c="var(--mantine-color-stone-8)" mt="4xs" lh={1.4} truncate>
-              {loc.name}
-            </Text>
-          </Box>
+              <Box style={{ textAlign: "center" }}>
+                <ThemeIcon
+                  className="location-settings-marker"
+                  radius="xl"
+                  size={26}
+                  fz={11}
+                  styles={{
+                    root: {
+                      background:
+                        other.risk.locationAccents[
+                          (loc.order - 1) % other.risk.locationAccents.length
+                        ],
+                    },
+                  }}
+                >
+                  {loc.order}
+                </ThemeIcon>
+                <Text
+                  fz={10.5}
+                  fw={700}
+                  c="var(--mantine-color-stone-8)"
+                  mt="4xs"
+                  lh={1.4}
+                  lineClamp={2}
+                >
+                  {loc.address}
+                </Text>
+              </Box>
+            </UnstyledButton>
+          </Tooltip>
         ))}
       </SimpleGrid>
 

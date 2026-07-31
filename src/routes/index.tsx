@@ -3,33 +3,33 @@ import {
   Box,
   Button,
   Container,
+  Group,
   Modal,
+  Paper,
   SimpleGrid,
   Stack,
   Text,
   Title,
   useMantineTheme,
 } from "@mantine/core";
-import { useDisclosure, useMediaQuery } from "@mantine/hooks";
+import { useMediaQuery } from "@mantine/hooks";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
 
 import { LocationInputCard } from "../components/location-input/LocationInputCard";
 import { AddLocationCard } from "../components/results/AddLocationCard";
 import { DesktopComparisonTable } from "../components/results/DesktopComparisonTable";
+import { LocationSettingsModal } from "../components/results/LocationSettingsModal";
 import { MobileComparisonView } from "../components/results/MobileComparisonView";
 import { ResultCard } from "../components/results/ResultCard";
 import { AppFooter } from "../components/shared/AppFooter";
-import { AppHeaderCompact, AppHeaderFull } from "../components/shared/AppHeader";
+import { AppHeader } from "../components/shared/AppHeader";
 import {
   DataSourcesDisclosure,
   InfoBanner,
   InvestigationProblemNotice,
 } from "../components/shared/InfoBlocks";
-import { ResultLegend } from "../components/shared/Legend";
 import { MapThemeControls } from "../components/shared/MapThemeControls";
 import { RiskMap } from "../components/shared/RiskMap";
-import { KANTO_PREFECTURE_CODES, outsideKantoResult } from "../domain/investigation-adapter";
 import {
   MAX_COMPARISON_LOCATIONS,
   defaultLocationName,
@@ -37,154 +37,54 @@ import {
   type LocationOrder,
   type LocationSelection,
 } from "../domain/location";
-import {
-  DEFAULT_MAP_SELECTION,
-  mapSelectionLabel,
-  type MapSelection,
-} from "../domain/map-selection";
-import { investigateLocation } from "../features/investigation/investigate-location";
-import { riskDataBaseUrl } from "../gis/config";
+import { mapSelectionLabel, type MapSelection } from "../domain/map-selection";
+import { useComparisonSession, type RemovalUndo } from "../features/comparison/comparison-session";
 import type { GeoPoint } from "../gis/geometry";
-import { rememberLocation } from "../storage/recent-locations";
 
-export const Route = createFileRoute("/")({
-  component: Home,
-});
+export const Route = createFileRoute("/")({ component: Home });
 
 function Home() {
-  const [locations, setLocations] = useState<ComparisonLocation[]>([]);
-  const [pendingOrder, setPendingOrder] = useState<LocationOrder | null>(1);
-  const [mapSelection, setMapSelection] = useState<MapSelection>(DEFAULT_MAP_SELECTION);
-  const [retryingLocationIds, setRetryingLocationIds] = useState<string[]>([]);
-  const [mapOpened, { open: openMap, close: closeMap }] = useDisclosure(false);
+  const navigate = Route.useNavigate();
+  const { investigate, reset } = useComparisonSession();
 
-  const investigatedCount = locations.length;
-  const isHome = investigatedCount === 0 && pendingOrder === 1;
-
-  async function handleInvestigate(order: LocationOrder, selection: LocationSelection) {
-    const result = !KANTO_PREFECTURE_CODES.has(selection.prefectureCode)
-      ? outsideKantoResult()
-      : await investigateLocation({
-          baseUrl: riskDataBaseUrl(),
-          selection,
-          storage: typeof window === "undefined" ? undefined : window.sessionStorage,
-        });
-
-    if (typeof window !== "undefined") {
-      try {
-        rememberLocation(window.localStorage, {
-          address: selection.address,
-          point: selection.point,
-        });
-      } catch {
-        // 端末内保存が使えなくても調査結果は表示する。
-      }
-    }
-
-    setLocations((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        order,
-        name: defaultLocationName(order),
-        address: selection.address,
-        point: selection.point,
-        prefectureCode: selection.prefectureCode,
-        result,
-      },
-    ]);
-    setPendingOrder(null);
+  async function handleHomeInvestigate(selection: LocationSelection) {
+    reset();
+    await investigate(1, selection);
+    // oxlint-disable-next-line react-doctor/tanstack-start-no-navigate-in-render
+    void navigate({ to: "/compare", search: {} });
   }
 
-  function handleAddLocation() {
-    const nextOrder = investigatedCount + 1;
-    if (nextOrder > MAX_COMPARISON_LOCATIONS) return;
-    setPendingOrder(nextOrder as LocationOrder);
-  }
+  return <HomeInitialView onSubmit={handleHomeInvestigate} />;
+}
 
-  function handleRename(id: string, name: string) {
-    setLocations((prev) => prev.map((loc) => (loc.id === id ? { ...loc, name } : loc)));
-  }
-
-  async function handleRetry(id: string) {
-    const location = locations.find((item) => item.id === id);
-    if (!location || retryingLocationIds.includes(id)) return;
-
-    setRetryingLocationIds((current) => [...current, id]);
-    try {
-      const result = await investigateLocation({
-        baseUrl: riskDataBaseUrl(),
-        selection: {
-          address: location.address,
-          point: location.point,
-          prefectureCode: location.prefectureCode,
-        },
-        storage: typeof window === "undefined" ? undefined : window.sessionStorage,
-      });
-      setLocations((current) =>
-        current.map((item) => (item.id === id ? { ...item, result } : item)),
-      );
-    } finally {
-      setRetryingLocationIds((current) => current.filter((item) => item !== id));
-    }
-  }
-
-  async function handleRelocate(order: LocationOrder, point: GeoPoint) {
-    const location = locations.find((item) => item.order === order);
-    if (!location) return;
-
-    const result = await investigateLocation({
-      baseUrl: riskDataBaseUrl(),
-      selection: {
-        address: location.address,
-        point,
-        prefectureCode: location.prefectureCode,
-      },
-      storage: typeof window === "undefined" ? undefined : window.sessionStorage,
-    });
-
-    setLocations((current) =>
-      current.map((item) => (item.id === location.id ? { ...item, point, result } : item)),
-    );
-
-    if (typeof window !== "undefined") {
-      try {
-        rememberLocation(window.localStorage, { address: location.address, point });
-      } catch {
-        // 端末内保存が使えなくてもピン移動後の調査結果は表示する。
-      }
-    }
-  }
-
-  function handleReset() {
-    setLocations([]);
-    setPendingOrder(1);
-    setRetryingLocationIds([]);
-  }
-
-  if (isHome) {
-    return <HomeInitialView onSubmit={(address) => handleInvestigate(1, address)} />;
-  }
-
+export function ResultsOverlays({
+  locations,
+  mapOpened,
+  mapSelection,
+  settingsLocation,
+  onCloseMap,
+  onMapSelectionChange,
+  onRelocate,
+  onCloseSettings,
+  onReplaceLocation,
+  onDeleteLocation,
+}: {
+  locations: ComparisonLocation[];
+  mapOpened: boolean;
+  mapSelection: MapSelection;
+  settingsLocation?: ComparisonLocation;
+  onCloseMap: () => void;
+  onMapSelectionChange: (selection: MapSelection) => void;
+  onRelocate: (order: LocationOrder, point: GeoPoint) => Promise<void>;
+  onCloseSettings: () => void;
+  onReplaceLocation: (id: string, selection: LocationSelection) => Promise<void>;
+  onDeleteLocation: (id: string) => void;
+}) {
   return (
     <>
-      <ResultsView
-        locations={locations}
-        pendingOrder={pendingOrder}
-        onInvestigate={handleInvestigate}
-        onAddLocation={handleAddLocation}
-        onRename={handleRename}
-        onReset={handleReset}
-        onOpenMap={openMap}
-        onRetry={handleRetry}
-        onRelocate={handleRelocate}
-        retryingLocationIds={retryingLocationIds}
-        mapSelection={mapSelection}
-        onMapSelectionChange={setMapSelection}
-      />
       <Modal
         opened={mapOpened}
-        onClose={closeMap}
+        onClose={onCloseMap}
         title="地図で見る"
         size="lg"
         centered
@@ -194,21 +94,68 @@ function Home() {
           <Text fz={12.5} c="var(--mantine-color-stone-8)">
             各地点の位置と、{mapSelectionLabel(mapSelection)}を重ねて表示しています。
           </Text>
-          <MapThemeControls selection={mapSelection} onChange={setMapSelection} compact />
+          <MapThemeControls selection={mapSelection} onChange={onMapSelectionChange} compact />
           <RiskMap
-            locations={locations.map(({ order, name, point, result }) => ({
+            locations={locations.map(({ order, address, point, result }) => ({
               order,
-              label: name,
+              label: address,
               point,
               floodLabel: result?.maxFloodDepth.sourceLabel,
             }))}
             height={320}
+            showLocationNavigator
             selection={mapSelection}
-            onRelocate={handleRelocate}
+            onRelocate={onRelocate}
           />
         </Stack>
       </Modal>
+      {settingsLocation ? (
+        <LocationSettingsModal
+          key={settingsLocation.id}
+          location={settingsLocation}
+          onClose={onCloseSettings}
+          onReplace={(selection) => onReplaceLocation(settingsLocation.id, selection)}
+          onDelete={() => onDeleteLocation(settingsLocation.id)}
+        />
+      ) : null}
     </>
+  );
+}
+
+export function RemovalUndoNotice({
+  removal,
+  onUndo,
+}: {
+  removal: RemovalUndo;
+  onUndo: () => void;
+}) {
+  return (
+    <Paper
+      component="output"
+      aria-live="polite"
+      withBorder
+      radius="lg"
+      shadow="md"
+      px="md"
+      py="sm"
+      pos="fixed"
+      bottom={24}
+      left="50%"
+      style={{
+        zIndex: 20,
+        width: "min(440px, calc(100vw - 32px))",
+        transform: "translateX(-50%)",
+      }}
+    >
+      <Group justify="space-between" gap="sm" wrap="nowrap">
+        <Text fz={12.5} fw={700} c="var(--mantine-color-stone-9)" lineClamp={2}>
+          {removal.address}を削除しました
+        </Text>
+        <Button variant="subtle" size="compact-sm" onClick={onUndo}>
+          元に戻す
+        </Button>
+      </Group>
+    </Paper>
   );
 }
 
@@ -229,7 +176,7 @@ function HomeInitialView({
 }) {
   return (
     <PageShell>
-      <AppHeaderFull />
+      <AppHeader />
       <Container size={720} pt={{ base: 32, sm: 52 }} pb={40} px={{ base: 20, sm: 40 }}>
         <Stack gap={0} align="center" ta="center">
           <Badge
@@ -268,7 +215,6 @@ function HomeInitialView({
           <LocationInputCard
             order={1}
             defaultName="地点1"
-            hint="名前はあとから変更できます（例：自宅、候補A）"
             submitLabel="この地点を調べる"
             onSubmit={onSubmit}
           />
@@ -291,14 +237,13 @@ function HomeInitialView({
   );
 }
 
-function ResultsView({
+export function ResultsView({
   locations,
   pendingOrder,
   onInvestigate,
   onAddLocation,
-  onRename,
-  onReset,
   onOpenMap,
+  onConfigureLocation,
   onRetry,
   onRelocate,
   retryingLocationIds,
@@ -309,9 +254,8 @@ function ResultsView({
   pendingOrder: LocationOrder | null;
   onInvestigate: (order: LocationOrder, selection: LocationSelection) => Promise<void>;
   onAddLocation: () => void;
-  onRename: (id: string, name: string) => void;
-  onReset: () => void;
   onOpenMap: () => void;
+  onConfigureLocation: (id: string) => void;
   onRetry: (id: string) => Promise<void>;
   onRelocate: (order: LocationOrder, point: GeoPoint) => Promise<void>;
   retryingLocationIds: readonly string[];
@@ -321,7 +265,7 @@ function ResultsView({
   const isDesktop = useMediaQuery("(min-width: 48em)");
   const count = locations.length;
   const remaining = MAX_COMPARISON_LOCATIONS - count;
-  const crumb = count <= 1 ? "調査結果" : `比較結果（${count}地点）`;
+  const pageTitle = count <= 1 ? "調査結果" : `比較結果（${count}地点）`;
   const showAddSlot = pendingOrder === null && remaining > 0;
   const isComparing = count >= 2;
   const primary = locations[0];
@@ -332,31 +276,39 @@ function ResultsView({
       order={pendingOrder}
       defaultName={defaultLocationName(pendingOrder)}
       submitLabel="この地点を調べる"
+      mapStartPoint={primary?.point}
       onSubmit={(selection) => onInvestigate(pendingOrder, selection)}
     />
   );
 
   return (
     <PageShell>
-      <AppHeaderCompact
-        crumb={crumb}
-        onBack={onReset}
-        action={
-          isComparing ? (
-            <Button onClick={onOpenMap} radius="xl" size="sm">
-              地図で見る
-            </Button>
-          ) : undefined
-        }
-      />
-
-      {isComparing ? (
-        <Box visibleFrom="sm">
-          <ResultLegend />
-        </Box>
-      ) : null}
+      <AppHeader />
 
       <Box px={{ base: "lg", sm: "5xl" }} py={{ base: "md", sm: count === 1 ? 28 : "2xl" }}>
+        <Box className="comparison-sticky-toolbar">
+          <Group justify="space-between" align="center" wrap="nowrap">
+            <Title
+              order={1}
+              fz={{ base: 20, sm: 26 }}
+              fw={900}
+              c="var(--mantine-color-stone-9)"
+              style={{
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {pageTitle}
+            </Title>
+            {isComparing ? (
+              <Button onClick={onOpenMap} radius="xl" size="sm" flex="none">
+                地図で見る
+              </Button>
+            ) : null}
+          </Group>
+        </Box>
         {count === 1 && primary ? (
           <>
             {/* モバイル: 地図（コンパクト）→ カード → 追加CTA（デザイン 3f） */}
@@ -384,12 +336,11 @@ function ResultsView({
                 />
                 <ResultCard
                   order={primary.order}
-                  name={primary.name}
                   address={primary.address}
                   result={primary.result!}
                   retrying={retryingLocationIds.includes(primary.id)}
                   onRetry={() => void onRetry(primary.id)}
-                  onRename={(name) => onRename(primary.id, name)}
+                  onConfigure={() => onConfigureLocation(primary.id)}
                 />
                 {showAddSlot ? (
                   <AddLocationCard remaining={remaining} onClick={onAddLocation} />
@@ -410,12 +361,11 @@ function ResultsView({
               <Stack gap="md">
                 <ResultCard
                   order={primary.order}
-                  name={primary.name}
                   address={primary.address}
                   result={primary.result!}
                   retrying={retryingLocationIds.includes(primary.id)}
                   onRetry={() => void onRetry(primary.id)}
-                  onRename={(name) => onRename(primary.id, name)}
+                  onConfigure={() => onConfigureLocation(primary.id)}
                 />
                 {showAddSlot ? (
                   <AddLocationCard remaining={remaining} onClick={onAddLocation} />
@@ -449,9 +399,13 @@ function ResultsView({
                   selection={mapSelection}
                   onChange={onMapSelectionChange}
                   compact
+                  showScale
                 />
               </Box>
-              <MobileComparisonView locations={locations} />
+              <MobileComparisonView
+                locations={locations}
+                onConfigureLocation={onConfigureLocation}
+              />
               <Stack px="lg" gap="xs">
                 {locations.map((location) =>
                   location.result && location.result.problems.length > 0 ? (
@@ -476,10 +430,15 @@ function ResultsView({
 
             {/* デスクトップ: 指標を行、地点を列に揃えた比較表 */}
             <Stack visibleFrom="sm" gap="md">
-              <MapThemeControls selection={mapSelection} onChange={onMapSelectionChange} />
+              <MapThemeControls
+                selection={mapSelection}
+                onChange={onMapSelectionChange}
+                showScale
+              />
               <DesktopComparisonTable
                 locations={locations}
                 selectedIndicator={mapSelection.indicator}
+                onConfigureLocation={onConfigureLocation}
               />
               {locations.map((location) =>
                 location.result && location.result.problems.length > 0 ? (

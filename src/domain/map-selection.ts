@@ -32,6 +32,10 @@ export const MAP_INDICATOR_OPTIONS: readonly {
   { value: "fire", label: "火災危険度", shortLabel: "火災" },
 ];
 
+export function isMapIndicator(value: unknown): value is MapIndicator {
+  return MAP_INDICATOR_OPTIONS.some((option) => option.value === value);
+}
+
 export function mapFeatureValueLabel(selection: MapSelection, value: unknown): string | undefined {
   const numericValue = typeof value === "number" ? value : Number(value);
   if (!Number.isInteger(numericValue)) return undefined;

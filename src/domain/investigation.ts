@@ -6,7 +6,7 @@ import type {
 import type { EvaluatedFloodResult } from "./flood-evaluator";
 import type { RiskDataSourceInfo } from "./risk";
 
-export const INVESTIGATION_LOGIC_VERSION = "risk-evaluator-v4-official-flood-tile";
+export const INVESTIGATION_LOGIC_VERSION = "risk-evaluator-v5-official-flood-legend";
 
 export interface FloodIndicatorInvestigation {
   result: EvaluatedFloodResult;

@@ -1,16 +1,15 @@
 import {
-  ActionIcon,
   Box,
   Card,
   Group,
   Paper,
   Stack,
   Text,
-  TextInput,
   ThemeIcon,
+  Tooltip,
+  UnstyledButton,
   useMantineTheme,
 } from "@mantine/core";
-import { useState } from "react";
 
 import type { InvestigationResult } from "../../domain/risk";
 import { DataBadge } from "../shared/DataBadge";
@@ -59,111 +58,26 @@ function IndicatorRow({ icon, iconColor, label, children, withBorder = true }: I
   );
 }
 
-function EditableName({
-  order,
-  name,
-  compact,
-  onRename,
-}: {
-  order: number;
-  name: string;
-  compact: boolean;
-  onRename: (name: string) => void;
-}) {
-  // editingは下のif分岐の描画切り替えに使っており、useRef化すると編集モードに
-  // 切り替わらなくなる（意図的な再描画トリガーのためuseStateのままにする）。
-  // oxlint-disable-next-line react-doctor/rerender-state-only-in-handlers
-  const [editing, setEditing] = useState(false);
-  // draftはpropと常時同期させたいのではなく、編集開始時(下のonClickでsetDraft(name))
-  // にのみコピーする一時編集バッファとして意図的にuseStateで保持している。
-  // oxlint-disable-next-line react-doctor/no-derived-useState
-  const [draft, setDraft] = useState(name);
-
-  if (editing) {
-    return (
-      <TextInput
-        ref={(el) => el?.focus()}
-        size="xs"
-        value={draft}
-        onChange={(event) => setDraft(event.currentTarget.value)}
-        onBlur={() => {
-          setEditing(false);
-          const trimmed = draft.trim();
-          if (trimmed.length > 0) onRename(trimmed);
-          else setDraft(name);
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") event.currentTarget.blur();
-        }}
-        aria-label={`地点${order}の名前`}
-        styles={{ input: { fontSize: 12, height: 22, minHeight: 22, padding: "0 6px" } }}
-      />
-    );
-  }
-
-  return (
-    <Group gap="3xs" fz={12} c="var(--mantine-color-stone-7)" wrap="nowrap">
-      <span>
-        地点{order}「{name}」
-      </span>
-      {compact ? (
-        <ActionIcon
-          variant="subtle"
-          color="teal"
-          size="xs"
-          aria-label={`地点${order}の名前を編集`}
-          onClick={() => {
-            setDraft(name);
-            setEditing(true);
-          }}
-        >
-          ✎
-        </ActionIcon>
-      ) : (
-        <Text
-          component="button"
-          type="button"
-          fz={12}
-          fw={700}
-          c="teal.8"
-          onClick={() => {
-            setDraft(name);
-            setEditing(true);
-          }}
-          style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
-        >
-          ✎ 名前を編集
-        </Text>
-      )}
-    </Group>
-  );
-}
-
 /**
  * 1地点分の調査結果カード。docs/CONTEXT.md の「データ状態」5区分と
- * 「境界警告」「重複判定」の全パターンを表示できる構造にする（デザインの 3d 参照）。
+ * 「境界警告」の全パターンを表示できる構造にする（デザインの 3d 参照）。
  */
 export function ResultCard({
   order,
-  name,
   address,
   result,
   accentColor,
-  compact = false,
   retrying = false,
   onRetry,
-  onRename,
+  onConfigure,
 }: {
   order: number;
-  name: string;
   address: string;
   result: InvestigationResult;
   accentColor?: string;
-  /** 3列比較グリッドなど横幅が狭い文脈では、名前編集を「✎」アイコンのみで表示する */
-  compact?: boolean;
   retrying?: boolean;
   onRetry?: () => void;
-  onRename: (name: string) => void;
+  onConfigure: () => void;
 }) {
   const { other } = useMantineTheme();
   const { maxFloodDepth, tokyoEarthquakeRisk, buildingCollapseRisk, fireRisk, aiSummary } = result;
@@ -172,22 +86,30 @@ export function ResultCard({
   return (
     <Card withBorder radius="xl" shadow="xs" p={0}>
       <Card.Section withBorder inheritPadding py="lg" px="xl">
-        <Group gap="xs" wrap="nowrap">
-          <ThemeIcon
-            radius="xl"
-            size={30}
-            fz={13}
-            styles={accentColor ? { root: { background: accentColor } } : undefined}
+        <Tooltip label={`地点${order}の設定`} openDelay={400} withArrow>
+          <UnstyledButton
+            className="location-settings-trigger"
+            aria-label={`${address}の設定を開く`}
+            onClick={onConfigure}
           >
-            {order}
-          </ThemeIcon>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <EditableName order={order} name={name} compact={compact} onRename={onRename} />
-            <Text fz={14} fw={700} c="var(--mantine-color-stone-9)" truncate>
-              {address}
-            </Text>
-          </div>
-        </Group>
+            <Group gap="xs" wrap="nowrap">
+              <ThemeIcon
+                className="location-settings-marker"
+                radius="xl"
+                size={30}
+                fz={13}
+                styles={accentColor ? { root: { background: accentColor } } : undefined}
+              >
+                {order}
+              </ThemeIcon>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <Text fz={14} fw={700} c="var(--mantine-color-stone-9)">
+                  {address}
+                </Text>
+              </div>
+            </Group>
+          </UnstyledButton>
+        </Tooltip>
       </Card.Section>
 
       <Card.Section inheritPadding px="xl">

@@ -1,4 +1,4 @@
-import { useMantineTheme } from "@mantine/core";
+import { Button, Group, Text, Tooltip, useMantineTheme } from "@mantine/core";
 import { useEffect, useReducer, useRef, useState } from "react";
 
 import type { LocationOrder } from "../../domain/location";
@@ -26,8 +26,19 @@ export interface RiskMapLocation {
   floodLabel?: string;
 }
 
+interface RiskMapProps {
+  locations: readonly RiskMapLocation[];
+  height?: number;
+  compact?: boolean;
+  active?: boolean;
+  showLocationNavigator?: boolean;
+  selection?: MapSelection;
+  onRelocate?: (order: LocationOrder, point: GeoPoint) => Promise<void>;
+}
+
 export const MAX_PIN_MOVE_METERS = 2_000;
 const INSPECT_LOADING_DELAY_MS = 250;
+const LOCATION_FOCUS_ZOOM = 14.5;
 
 async function officialFloodLabelAtPoint(location: GeoPoint): Promise<string | undefined> {
   const { result } = await fetchOfficialFloodAtPoint({ location, radiusMeters: 0 });
@@ -189,21 +200,124 @@ function useRiskLayerVisibility(outline: string) {
 
 let protocolRegistered = false;
 
-export function RiskMap({
+function MapLocationNavigator({
   locations,
-  height = 560,
-  compact = false,
-  active = true,
-  selection = DEFAULT_MAP_SELECTION,
-  onRelocate,
+  status,
+  accents,
+  onShowAll,
+  onFocus,
 }: {
   locations: readonly RiskMapLocation[];
-  height?: number;
-  compact?: boolean;
-  active?: boolean;
-  selection?: MapSelection;
-  onRelocate?: (order: LocationOrder, point: GeoPoint) => Promise<void>;
+  status: RiskMapStatus;
+  accents: readonly string[];
+  onShowAll: () => void;
+  onFocus: (location: RiskMapLocation) => void;
 }) {
+  return (
+    <Group
+      component="nav"
+      aria-label="地図の表示地点"
+      justify="space-between"
+      gap="sm"
+      wrap="nowrap"
+    >
+      <Text fz={11.5} fw={700} c="var(--mantine-color-stone-7)">
+        地図の移動
+      </Text>
+      <Group gap="4xs" wrap="nowrap">
+        <Button
+          variant="default"
+          size="compact-xs"
+          radius="xl"
+          onClick={onShowAll}
+          disabled={status !== "ready"}
+        >
+          全体
+        </Button>
+        {locations.map((location) => {
+          const accent = accents[(location.order - 1) % accents.length] ?? "#4B5563";
+          return (
+            <Tooltip key={location.order} label={location.label} openDelay={300}>
+              <Button
+                aria-label={`${location.label}の周辺へ地図を移動`}
+                size="compact-xs"
+                radius="xl"
+                w={28}
+                px={0}
+                onClick={() => onFocus(location)}
+                disabled={status !== "ready"}
+                styles={{ root: { backgroundColor: accent, borderColor: accent } }}
+              >
+                {location.order}
+              </Button>
+            </Tooltip>
+          );
+        })}
+      </Group>
+    </Group>
+  );
+}
+
+function focusMapOnLocation({
+  map,
+  marker,
+  location,
+}: {
+  map: import("maplibre-gl").Map | null;
+  marker?: import("maplibre-gl").Marker;
+  location: RiskMapLocation;
+}) {
+  if (!map) return;
+  map.easeTo({
+    center: marker?.getLngLat() ?? [location.point.longitude, location.point.latitude],
+    zoom: Math.max(map.getZoom(), LOCATION_FOCUS_ZOOM),
+    duration: 500,
+  });
+}
+
+function fitMapToLocations({
+  map,
+  markers,
+  locations,
+  compact,
+}: {
+  map: import("maplibre-gl").Map | null;
+  markers: ReadonlyMap<LocationOrder, import("maplibre-gl").Marker>;
+  locations: readonly RiskMapLocation[];
+  compact: boolean;
+}) {
+  if (!map || locations.length === 0) return;
+  const points = locations.map((location) => {
+    const markerPoint = markers.get(location.order)?.getLngLat();
+    return markerPoint
+      ? ([markerPoint.lng, markerPoint.lat] as const)
+      : ([location.point.longitude, location.point.latitude] as const);
+  });
+  const longitudes = points.map(([longitude]) => longitude);
+  const latitudes = points.map(([, latitude]) => latitude);
+  map.fitBounds(
+    [
+      [Math.min(...longitudes), Math.min(...latitudes)],
+      [Math.max(...longitudes), Math.max(...latitudes)],
+    ],
+    {
+      padding: compact ? 30 : 72,
+      maxZoom: 13,
+      duration: 500,
+    },
+  );
+}
+
+export function RiskMap(props: RiskMapProps) {
+  const {
+    locations,
+    height = 560,
+    compact = false,
+    active = true,
+    showLocationNavigator = false,
+    selection = DEFAULT_MAP_SELECTION,
+    onRelocate,
+  } = props;
   const containerRef = useRef<HTMLDivElement>(null);
   const {
     markersRef,
@@ -229,8 +343,21 @@ export function RiskMap({
     .join("|");
   const theme = selectedRiskMapTheme(selection);
   const { mapRef, riskLayerVisible, toggleRiskLayer } = useRiskLayerVisibility(theme.outline);
-  const selectionKey = selection.indicator;
   const selectionLabel = mapSelectionLabel(selection);
+
+  const focusLocation = (location: RiskMapLocation) =>
+    focusMapOnLocation({
+      map: mapRef.current,
+      marker: markersRef.current.get(location.order),
+      location,
+    });
+  const showAllLocations = () =>
+    fitMapToLocations({
+      map: mapRef.current,
+      markers: markersRef.current,
+      locations,
+      compact,
+    });
 
   useEffect(() => {
     const container = containerRef.current;
@@ -448,25 +575,36 @@ export function RiskMap({
     };
     // locationKey is a stable, serializable representation of the locations.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, compact, locationKey, other.risk.locationAccents, selectionKey]);
+  }, [active, compact, locationKey, other.risk.locationAccents, selection.indicator]);
 
   return (
-    <RiskMapFrame
-      containerRef={containerRef}
-      height={height}
-      compact={compact}
-      status={status}
-      selection={selection}
-      selectionLabel={selectionLabel}
-      palette={theme.palette}
-      relocationEnabled={Boolean(onRelocate)}
-      pendingMove={pendingMove}
-      moveNotice={moveNotice}
-      relocating={relocating}
-      onCancelMove={cancelPendingMove}
-      onConfirmMove={() => void confirmPendingMove()}
-      riskLayerVisible={riskLayerVisible}
-      onToggleRiskLayer={toggleRiskLayer}
-    />
+    <>
+      {showLocationNavigator && locations.length > 1 ? (
+        <MapLocationNavigator
+          locations={locations}
+          status={status}
+          accents={other.risk.locationAccents}
+          onShowAll={showAllLocations}
+          onFocus={focusLocation}
+        />
+      ) : null}
+      <RiskMapFrame
+        containerRef={containerRef}
+        height={height}
+        compact={compact}
+        status={status}
+        selection={selection}
+        selectionLabel={selectionLabel}
+        palette={theme.palette}
+        relocationEnabled={Boolean(onRelocate)}
+        pendingMove={pendingMove}
+        moveNotice={moveNotice}
+        relocating={relocating}
+        onCancelMove={cancelPendingMove}
+        onConfirmMove={() => void confirmPendingMove()}
+        riskLayerVisible={riskLayerVisible}
+        onToggleRiskLayer={toggleRiskLayer}
+      />
+    </>
   );
 }
