@@ -9,6 +9,7 @@ import {
   type MapSelection,
 } from "../../domain/map-selection";
 import { distanceBetweenPointsMeters, type GeoPoint } from "../../gis/geometry";
+import { collapseMapAttribution } from "../../gis/map-attribution";
 import {
   applyRiskLayerVisibility,
   createRiskMapStyle,
@@ -328,6 +329,7 @@ export function RiskMap({
 
         handleIdle = () => {
           if (!disposed && map) {
+            collapseMapAttribution(container);
             container.dataset.visibleRiskFeatures = String(
               map.queryRenderedFeatures(undefined, { layers: [RISK_FILL_LAYER_ID] }).length,
             );
