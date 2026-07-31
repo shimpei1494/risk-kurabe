@@ -5,15 +5,18 @@ import {
   type MapIndicator,
   type MapSelection,
 } from "../../domain/map-selection";
+import { IndicatorScaleLegend } from "./Legend";
 
 export function MapThemeControls({
   selection,
   onChange,
   compact = false,
+  showScale = false,
 }: {
   selection: MapSelection;
   onChange: (selection: MapSelection) => void;
   compact?: boolean;
+  showScale?: boolean;
 }) {
   return (
     <Paper
@@ -50,6 +53,7 @@ export function MapThemeControls({
             label: { fontWeight: 700, paddingInline: compact ? 5 : 10 },
           }}
         />
+        {showScale ? <IndicatorScaleLegend selection={selection} /> : null}
       </Stack>
     </Paper>
   );

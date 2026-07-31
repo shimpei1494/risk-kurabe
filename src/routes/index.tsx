@@ -26,7 +26,6 @@ import {
   InfoBanner,
   InvestigationProblemNotice,
 } from "../components/shared/InfoBlocks";
-import { ResultLegend } from "../components/shared/Legend";
 import { MapThemeControls } from "../components/shared/MapThemeControls";
 import { RiskMap } from "../components/shared/RiskMap";
 import { KANTO_PREFECTURE_CODES, outsideKantoResult } from "../domain/investigation-adapter";
@@ -343,12 +342,6 @@ function ResultsView({
         }
       />
 
-      {isComparing ? (
-        <Box visibleFrom="sm">
-          <ResultLegend />
-        </Box>
-      ) : null}
-
       <Box px={{ base: "lg", sm: "5xl" }} py={{ base: "md", sm: count === 1 ? 28 : "2xl" }}>
         {count === 1 && primary ? (
           <>
@@ -438,6 +431,7 @@ function ResultsView({
                   selection={mapSelection}
                   onChange={onMapSelectionChange}
                   compact
+                  showScale
                 />
               </Box>
               <MobileComparisonView locations={locations} />
@@ -465,7 +459,11 @@ function ResultsView({
 
             {/* デスクトップ: 指標を行、地点を列に揃えた比較表 */}
             <Stack visibleFrom="sm" gap="md">
-              <MapThemeControls selection={mapSelection} onChange={onMapSelectionChange} />
+              <MapThemeControls
+                selection={mapSelection}
+                onChange={onMapSelectionChange}
+                showScale
+              />
               <DesktopComparisonTable
                 locations={locations}
                 selectedIndicator={mapSelection.indicator}

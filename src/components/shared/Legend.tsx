@@ -1,56 +1,103 @@
-import { ColorSwatch, Group, Text, useMantineTheme } from "@mantine/core";
+import { Box, Group, Stack, Text, Tooltip, useMantineTheme } from "@mantine/core";
 
-/** 比較結果画面の凡例。浸水深階級と東京都公式ランク1〜5、グレー＝値のない状態を説明する */
-export function ResultLegend() {
+import type { MapSelection } from "../../domain/map-selection";
+
+interface ScaleEntry {
+  label: string;
+  color: string;
+}
+
+function ScaleSegment({
+  entry,
+  index,
+  count,
+  scaleLabel,
+}: {
+  entry: ScaleEntry;
+  index: number;
+  count: number;
+  scaleLabel: string;
+}) {
+  return (
+    <Tooltip
+      label={entry.label}
+      withArrow
+      openDelay={80}
+      events={{ hover: true, focus: true, touch: true }}
+    >
+      <Box
+        component="li"
+        tabIndex={0}
+        aria-label={`${scaleLabel}: ${entry.label}`}
+        h={9}
+        style={{
+          flex: 1,
+          background: entry.color,
+          borderRadius:
+            index === 0
+              ? "var(--mantine-radius-xl) 0 0 var(--mantine-radius-xl)"
+              : index === count - 1
+                ? "0 var(--mantine-radius-xl) var(--mantine-radius-xl) 0"
+                : 0,
+          outlineOffset: 2,
+        }}
+      />
+    </Tooltip>
+  );
+}
+
+/** 比較中の指標だけを示す省スペースな色スケール。 */
+export function IndicatorScaleLegend({ selection }: { selection: MapSelection }) {
   const { other } = useMantineTheme();
+  const isFlood = selection.indicator === "maximum-flood";
+  const scaleLabel = isFlood ? "最大浸水深" : "東京都の地域危険度";
+  const entries: ScaleEntry[] = isFlood
+    ? Object.entries(other.risk.floodDepth).map(([label, color]) => ({
+        label,
+        color: color.bg,
+      }))
+    : Object.entries(other.risk.regionalRiskRank).map(([rank, color]) => ({
+        label: `ランク${rank}／5`,
+        color: color.bg,
+      }));
 
   return (
-    <Group
-      gap={28}
-      px={{ base: "2xl", sm: "5xl" }}
-      pt="lg"
-      fz={12}
-      c="var(--mantine-color-stone-8)"
-      wrap="wrap"
+    <Stack
+      gap="3xs"
+      pt="2xs"
+      style={{ borderTop: "1px solid var(--mantine-color-stone-2)" }}
+      aria-label={`${scaleLabel}の色の見方`}
     >
-      <Group gap={10} wrap="wrap">
-        <Text fw={700} c="var(--mantine-color-stone-9)" span>
-          浸水深
-          <Text component="span" fw={500} c="var(--mantine-color-stone-7)" fz={12}>
-            （国交省の階級）
-          </Text>
-        </Text>
-        {Object.entries(other.risk.floodDepth).map(([label, color]) => (
-          <Group key={label} gap={5} wrap="nowrap">
-            <ColorSwatch color={color.bg} size={14} />
-            <Text span fz={12}>
-              {label}
-            </Text>
-          </Group>
+      <Text fz={10.5} fw={800} c="var(--mantine-color-stone-8)">
+        {scaleLabel}
+      </Text>
+      <Group
+        component="ul"
+        gap={0}
+        wrap="nowrap"
+        m={0}
+        p={0}
+        style={{ listStyle: "none" }}
+        aria-label={`${scaleLabel}の階級`}
+      >
+        {entries.map((entry, index) => (
+          <ScaleSegment
+            key={entry.label}
+            entry={entry}
+            index={index}
+            count={entries.length}
+            scaleLabel={scaleLabel}
+          />
         ))}
       </Group>
-      <Group gap={10} wrap="wrap">
-        <Text fw={700} c="var(--mantine-color-stone-9)" span>
-          地域危険度
-          <Text component="span" fw={500} c="var(--mantine-color-stone-7)" fz={12}>
-            （東京都公式ランク1〜5）
-          </Text>
+      <Group justify="space-between" gap="sm" wrap="nowrap">
+        <Text fz={9.5} c="var(--mantine-color-stone-7)">
+          {isFlood ? "浅い 0.5m未満" : "低い ランク1"}
         </Text>
-        {Object.entries(other.risk.regionalRiskRank).map(([rank, color]) => (
-          <Group key={rank} gap={5} wrap="nowrap">
-            <ColorSwatch color={color.bg} size={14} />
-            <Text span fz={12}>
-              {rank}
-            </Text>
-          </Group>
-        ))}
-      </Group>
-      <Group gap={6} wrap="nowrap">
-        <ColorSwatch color={other.risk.neutral.bg} size={14} />
-        <Text span fz={12}>
-          値のない状態（区域外・未公開・対象外・判定不能。安全の意味ではありません）
+        <Text fz={9.5} c="var(--mantine-color-stone-7)">
+          {isFlood ? "深い 20m以上" : "高い ランク5"}
         </Text>
       </Group>
-    </Group>
+    </Stack>
   );
 }
