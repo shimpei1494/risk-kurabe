@@ -3,7 +3,9 @@ import {
   Box,
   Button,
   Container,
+  Group,
   Modal,
+  Paper,
   SimpleGrid,
   Stack,
   Text,
@@ -12,11 +14,12 @@ import {
 } from "@mantine/core";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { LocationInputCard } from "../components/location-input/LocationInputCard";
 import { AddLocationCard } from "../components/results/AddLocationCard";
 import { DesktopComparisonTable } from "../components/results/DesktopComparisonTable";
+import { LocationSettingsModal } from "../components/results/LocationSettingsModal";
 import { MobileComparisonView } from "../components/results/MobileComparisonView";
 import { ResultCard } from "../components/results/ResultCard";
 import { AppFooter } from "../components/shared/AppFooter";
@@ -32,6 +35,7 @@ import { KANTO_PREFECTURE_CODES, outsideKantoResult } from "../domain/investigat
 import {
   MAX_COMPARISON_LOCATIONS,
   defaultLocationName,
+  resequenceLocations,
   type ComparisonLocation,
   type LocationOrder,
   type LocationSelection,
@@ -52,6 +56,22 @@ type HomeSearch = {
   indicator?: MapIndicator;
 };
 
+type RemovalUndo = {
+  locations: ComparisonLocation[];
+  pendingOrder: LocationOrder | null;
+  address: string;
+};
+
+type LocationUiState = {
+  settingsLocationId: string | null;
+  removalUndo: RemovalUndo | null;
+};
+
+const INITIAL_LOCATION_UI_STATE: LocationUiState = {
+  settingsLocationId: null,
+  removalUndo: null,
+};
+
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>): HomeSearch =>
     isMapIndicator(search.indicator) ? { indicator: search.indicator } : {},
@@ -64,6 +84,8 @@ function Home() {
   const [locations, setLocations] = useState<ComparisonLocation[]>([]);
   const [pendingOrder, setPendingOrder] = useState<LocationOrder | null>(1);
   const [retryingLocationIds, setRetryingLocationIds] = useState<string[]>([]);
+  const [locationUi, setLocationUi] = useState<LocationUiState>(INITIAL_LOCATION_UI_STATE);
+  const removalUndoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [mapOpened, { open: openMap, close: closeMap }] = useDisclosure(false);
   const mapSelection: MapSelection = {
     indicator: search.indicator ?? DEFAULT_MAP_SELECTION.indicator,
@@ -71,6 +93,25 @@ function Home() {
 
   const investigatedCount = locations.length;
   const isHome = investigatedCount === 0 && pendingOrder === 1;
+  const { settingsLocationId, removalUndo } = locationUi;
+  const settingsLocation =
+    settingsLocationId === null
+      ? undefined
+      : locations.find((location) => location.id === settingsLocationId);
+
+  useEffect(
+    () => () => {
+      if (removalUndoTimer.current) clearTimeout(removalUndoTimer.current);
+    },
+    [],
+  );
+
+  function discardRemovalUndo() {
+    if (!removalUndo) return;
+    if (removalUndoTimer.current) clearTimeout(removalUndoTimer.current);
+    setLocationUi((current) => ({ ...current, removalUndo: null }));
+    removalUndoTimer.current = null;
+  }
 
   async function handleInvestigate(order: LocationOrder, selection: LocationSelection) {
     const result = !KANTO_PREFECTURE_CODES.has(selection.prefectureCode)
@@ -92,6 +133,7 @@ function Home() {
       }
     }
 
+    discardRemovalUndo();
     setLocations((prev) => [
       ...prev,
       {
@@ -110,6 +152,7 @@ function Home() {
   function handleAddLocation() {
     const nextOrder = investigatedCount + 1;
     if (nextOrder > MAX_COMPARISON_LOCATIONS) return;
+    discardRemovalUndo();
     setPendingOrder(nextOrder as LocationOrder);
   }
 
@@ -150,6 +193,7 @@ function Home() {
       storage: typeof window === "undefined" ? undefined : window.sessionStorage,
     });
 
+    discardRemovalUndo();
     setLocations((current) =>
       current.map((item) => (item.id === location.id ? { ...item, point, result } : item)),
     );
@@ -163,12 +207,86 @@ function Home() {
     }
   }
 
+  async function handleReplaceLocation(id: string, selection: LocationSelection) {
+    const location = locations.find((item) => item.id === id);
+    if (!location) return;
+
+    const result = await investigateLocation({
+      baseUrl: riskDataBaseUrl(),
+      selection,
+      storage: typeof window === "undefined" ? undefined : window.sessionStorage,
+    });
+
+    discardRemovalUndo();
+    setLocations((current) =>
+      current.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              address: selection.address,
+              point: selection.point,
+              prefectureCode: selection.prefectureCode,
+              result,
+            }
+          : item,
+      ),
+    );
+    setLocationUi((current) => ({ ...current, settingsLocationId: null }));
+
+    if (typeof window !== "undefined") {
+      try {
+        rememberLocation(window.localStorage, {
+          address: selection.address,
+          point: selection.point,
+        });
+      } catch {
+        // 端末内保存が使えなくても住所変更後の調査結果は表示する。
+      }
+    }
+  }
+
+  function handleDeleteLocation(id: string) {
+    const location = locations.find((item) => item.id === id);
+    if (!location) return;
+
+    if (removalUndoTimer.current) clearTimeout(removalUndoTimer.current);
+    setLocationUi({
+      settingsLocationId: null,
+      removalUndo: {
+        locations,
+        pendingOrder,
+        address: location.address,
+      },
+    });
+
+    const remaining = resequenceLocations(locations.filter((item) => item.id !== id));
+    setLocations(remaining);
+    setPendingOrder(remaining.length === 0 ? 1 : null);
+    removalUndoTimer.current = setTimeout(() => {
+      setLocationUi((current) => ({ ...current, removalUndo: null }));
+      removalUndoTimer.current = null;
+    }, 10_000);
+  }
+
+  function handleUndoDelete() {
+    if (!removalUndo) return;
+    if (removalUndoTimer.current) clearTimeout(removalUndoTimer.current);
+    setLocations(removalUndo.locations);
+    setPendingOrder(removalUndo.pendingOrder);
+    setLocationUi((current) => ({ ...current, removalUndo: null }));
+    removalUndoTimer.current = null;
+  }
+
   const handleReset = useCallback(() => {
     setLocations([]);
     setPendingOrder(1);
     setRetryingLocationIds([]);
+    setLocationUi(INITIAL_LOCATION_UI_STATE);
+    if (removalUndoTimer.current) clearTimeout(removalUndoTimer.current);
+    removalUndoTimer.current = null;
+    closeMap();
     void navigate({ search: {}, replace: true });
-  }, [navigate]);
+  }, [closeMap, navigate]);
 
   const handleMapSelectionChange = useCallback(
     (selection: MapSelection) => {
@@ -183,28 +301,77 @@ function Home() {
     [navigate],
   );
 
-  if (isHome) {
-    return <HomeInitialView onSubmit={(address) => handleInvestigate(1, address)} />;
-  }
-
   return (
     <>
-      <ResultsView
-        locations={locations}
-        pendingOrder={pendingOrder}
-        onInvestigate={handleInvestigate}
-        onAddLocation={handleAddLocation}
-        onReset={handleReset}
-        onOpenMap={openMap}
-        onRetry={handleRetry}
-        onRelocate={handleRelocate}
-        retryingLocationIds={retryingLocationIds}
-        mapSelection={mapSelection}
-        onMapSelectionChange={handleMapSelectionChange}
-      />
+      {isHome ? (
+        <HomeInitialView onSubmit={(address) => handleInvestigate(1, address)} />
+      ) : (
+        <>
+          <ResultsView
+            locations={locations}
+            pendingOrder={pendingOrder}
+            onInvestigate={handleInvestigate}
+            onAddLocation={handleAddLocation}
+            onReset={handleReset}
+            onOpenMap={openMap}
+            onConfigureLocation={(id) =>
+              setLocationUi((current) => ({ ...current, settingsLocationId: id }))
+            }
+            onRetry={handleRetry}
+            onRelocate={handleRelocate}
+            retryingLocationIds={retryingLocationIds}
+            mapSelection={mapSelection}
+            onMapSelectionChange={handleMapSelectionChange}
+          />
+          <ResultsOverlays
+            locations={locations}
+            mapOpened={mapOpened}
+            mapSelection={mapSelection}
+            settingsLocation={settingsLocation}
+            onCloseMap={closeMap}
+            onMapSelectionChange={handleMapSelectionChange}
+            onRelocate={handleRelocate}
+            onCloseSettings={() =>
+              setLocationUi((current) => ({ ...current, settingsLocationId: null }))
+            }
+            onReplaceLocation={handleReplaceLocation}
+            onDeleteLocation={handleDeleteLocation}
+          />
+        </>
+      )}
+      {removalUndo ? <RemovalUndoNotice removal={removalUndo} onUndo={handleUndoDelete} /> : null}
+    </>
+  );
+}
+
+function ResultsOverlays({
+  locations,
+  mapOpened,
+  mapSelection,
+  settingsLocation,
+  onCloseMap,
+  onMapSelectionChange,
+  onRelocate,
+  onCloseSettings,
+  onReplaceLocation,
+  onDeleteLocation,
+}: {
+  locations: ComparisonLocation[];
+  mapOpened: boolean;
+  mapSelection: MapSelection;
+  settingsLocation?: ComparisonLocation;
+  onCloseMap: () => void;
+  onMapSelectionChange: (selection: MapSelection) => void;
+  onRelocate: (order: LocationOrder, point: GeoPoint) => Promise<void>;
+  onCloseSettings: () => void;
+  onReplaceLocation: (id: string, selection: LocationSelection) => Promise<void>;
+  onDeleteLocation: (id: string) => void;
+}) {
+  return (
+    <>
       <Modal
         opened={mapOpened}
-        onClose={closeMap}
+        onClose={onCloseMap}
         title="地図で見る"
         size="lg"
         centered
@@ -214,7 +381,7 @@ function Home() {
           <Text fz={12.5} c="var(--mantine-color-stone-8)">
             各地点の位置と、{mapSelectionLabel(mapSelection)}を重ねて表示しています。
           </Text>
-          <MapThemeControls selection={mapSelection} onChange={handleMapSelectionChange} compact />
+          <MapThemeControls selection={mapSelection} onChange={onMapSelectionChange} compact />
           <RiskMap
             locations={locations.map(({ order, name, point, result }) => ({
               order,
@@ -224,11 +391,51 @@ function Home() {
             }))}
             height={320}
             selection={mapSelection}
-            onRelocate={handleRelocate}
+            onRelocate={onRelocate}
           />
         </Stack>
       </Modal>
+      {settingsLocation ? (
+        <LocationSettingsModal
+          key={settingsLocation.id}
+          location={settingsLocation}
+          onClose={onCloseSettings}
+          onReplace={(selection) => onReplaceLocation(settingsLocation.id, selection)}
+          onDelete={() => onDeleteLocation(settingsLocation.id)}
+        />
+      ) : null}
     </>
+  );
+}
+
+function RemovalUndoNotice({ removal, onUndo }: { removal: RemovalUndo; onUndo: () => void }) {
+  return (
+    <Paper
+      component="output"
+      aria-live="polite"
+      withBorder
+      radius="lg"
+      shadow="md"
+      px="md"
+      py="sm"
+      pos="fixed"
+      bottom={24}
+      left="50%"
+      style={{
+        zIndex: 20,
+        width: "min(440px, calc(100vw - 32px))",
+        transform: "translateX(-50%)",
+      }}
+    >
+      <Group justify="space-between" gap="sm" wrap="nowrap">
+        <Text fz={12.5} fw={700} c="var(--mantine-color-stone-9)" lineClamp={2}>
+          {removal.address}を削除しました
+        </Text>
+        <Button variant="subtle" size="compact-sm" onClick={onUndo}>
+          元に戻す
+        </Button>
+      </Group>
+    </Paper>
   );
 }
 
@@ -317,6 +524,7 @@ function ResultsView({
   onAddLocation,
   onReset,
   onOpenMap,
+  onConfigureLocation,
   onRetry,
   onRelocate,
   retryingLocationIds,
@@ -329,6 +537,7 @@ function ResultsView({
   onAddLocation: () => void;
   onReset: () => void;
   onOpenMap: () => void;
+  onConfigureLocation: (id: string) => void;
   onRetry: (id: string) => Promise<void>;
   onRelocate: (order: LocationOrder, point: GeoPoint) => Promise<void>;
   retryingLocationIds: readonly string[];
@@ -400,6 +609,7 @@ function ResultsView({
                   result={primary.result!}
                   retrying={retryingLocationIds.includes(primary.id)}
                   onRetry={() => void onRetry(primary.id)}
+                  onConfigure={() => onConfigureLocation(primary.id)}
                 />
                 {showAddSlot ? (
                   <AddLocationCard remaining={remaining} onClick={onAddLocation} />
@@ -424,6 +634,7 @@ function ResultsView({
                   result={primary.result!}
                   retrying={retryingLocationIds.includes(primary.id)}
                   onRetry={() => void onRetry(primary.id)}
+                  onConfigure={() => onConfigureLocation(primary.id)}
                 />
                 {showAddSlot ? (
                   <AddLocationCard remaining={remaining} onClick={onAddLocation} />
@@ -460,7 +671,10 @@ function ResultsView({
                   showScale
                 />
               </Box>
-              <MobileComparisonView locations={locations} />
+              <MobileComparisonView
+                locations={locations}
+                onConfigureLocation={onConfigureLocation}
+              />
               <Stack px="lg" gap="xs">
                 {locations.map((location) =>
                   location.result && location.result.problems.length > 0 ? (
@@ -493,6 +707,7 @@ function ResultsView({
               <DesktopComparisonTable
                 locations={locations}
                 selectedIndicator={mapSelection.indicator}
+                onConfigureLocation={onConfigureLocation}
               />
               {locations.map((location) =>
                 location.result && location.result.problems.length > 0 ? (

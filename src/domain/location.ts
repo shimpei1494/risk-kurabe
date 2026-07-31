@@ -31,6 +31,20 @@ export function defaultLocationName(order: LocationOrder): string {
   return `地点${order}`;
 }
 
+/** 削除後も画面上の地点番号を1から連続させる。 */
+export function resequenceLocations(
+  locations: readonly ComparisonLocation[],
+): ComparisonLocation[] {
+  return locations.map((location, index) => {
+    const order = (index + 1) as LocationOrder;
+    return {
+      ...location,
+      order,
+      name: defaultLocationName(order),
+    };
+  });
+}
+
 const KANTO_PREFECTURE_NAMES = {
   茨城県: "08",
   栃木県: "09",

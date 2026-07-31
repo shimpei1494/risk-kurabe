@@ -9,6 +9,33 @@ body {
   outline-offset: 3px;
 }
 
+.location-settings-trigger {
+  width: 100%;
+  padding: 6px;
+  border-radius: var(--mantine-radius-md);
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+.location-settings-trigger:hover {
+  background: var(--mantine-color-teal-0);
+}
+
+.location-settings-trigger:active {
+  transform: translateY(1px);
+}
+
+.location-settings-marker {
+  transition: box-shadow 140ms ease;
+}
+
+.location-settings-trigger:hover .location-settings-marker,
+.location-settings-trigger:focus-visible .location-settings-marker {
+  box-shadow: 0 0 0 3px var(--mantine-color-teal-2);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -1,4 +1,15 @@
-import { Box, Card, Group, Paper, Stack, Text, ThemeIcon, useMantineTheme } from "@mantine/core";
+import {
+  Box,
+  Card,
+  Group,
+  Paper,
+  Stack,
+  Text,
+  ThemeIcon,
+  Tooltip,
+  UnstyledButton,
+  useMantineTheme,
+} from "@mantine/core";
 
 import type { InvestigationResult } from "../../domain/risk";
 import { DataBadge } from "../shared/DataBadge";
@@ -58,6 +69,7 @@ export function ResultCard({
   accentColor,
   retrying = false,
   onRetry,
+  onConfigure,
 }: {
   order: number;
   address: string;
@@ -65,6 +77,7 @@ export function ResultCard({
   accentColor?: string;
   retrying?: boolean;
   onRetry?: () => void;
+  onConfigure: () => void;
 }) {
   const { other } = useMantineTheme();
   const { maxFloodDepth, tokyoEarthquakeRisk, buildingCollapseRisk, fireRisk, aiSummary } = result;
@@ -73,21 +86,30 @@ export function ResultCard({
   return (
     <Card withBorder radius="xl" shadow="xs" p={0}>
       <Card.Section withBorder inheritPadding py="lg" px="xl">
-        <Group gap="xs" wrap="nowrap">
-          <ThemeIcon
-            radius="xl"
-            size={30}
-            fz={13}
-            styles={accentColor ? { root: { background: accentColor } } : undefined}
+        <Tooltip label={`地点${order}の設定`} openDelay={400} withArrow>
+          <UnstyledButton
+            className="location-settings-trigger"
+            aria-label={`${address}の設定を開く`}
+            onClick={onConfigure}
           >
-            {order}
-          </ThemeIcon>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <Text fz={14} fw={700} c="var(--mantine-color-stone-9)">
-              {address}
-            </Text>
-          </div>
-        </Group>
+            <Group gap="xs" wrap="nowrap">
+              <ThemeIcon
+                className="location-settings-marker"
+                radius="xl"
+                size={30}
+                fz={13}
+                styles={accentColor ? { root: { background: accentColor } } : undefined}
+              >
+                {order}
+              </ThemeIcon>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <Text fz={14} fw={700} c="var(--mantine-color-stone-9)">
+                  {address}
+                </Text>
+              </div>
+            </Group>
+          </UnstyledButton>
+        </Tooltip>
       </Card.Section>
 
       <Card.Section inheritPadding px="xl">

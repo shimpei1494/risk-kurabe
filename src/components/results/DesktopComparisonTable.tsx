@@ -1,4 +1,14 @@
-import { Box, Card, Group, Table, Text, ThemeIcon, useMantineTheme } from "@mantine/core";
+import {
+  Box,
+  Card,
+  Group,
+  Table,
+  Text,
+  ThemeIcon,
+  Tooltip,
+  UnstyledButton,
+  useMantineTheme,
+} from "@mantine/core";
 import { useEffect, useRef } from "react";
 
 import type { ComparisonLocation } from "../../domain/location";
@@ -42,9 +52,11 @@ function RegionalRiskCell({
 export function DesktopComparisonTable({
   locations,
   selectedIndicator,
+  onConfigureLocation,
 }: {
   locations: readonly ComparisonLocation[];
   selectedIndicator: MapIndicator;
+  onConfigureLocation: (id: string) => void;
 }) {
   const { other } = useMantineTheme();
   const detailsRef = useRef<HTMLDetailsElement>(null);
@@ -82,34 +94,43 @@ export function DesktopComparisonTable({
             </Table.Th>
             {withResult.map((location) => (
               <Table.Th key={location.id}>
-                <Group gap="xs" wrap="nowrap">
-                  <ThemeIcon
-                    radius="xl"
-                    size={28}
-                    fz={12}
-                    styles={{
-                      root: {
-                        background:
-                          other.risk.locationAccents[
-                            (location.order - 1) % other.risk.locationAccents.length
-                          ],
-                      },
-                    }}
+                <Tooltip label={`${location.name}の設定`} openDelay={400} withArrow>
+                  <UnstyledButton
+                    className="location-settings-trigger"
+                    aria-label={`${location.address}の設定を開く`}
+                    onClick={() => onConfigureLocation(location.id)}
                   >
-                    {location.order}
-                  </ThemeIcon>
-                  <Box miw={0}>
-                    <Text
-                      fz={12.5}
-                      fw={800}
-                      c="var(--mantine-color-stone-9)"
-                      truncate
-                      title={location.address}
-                    >
-                      {location.address}
-                    </Text>
-                  </Box>
-                </Group>
+                    <Group gap="xs" wrap="nowrap">
+                      <ThemeIcon
+                        className="location-settings-marker"
+                        radius="xl"
+                        size={28}
+                        fz={12}
+                        styles={{
+                          root: {
+                            background:
+                              other.risk.locationAccents[
+                                (location.order - 1) % other.risk.locationAccents.length
+                              ],
+                          },
+                        }}
+                      >
+                        {location.order}
+                      </ThemeIcon>
+                      <Box miw={0}>
+                        <Text
+                          fz={12.5}
+                          fw={800}
+                          c="var(--mantine-color-stone-9)"
+                          truncate
+                          title={location.address}
+                        >
+                          {location.address}
+                        </Text>
+                      </Box>
+                    </Group>
+                  </UnstyledButton>
+                </Tooltip>
               </Table.Th>
             ))}
           </Table.Tr>

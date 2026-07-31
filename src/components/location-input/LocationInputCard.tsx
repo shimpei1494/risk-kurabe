@@ -146,7 +146,10 @@ function AddressInput({
 
   return (
     <>
-      {recentLocations.length > 0 && !selected && candidates.length === 0 ? (
+      {recentLocations.length > 0 &&
+      query.trim().length === 0 &&
+      !selected &&
+      candidates.length === 0 ? (
         <RecentLocationsPanel
           locations={recentLocations}
           onChange={(nextLocations) => onUpdate({ recentLocations: nextLocations })}
@@ -362,6 +365,8 @@ export function LocationInputCard({
   hint,
   submitLabel,
   mapStartPoint,
+  initialQuery = "",
+  embedded = false,
   onSubmit,
 }: {
   order: number;
@@ -369,11 +374,14 @@ export function LocationInputCard({
   hint?: string;
   submitLabel: string;
   mapStartPoint?: GeoPoint;
+  initialQuery?: string;
+  embedded?: boolean;
   onSubmit: (selection: LocationSelection) => Promise<void>;
 }) {
   const [state, updateState] = useReducer(
     (current: InputState, update: Partial<InputState>) => ({ ...current, ...update }),
-    initialInputState,
+    initialQuery,
+    (query): InputState => ({ ...initialInputState, query }),
   );
   const { query, selected, point, requestState, message, inputMode, mapPoint } = state;
   const searchAddressFn = useServerFn(searchAddress);
@@ -454,21 +462,23 @@ export function LocationInputCard({
       });
     }
   }
-  return (
-    <Card withBorder radius="xl" py="3xl" px="3xl" shadow="xs">
-      <Group gap="xs" mb="sm">
-        <ThemeIcon radius="xl" size={28} fz={13}>
-          {order}
-        </ThemeIcon>
-        <Text fz={14} fw={700} c="var(--mantine-color-stone-9)">
-          {defaultName}
-        </Text>
-        {hint ? (
-          <Text fz={11.5} c="var(--mantine-color-stone-7)">
-            {hint}
+  const content = (
+    <>
+      {!embedded ? (
+        <Group gap="xs" mb="sm">
+          <ThemeIcon radius="xl" size={28} fz={13}>
+            {order}
+          </ThemeIcon>
+          <Text fz={14} fw={700} c="var(--mantine-color-stone-9)">
+            {defaultName}
           </Text>
-        ) : null}
-      </Group>
+          {hint ? (
+            <Text fz={11.5} c="var(--mantine-color-stone-7)">
+              {hint}
+            </Text>
+          ) : null}
+        </Group>
+      ) : null}
 
       <Stack gap="sm">
         {mapStartPoint ? (
@@ -529,6 +539,16 @@ export function LocationInputCard({
           </Text>
         )}
       </Stack>
+    </>
+  );
+
+  if (embedded) {
+    return <Box>{content}</Box>;
+  }
+
+  return (
+    <Card withBorder radius="xl" py="3xl" px="3xl" shadow="xs">
+      {content}
     </Card>
   );
 }
