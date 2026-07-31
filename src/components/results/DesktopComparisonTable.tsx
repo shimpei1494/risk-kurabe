@@ -190,7 +190,16 @@ export function DesktopComparisonTable({
                   >
                     内訳と根拠を表示
                   </Text>
-                  <Table mt="xs" horizontalSpacing="xl" verticalSpacing="sm" layout="fixed">
+                  <Table
+                    mt="xs"
+                    horizontalSpacing="xl"
+                    verticalSpacing="sm"
+                    layout="fixed"
+                    style={{
+                      marginInline: "calc(-1 * var(--mantine-spacing-xl))",
+                      width: "calc(100% + 2 * var(--mantine-spacing-xl))",
+                    }}
+                  >
                     <Table.Tbody>
                       <Table.Tr
                         bg={selectedIndicator === "building-collapse" ? "teal.0" : undefined}
