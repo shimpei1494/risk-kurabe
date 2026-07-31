@@ -26,6 +26,7 @@ import {
   removeRecentLocation,
   type RecentLocation,
 } from "../../storage/recent-locations";
+import { isAddressSearchEnter } from "./address-search-keyboard";
 import { LocationConfirmMap } from "./LocationConfirmMap";
 
 type RequestState = "idle" | "searching" | "investigating";
@@ -232,7 +233,16 @@ export function LocationInputCard({
             value={query}
             onChange={(event) => updateState({ query: event.currentTarget.value })}
             onKeyDown={(event) => {
-              if (event.key === "Enter") void handleSearch();
+              if (
+                isAddressSearchEnter({
+                  key: event.key,
+                  isComposing: event.nativeEvent.isComposing,
+                  keyCode: event.nativeEvent.keyCode,
+                })
+              ) {
+                event.preventDefault();
+                void handleSearch();
+              }
             }}
             style={{ flex: 1 }}
             radius="md"
