@@ -1,19 +1,22 @@
-import { Box, Center, Loader, Paper, Stack, Text, useMantineTheme } from "@mantine/core";
-import { useEffect, useReducer, useRef } from "react";
+import { useMantineTheme } from "@mantine/core";
+import { useEffect, useReducer, useRef, useState } from "react";
 
 import type { LocationOrder } from "../../domain/location";
 import {
   DEFAULT_MAP_SELECTION,
+  mapFeatureValueLabel,
   mapSelectionLabel,
   type MapSelection,
 } from "../../domain/map-selection";
+import { distanceBetweenPointsMeters, type GeoPoint } from "../../gis/geometry";
+import { collapseMapAttribution } from "../../gis/map-attribution";
 import {
-  a31aPmtilesUrl,
-  a53PmtilesUrl,
-  tokyoBuildingCollapsePmtilesUrl,
-  tokyoFirePmtilesUrl,
-} from "../../gis/config";
-import type { GeoPoint } from "../../gis/geometry";
+  applyRiskLayerVisibility,
+  createRiskMapStyle,
+  RISK_FILL_LAYER_ID,
+  selectedRiskMapTheme,
+} from "./risk-map-theme";
+import { type PendingMapMove, RiskMapFrame, type RiskMapStatus } from "./RiskMapPresentation";
 
 export interface RiskMapLocation {
   order: LocationOrder;
@@ -21,62 +24,85 @@ export interface RiskMapLocation {
   point: GeoPoint;
 }
 
-const depthColors = {
-  1: "#D5E5F3",
-  2: "#93BFE3",
-  3: "#5A8FC7",
-  4: "#33619E",
-  5: "#234776",
-  6: "#172F52",
-} as const;
+export const MAX_PIN_MOVE_METERS = 2_000;
 
-const rankColors = {
-  1: "#F7F0CB",
-  2: "#F2DC86",
-  3: "#EFB25C",
-  4: "#E0763F",
-  5: "#C13A32",
-} as const;
+function usePendingMapMove(
+  onRelocate: ((order: LocationOrder, point: GeoPoint) => Promise<void>) | undefined,
+) {
+  const markersRef = useRef(new Map<LocationOrder, import("maplibre-gl").Marker>());
+  const valuePopupsRef = useRef(new Map<LocationOrder, import("maplibre-gl").Popup>());
+  const pendingMoveRef = useRef<PendingMapMove | null>(null);
+  const hoverSuppressedRef = useRef(false);
+  const [pendingMove, setPendingMove] = useState<PendingMapMove | null>(null);
+  const [moveNotice, setMoveNotice] = useState<string | null>(null);
+  const [relocating, setRelocating] = useState(false);
 
-function selectedTheme(selection: MapSelection) {
-  switch (selection.indicator) {
-    case "frequency-flood":
-      return {
-        url: a53PmtilesUrl(selection.rainfallDenominator),
-        sourceLayer: "a53",
-        valueProperty: "depth_code",
-        palette: depthColors,
-        outline: "rgba(42, 78, 128, 0.35)",
-        attribution: "頻度別洪水浸水想定区域: 国土交通省",
-      };
-    case "building-collapse":
-      return {
-        url: tokyoBuildingCollapsePmtilesUrl(),
-        sourceLayer: "tokyo_building_collapse",
-        valueProperty: "building_collapse_rank",
-        palette: rankColors,
-        outline: "rgba(92, 74, 10, 0.35)",
-        attribution: "建物倒壊危険度: 東京都都市整備局",
-      };
-    case "fire":
-      return {
-        url: tokyoFirePmtilesUrl(),
-        sourceLayer: "tokyo_fire",
-        valueProperty: "fire_rank",
-        palette: rankColors,
-        outline: "rgba(120, 55, 32, 0.35)",
-        attribution: "火災危険度: 東京都都市整備局",
-      };
-    default:
-      return {
-        url: a31aPmtilesUrl(),
-        sourceLayer: "a31a",
-        valueProperty: "depth_code",
-        palette: depthColors,
-        outline: "rgba(42, 78, 128, 0.35)",
-        attribution: "洪水浸水想定区域: 国土交通省 国土数値情報",
-      };
-  }
+  const beginPinMove = () => setMoveNotice(null);
+  const stagePinMove = (nextMove: PendingMapMove) => {
+    pendingMoveRef.current = nextMove;
+    setPendingMove(nextMove);
+  };
+  const rejectPinMove = () => {
+    pendingMoveRef.current = null;
+    setPendingMove(null);
+    setMoveNotice("近くを比べるため、ピンは元の位置から2km以内で動かしてください。");
+  };
+  const cancelPendingMove = () => {
+    if (!pendingMove) return;
+    markersRef.current
+      .get(pendingMove.order)
+      ?.setLngLat([pendingMove.originalPoint.longitude, pendingMove.originalPoint.latitude]);
+    valuePopupsRef.current
+      .get(pendingMove.order)
+      ?.setLngLat([pendingMove.originalPoint.longitude, pendingMove.originalPoint.latitude]);
+    pendingMoveRef.current = null;
+    hoverSuppressedRef.current = false;
+    setPendingMove(null);
+    setMoveNotice(null);
+  };
+  const confirmPendingMove = async () => {
+    if (!pendingMove || !onRelocate || relocating) return;
+    setRelocating(true);
+    setMoveNotice(null);
+    try {
+      await onRelocate(pendingMove.order, pendingMove.point);
+      pendingMoveRef.current = null;
+      hoverSuppressedRef.current = false;
+      setPendingMove(null);
+    } catch {
+      setMoveNotice("この位置を再判定できませんでした。通信状況を確認して再度お試しください。");
+    } finally {
+      setRelocating(false);
+    }
+  };
+
+  return {
+    markersRef,
+    valuePopupsRef,
+    pendingMoveRef,
+    hoverSuppressedRef,
+    pendingMove,
+    moveNotice,
+    relocating,
+    beginPinMove,
+    stagePinMove,
+    rejectPinMove,
+    cancelPendingMove,
+    confirmPendingMove,
+  };
+}
+
+function useRiskLayerVisibility(outline: string) {
+  const mapRef = useRef<import("maplibre-gl").Map | null>(null);
+  const [riskLayerVisible, setRiskLayerVisible] = useState(true);
+
+  const toggleRiskLayer = () => {
+    const nextVisible = !riskLayerVisible;
+    applyRiskLayerVisibility({ map: mapRef.current, visible: nextVisible, outline });
+    setRiskLayerVisible(nextVisible);
+  };
+
+  return { mapRef, riskLayerVisible, toggleRiskLayer };
 }
 
 let protocolRegistered = false;
@@ -87,36 +113,59 @@ export function RiskMap({
   compact = false,
   active = true,
   selection = DEFAULT_MAP_SELECTION,
+  onRelocate,
 }: {
   locations: readonly RiskMapLocation[];
   height?: number;
   compact?: boolean;
   active?: boolean;
   selection?: MapSelection;
+  onRelocate?: (order: LocationOrder, point: GeoPoint) => Promise<void>;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const {
+    markersRef,
+    valuePopupsRef,
+    pendingMoveRef,
+    hoverSuppressedRef,
+    pendingMove,
+    moveNotice,
+    relocating,
+    beginPinMove,
+    stagePinMove,
+    rejectPinMove,
+    cancelPendingMove,
+    confirmPendingMove,
+  } = usePendingMapMove(onRelocate);
   const [status, dispatchStatus] = useReducer(
-    (_previous: "loading" | "ready" | "error", next: "loading" | "ready" | "error") => next,
+    (_previous: RiskMapStatus, next: RiskMapStatus) => next,
     "loading",
   );
   const { other } = useMantineTheme();
   const locationKey = locations
     .map(({ order, point }) => `${order}:${point.longitude}:${point.latitude}`)
     .join("|");
-  const theme = selectedTheme(selection);
-  const selectionKey = `${selection.indicator}:${selection.rainfallDenominator}`;
+  const theme = selectedRiskMapTheme(selection);
+  const { mapRef, riskLayerVisible, toggleRiskLayer } = useRiskLayerVisibility(theme.outline);
+  const selectionKey = selection.indicator;
   const selectionLabel = mapSelectionLabel(selection);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!active || !container || locations.length === 0) return;
     dispatchStatus("loading");
+    const markers = markersRef.current;
+    const valuePopups = valuePopupsRef.current;
+    hoverSuppressedRef.current = Boolean(pendingMoveRef.current);
 
     let disposed = false;
     let map: import("maplibre-gl").Map | undefined;
     let handleIdle: (() => void) | undefined;
     let handleError: (() => void) | undefined;
-
+    let handleThemeMouseMove:
+      | ((event: import("maplibre-gl").MapLayerMouseEvent) => void)
+      | undefined;
+    let handleThemeMouseLeave: (() => void) | undefined;
     void Promise.all([import("maplibre-gl"), import("pmtiles")])
       .then(([maplibreModule, pmtilesModule]) => {
         if (disposed) return;
@@ -136,92 +185,106 @@ export function RiskMap({
           center: [first.point.longitude, first.point.latitude],
           zoom: compact ? 13.25 : 14.25,
           attributionControl: { compact: true },
-          style: {
-            version: 8,
-            sources: {
-              backgroundMap: {
-                type: "raster",
-                tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-                tileSize: 256,
-                attribution:
-                  '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-              },
-              riskTheme: {
-                type: "vector",
-                url: `pmtiles://${theme.url}`,
-                attribution: theme.attribution,
-              },
-            },
-            layers: [
-              {
-                id: "background",
-                type: "background",
-                paint: { "background-color": "#EDEBE6" },
-              },
-              {
-                id: "background-map",
-                type: "raster",
-                source: "backgroundMap",
-                paint: {
-                  "raster-opacity": 0.62,
-                  "raster-saturation": -0.75,
-                  "raster-contrast": -0.08,
-                },
-              },
-              {
-                id: "risk-theme-fill",
-                type: "fill",
-                source: "riskTheme",
-                "source-layer": theme.sourceLayer,
-                paint: {
-                  "fill-color": [
-                    "match",
-                    ["to-number", ["get", theme.valueProperty]],
-                    1,
-                    theme.palette[1],
-                    2,
-                    theme.palette[2],
-                    3,
-                    theme.palette[3],
-                    4,
-                    theme.palette[4],
-                    5,
-                    theme.palette[5],
-                    ...(selection.indicator === "maximum-flood" ||
-                    selection.indicator === "frequency-flood"
-                      ? [6, depthColors[6]]
-                      : []),
-                    "#B5B2A9",
-                  ],
-                  "fill-opacity": 0.78,
-                  "fill-outline-color": theme.outline,
-                },
-              },
-            ],
-          },
+          style: createRiskMapStyle({ theme, selection, riskLayerVisible }),
         });
+        mapRef.current = map;
 
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+        const hoverPopup = new maplibregl.Popup({
+          closeButton: false,
+          closeOnClick: false,
+          offset: 12,
+          className: "risk-map-hover-popup",
+        });
+        const featureLabelAtPoint = (point: import("maplibre-gl").PointLike) => {
+          if (!map) return undefined;
+          const values: number[] = [];
+          for (const feature of map.queryRenderedFeatures(point, {
+            layers: [RISK_FILL_LAYER_ID],
+          })) {
+            const value = Number(feature.properties?.[theme.valueProperty]);
+            if (Number.isFinite(value)) values.push(value);
+          }
+          if (values.length === 0) return undefined;
+          return mapFeatureValueLabel(selection, Math.max(...values));
+        };
 
         const bounds = new maplibregl.LngLatBounds();
+        markers.clear();
+        valuePopups.clear();
         for (const location of locations) {
           const accent =
             other.risk.locationAccents[(location.order - 1) % other.risk.locationAccents.length];
+          const pendingForLocation =
+            pendingMoveRef.current?.order === location.order ? pendingMoveRef.current : undefined;
+          const markerPoint = pendingForLocation?.point ?? location.point;
           const marker = document.createElement("div");
           marker.className = "risk-map-marker";
           marker.style.setProperty("--marker-accent", accent ?? "#4B5563");
           marker.setAttribute("aria-label", `${location.label}の位置`);
+          if (onRelocate) {
+            marker.title = `${location.label}のピン。ドラッグして近くの位置を調べられます`;
+          }
           const markerLabel = document.createElement("span");
           markerLabel.textContent = String(location.order);
           marker.append(markerLabel);
 
-          new maplibregl.Marker({ element: marker })
-            .setLngLat([location.point.longitude, location.point.latitude])
-            .setPopup(
-              new maplibregl.Popup({ offset: 20, closeButton: false }).setText(location.label),
-            )
+          const mapMarker = new maplibregl.Marker({
+            element: marker,
+            draggable: Boolean(onRelocate),
+          })
+            .setLngLat([markerPoint.longitude, markerPoint.latitude])
             .addTo(map);
-          bounds.extend([location.point.longitude, location.point.latitude]);
+          const valuePopup = new maplibregl.Popup({
+            closeButton: false,
+            closeOnClick: false,
+            offset: 25,
+            className: "risk-map-value-popup",
+          })
+            .setLngLat([markerPoint.longitude, markerPoint.latitude])
+            .setText("判定を確認中")
+            .addTo(map);
+          markers.set(location.order, mapMarker);
+          valuePopups.set(location.order, valuePopup);
+
+          if (onRelocate) {
+            mapMarker.on("dragstart", () => {
+              hoverSuppressedRef.current = true;
+              hoverPopup.remove();
+              beginPinMove();
+            });
+            mapMarker.on("drag", () => {
+              const coordinate = mapMarker.getLngLat();
+              valuePopup.setLngLat(coordinate);
+            });
+            mapMarker.on("dragend", () => {
+              const coordinate = mapMarker.getLngLat();
+              const point = { longitude: coordinate.lng, latitude: coordinate.lat };
+              const distanceMeters = distanceBetweenPointsMeters(location.point, point);
+              if (distanceMeters > MAX_PIN_MOVE_METERS) {
+                hoverSuppressedRef.current = false;
+                hoverPopup.remove();
+                mapMarker.setLngLat([location.point.longitude, location.point.latitude]);
+                valuePopup.setLngLat([location.point.longitude, location.point.latitude]);
+                rejectPinMove();
+                return;
+              }
+
+              const nextMove = {
+                order: location.order,
+                label: location.label,
+                originalPoint: location.point,
+                point,
+                distanceMeters,
+                valueLabel: map ? featureLabelAtPoint(map.project(coordinate)) : undefined,
+              };
+              stagePinMove(nextMove);
+              hoverPopup.remove();
+              map?.triggerRepaint();
+            });
+          }
+
+          bounds.extend([markerPoint.longitude, markerPoint.latitude]);
         }
 
         if (locations.length > 1) {
@@ -232,18 +295,52 @@ export function RiskMap({
           });
         }
 
+        const updateMarkerValues = () => {
+          if (!map) return;
+          for (const [order, markerInstance] of markers) {
+            const valuePopup = valuePopups.get(order);
+            if (!valuePopup) continue;
+            const label = featureLabelAtPoint(map.project(markerInstance.getLngLat()));
+            valuePopup.setText(label ?? "表示データなし");
+          }
+        };
+
+        handleThemeMouseMove = (event) => {
+          if (!map) return;
+          if (hoverSuppressedRef.current || pendingMoveRef.current) {
+            hoverPopup.remove();
+            return;
+          }
+          const label = featureLabelAtPoint(event.point);
+          map.getCanvas().style.cursor = label ? "crosshair" : "";
+          if (!label) {
+            hoverPopup.remove();
+            return;
+          }
+          hoverPopup.setLngLat(event.lngLat).setText(`ここは ${label}`).addTo(map);
+        };
+        handleThemeMouseLeave = () => {
+          if (map) map.getCanvas().style.cursor = "";
+          hoverPopup.remove();
+        };
+        map.on("mousemove", RISK_FILL_LAYER_ID, handleThemeMouseMove);
+        map.on("click", RISK_FILL_LAYER_ID, handleThemeMouseMove);
+        map.on("mouseleave", RISK_FILL_LAYER_ID, handleThemeMouseLeave);
+
         handleIdle = () => {
           if (!disposed && map) {
+            collapseMapAttribution(container);
             container.dataset.visibleRiskFeatures = String(
-              map.queryRenderedFeatures(undefined, { layers: ["risk-theme-fill"] }).length,
+              map.queryRenderedFeatures(undefined, { layers: [RISK_FILL_LAYER_ID] }).length,
             );
+            updateMarkerValues();
             dispatchStatus("ready");
           }
         };
         handleError = () => {
           if (!disposed) dispatchStatus("error");
         };
-        map.once("idle", handleIdle);
+        map.on("idle", handleIdle);
         map.on("error", handleError);
       })
       .catch(() => {
@@ -254,83 +351,37 @@ export function RiskMap({
       disposed = true;
       if (map && handleIdle) map.off("idle", handleIdle);
       if (map && handleError) map.off("error", handleError);
+      if (map && handleThemeMouseMove)
+        map.off("mousemove", RISK_FILL_LAYER_ID, handleThemeMouseMove);
+      if (map && handleThemeMouseMove) map.off("click", RISK_FILL_LAYER_ID, handleThemeMouseMove);
+      if (map && handleThemeMouseLeave)
+        map.off("mouseleave", RISK_FILL_LAYER_ID, handleThemeMouseLeave);
+      markers.clear();
+      valuePopups.clear();
       map?.remove();
+      if (mapRef.current === map) mapRef.current = null;
     };
     // locationKey is a stable, serializable representation of the locations.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, compact, locationKey, other.risk.locationAccents, selectionKey]);
 
   return (
-    <Paper
-      component="section"
-      radius="lg"
-      aria-label={`${selectionLabel}の地図`}
-      style={{
-        position: "relative",
-        overflow: "hidden",
-        border: "1px solid var(--mantine-color-stone-3)",
-        background: "var(--mantine-color-stone-2)",
-        height,
-      }}
-    >
-      <Box ref={containerRef} pos="absolute" inset={0} />
-
-      {status === "loading" ? (
-        <Center pos="absolute" inset={0} bg="rgba(242,240,235,.84)" style={{ zIndex: 2 }}>
-          <Stack align="center" gap="xs">
-            <Loader size="sm" />
-            <Text fz={12} fw={700} c="var(--mantine-color-stone-8)">
-              {selectionLabel}を読み込んでいます
-            </Text>
-          </Stack>
-        </Center>
-      ) : null}
-
-      {status === "error" ? (
-        <Center pos="absolute" inset={0} bg="rgba(242,240,235,.94)" p="lg" style={{ zIndex: 2 }}>
-          <Stack align="center" gap="4xs" ta="center">
-            <Text fz={13} fw={700} c="var(--mantine-color-stone-9)">
-              地図データを読み込めませんでした
-            </Text>
-            <Text fz={11.5} c="var(--mantine-color-stone-7)">
-              調査結果は地図とは別に判定されています。通信状況を確認して再読み込みしてください。
-            </Text>
-          </Stack>
-        </Center>
-      ) : null}
-
-      {!compact ? (
-        <Paper
-          pos="absolute"
-          left={14}
-          bottom={28}
-          radius="sm"
-          px="sm"
-          py="xs"
-          bg="rgba(255,255,255,.92)"
-          shadow="xs"
-          style={{ zIndex: 1 }}
-        >
-          <Text fz={10.5} fw={700} c="var(--mantine-color-stone-9)">
-            {selectionLabel}
-          </Text>
-          <Box mt="4xs" style={{ display: "flex" }}>
-            {Object.values(theme.palette).map((color) => (
-              <Box key={color} w={22} h={6} bg={color} />
-            ))}
-          </Box>
-          <Text mt={3} fz={9.5} c="var(--mantine-color-stone-7)">
-            {selection.indicator === "maximum-flood" || selection.indicator === "frequency-flood"
-              ? "浅い"
-              : "ランク1"}
-            <Text component="span" ml={76}>
-              {selection.indicator === "maximum-flood" || selection.indicator === "frequency-flood"
-                ? "深い"
-                : "ランク5"}
-            </Text>
-          </Text>
-        </Paper>
-      ) : null}
-    </Paper>
+    <RiskMapFrame
+      containerRef={containerRef}
+      height={height}
+      compact={compact}
+      status={status}
+      selection={selection}
+      selectionLabel={selectionLabel}
+      palette={theme.palette}
+      relocationEnabled={Boolean(onRelocate)}
+      pendingMove={pendingMove}
+      moveNotice={moveNotice}
+      relocating={relocating}
+      onCancelMove={cancelPendingMove}
+      onConfirmMove={() => void confirmPendingMove()}
+      riskLayerVisible={riskLayerVisible}
+      onToggleRiskLayer={toggleRiskLayer}
+    />
   );
 }

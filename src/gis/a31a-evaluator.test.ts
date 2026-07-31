@@ -56,7 +56,7 @@ function square(
 const tokyoPoint = { longitude: 139.7, latitude: 35.6 };
 
 describe("evaluateA31aAtPoint", () => {
-  it("A31a河川コードをA53の6桁水系コードへ正規化する", () => {
+  it("A31a河川コードを6桁水系コードへ正規化する", () => {
     expect(a31aBasinCode("8303010001")).toBe("830301");
     expect(a31aBasinCode("fixture-river")).toBe("fixture-river");
   });

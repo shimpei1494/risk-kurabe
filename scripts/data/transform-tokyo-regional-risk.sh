@@ -10,13 +10,15 @@ ARCHIVE_PATH="$SOURCE_DIR/tokyo-regional-risk-all2.zip"
 CSV_SOURCE_PATH="$SOURCE_DIR/tokyo-regional-risk-all2.csv"
 EXTRACT_DIR="$WORK_DIR/extracted/tokyo-regional-risk"
 INTERMEDIATE_DIR="$WORK_DIR/intermediate"
-VERSION_DIR="$WORK_DIR/output/risk-data/v1"
+VERSION_DIR="$WORK_DIR/output/risk-data/v2"
 SHAPEFILE_PATH="$EXTRACT_DIR/regional-risk.shp"
 CSV_PATH="$EXTRACT_DIR/regional-risk.csv"
 GPKG_PATH="$INTERMEDIATE_DIR/tokyo-regional-risk.gpkg"
 FGB_PATH="$VERSION_DIR/query/tokyo/regional-risk.fgb"
 BUILDING_MBTILES_PATH="$INTERMEDIATE_DIR/tokyo-building-collapse.mbtiles"
 BUILDING_PMTILES_PATH="$VERSION_DIR/map/tokyo-building-collapse.pmtiles"
+OVERALL_MBTILES_PATH="$INTERMEDIATE_DIR/tokyo-overall-risk.mbtiles"
+OVERALL_PMTILES_PATH="$VERSION_DIR/map/tokyo-overall-risk.pmtiles"
 FIRE_MBTILES_PATH="$INTERMEDIATE_DIR/tokyo-fire.mbtiles"
 FIRE_PMTILES_PATH="$VERSION_DIR/map/tokyo-fire.pmtiles"
 DATASET_ID="tokyo-regional-risk-9"
@@ -24,12 +26,21 @@ DATASET_ID="tokyo-regional-risk-9"
 bash "$ROOT_DIR/scripts/data/download-sources.sh" TokyoRegionalRisk
 
 if [[ ! -f "$VERSION_DIR/manifest.json" || ! -f "$VERSION_DIR/coverage.json" || ! -f "$VERSION_DIR/checksums.json" ]]; then
-  echo "A31a and A53 metadata are required before Tokyo regional risk" >&2
+  echo "A31a metadata is required before Tokyo regional risk" >&2
   exit 1
 fi
 
 rm -rf "$EXTRACT_DIR"
 mkdir -p "$EXTRACT_DIR" "$INTERMEDIATE_DIR" "$(dirname "$FGB_PATH")" "$VERSION_DIR/map"
+rm -f \
+  "$GPKG_PATH" \
+  "$FGB_PATH" \
+  "$BUILDING_MBTILES_PATH" \
+  "$BUILDING_PMTILES_PATH" \
+  "$OVERALL_MBTILES_PATH" \
+  "$OVERALL_PMTILES_PATH" \
+  "$FIRE_MBTILES_PATH" \
+  "$FIRE_PMTILES_PATH"
 
 while IFS= read -r entry_name; do
   extension="${entry_name##*.}"
@@ -84,7 +95,6 @@ if [[ "$SHAPE_COUNT" -ne 5192 || "$CSV_COUNT" -ne 5192 || "$JOINED_COUNT" -ne 51
   exit 1
 fi
 
-rm -f "$FGB_PATH"
 ogr2ogr \
   -f FlatGeobuf \
   "$FGB_PATH" \
@@ -120,6 +130,8 @@ ogr2ogr \
 rm -f \
   "$BUILDING_MBTILES_PATH" \
   "$BUILDING_PMTILES_PATH" \
+  "$OVERALL_MBTILES_PATH" \
+  "$OVERALL_PMTILES_PATH" \
   "$FIRE_MBTILES_PATH" \
   "$FIRE_PMTILES_PATH"
 
@@ -134,6 +146,18 @@ tippecanoe \
   -y building_collapse_rank \
   "$FGB_PATH"
 pmtiles convert "$BUILDING_MBTILES_PATH" "$BUILDING_PMTILES_PATH"
+
+tippecanoe \
+  -o "$OVERALL_MBTILES_PATH" \
+  -l tokyo_overall_risk \
+  -Z8 \
+  -z16 \
+  --force \
+  --no-feature-limit \
+  --no-tile-size-limit \
+  -y overall_rank \
+  "$FGB_PATH"
+pmtiles convert "$OVERALL_MBTILES_PATH" "$OVERALL_PMTILES_PATH"
 
 tippecanoe \
   -o "$FIRE_MBTILES_PATH" \
@@ -151,6 +175,8 @@ FGB_SHA256="$(shasum -a 256 "$FGB_PATH" | awk '{print $1}')"
 FGB_SIZE="$(wc -c <"$FGB_PATH" | tr -d ' ')"
 BUILDING_PMTILES_SHA256="$(shasum -a 256 "$BUILDING_PMTILES_PATH" | awk '{print $1}')"
 BUILDING_PMTILES_SIZE="$(wc -c <"$BUILDING_PMTILES_PATH" | tr -d ' ')"
+OVERALL_PMTILES_SHA256="$(shasum -a 256 "$OVERALL_PMTILES_PATH" | awk '{print $1}')"
+OVERALL_PMTILES_SIZE="$(wc -c <"$OVERALL_PMTILES_PATH" | tr -d ' ')"
 FIRE_PMTILES_SHA256="$(shasum -a 256 "$FIRE_PMTILES_PATH" | awk '{print $1}')"
 FIRE_PMTILES_SIZE="$(wc -c <"$FIRE_PMTILES_PATH" | tr -d ' ')"
 
@@ -159,6 +185,8 @@ jq -n \
   --argjson fgb_size "$FGB_SIZE" \
   --arg building_pmtiles_sha256 "$BUILDING_PMTILES_SHA256" \
   --argjson building_pmtiles_size "$BUILDING_PMTILES_SIZE" \
+  --arg overall_pmtiles_sha256 "$OVERALL_PMTILES_SHA256" \
+  --argjson overall_pmtiles_size "$OVERALL_PMTILES_SIZE" \
   --arg fire_pmtiles_sha256 "$FIRE_PMTILES_SHA256" \
   --argjson fire_pmtiles_size "$FIRE_PMTILES_SIZE" \
   '{
@@ -179,6 +207,12 @@ jq -n \
       sha256: $fgb_sha256
     },
     mapArtifacts: {
+      overall: {
+        path: "map/tokyo-overall-risk.pmtiles",
+        contentType: "application/vnd.pmtiles",
+        size: $overall_pmtiles_size,
+        sha256: $overall_pmtiles_sha256
+      },
       buildingCollapse: {
         path: "map/tokyo-building-collapse.pmtiles",
         contentType: "application/vnd.pmtiles",
@@ -220,6 +254,8 @@ jq \
   --argjson fgb_size "$FGB_SIZE" \
   --arg building_pmtiles_sha256 "$BUILDING_PMTILES_SHA256" \
   --argjson building_pmtiles_size "$BUILDING_PMTILES_SIZE" \
+  --arg overall_pmtiles_sha256 "$OVERALL_PMTILES_SHA256" \
+  --argjson overall_pmtiles_size "$OVERALL_PMTILES_SIZE" \
   --arg fire_pmtiles_sha256 "$FIRE_PMTILES_SHA256" \
   --argjson fire_pmtiles_size "$FIRE_PMTILES_SIZE" \
   '.files = (
@@ -228,6 +264,7 @@ jq \
         select(
           (
             .key == "query/tokyo/regional-risk.fgb"
+            or .key == "map/tokyo-overall-risk.pmtiles"
             or .key == "map/tokyo-building-collapse.pmtiles"
             or .key == "map/tokyo-fire.pmtiles"
           )
@@ -238,6 +275,10 @@ jq \
     "query/tokyo/regional-risk.fgb": {
       size: $fgb_size,
       sha256: $fgb_sha256
+    },
+    "map/tokyo-overall-risk.pmtiles": {
+      size: $overall_pmtiles_size,
+      sha256: $overall_pmtiles_sha256
     },
     "map/tokyo-building-collapse.pmtiles": {
       size: $building_pmtiles_size,

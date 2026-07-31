@@ -2,6 +2,7 @@ import { Box, Center, Loader, Paper, Text } from "@mantine/core";
 import { useEffect, useReducer, useRef } from "react";
 
 import type { GeoPoint } from "../../gis/geometry";
+import { collapseMapAttribution } from "../../gis/map-attribution";
 
 export function LocationConfirmMap({
   point,
@@ -66,7 +67,10 @@ export function LocationConfirmMap({
         };
         marker.on("dragend", handleDragEnd);
         map.once("idle", () => {
-          if (!disposed) setStatus("ready");
+          if (!disposed) {
+            collapseMapAttribution(container);
+            setStatus("ready");
+          }
         });
         handleError = () => {
           if (!disposed) setStatus("error");

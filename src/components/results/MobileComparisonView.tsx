@@ -1,21 +1,27 @@
 import { Box, Card, Group, SimpleGrid, Text, ThemeIcon, useMantineTheme } from "@mantine/core";
 
 import type { ComparisonLocation } from "../../domain/location";
-import { floodFrequencyAt, type RainfallDenominator } from "../../domain/risk";
 import { DataBadge } from "../shared/DataBadge";
 import { AiSummaryBox, BoundaryWarningNote, MultiRiverEvidence } from "../shared/InfoBlocks";
+import {
+  RegionalRiskMeta,
+  TOKYO_EARTHQUAKE_EXPLANATION,
+  TokyoEarthquakeProvenance,
+} from "./TokyoEarthquakeRiskDetails";
 
 function IndicatorGroupCard({
   icon,
   iconColor,
   label,
   hint,
+  columns = 3,
   children,
 }: {
   icon: string;
   iconColor: { bg: string; text: string };
   label: string;
   hint?: string;
+  columns?: number;
   children: React.ReactNode;
 }) {
   return (
@@ -36,7 +42,7 @@ function IndicatorGroupCard({
           </Text>
         ) : null}
       </Group>
-      <SimpleGrid cols={3} spacing="2xs">
+      <SimpleGrid cols={columns} spacing="2xs">
         {children}
       </SimpleGrid>
     </Card>
@@ -47,22 +53,211 @@ function BadgeCell({ children }: { children: React.ReactNode }) {
   return <Box style={{ textAlign: "center" }}>{children}</Box>;
 }
 
+type ResultLocation = ComparisonLocation & {
+  result: NonNullable<ComparisonLocation["result"]>;
+};
+
+function MobileTokyoEarthquakeSection({ locations }: { locations: readonly ResultLocation[] }) {
+  const { other } = useMantineTheme();
+
+  return (
+    <>
+      <Box mt="md" px="lg">
+        <IndicatorGroupCard
+          icon="総"
+          iconColor={other.risk.indicatorIcon.building}
+          label="東京都・地震時の総合危険度"
+          hint="東京都内の相対評価"
+          columns={locations.length}
+        >
+          {locations.map((loc) => (
+            <BadgeCell key={loc.id}>
+              <DataBadge
+                state={loc.result.tokyoEarthquakeRisk.state}
+                valueLabel={
+                  loc.result.tokyoEarthquakeRisk.rank
+                    ? `ランク${loc.result.tokyoEarthquakeRisk.rank}／5`
+                    : undefined
+                }
+                valueColor={
+                  loc.result.tokyoEarthquakeRisk.rank
+                    ? other.risk.regionalRiskRank[loc.result.tokyoEarthquakeRisk.rank]
+                    : undefined
+                }
+                notApplicableLabel="対象外（東京都のみ）"
+              />
+              <RegionalRiskMeta
+                score={loc.result.tokyoEarthquakeRisk.score}
+                order={loc.result.tokyoEarthquakeRisk.order}
+                align="center"
+              />
+            </BadgeCell>
+          ))}
+        </IndicatorGroupCard>
+        <Text mt="xs" fz={11} lh={1.7} c="var(--mantine-color-stone-8)">
+          {TOKYO_EARTHQUAKE_EXPLANATION}
+        </Text>
+        {locations.map((loc) =>
+          loc.result.tokyoEarthquakeRisk.boundaryWarning ? (
+            <Box key={loc.id} mt="2xs">
+              <Text fz={10.5} fw={700} c="var(--mantine-color-stone-7)" mb="4xs">
+                {loc.name}
+              </Text>
+              <BoundaryWarningNote />
+            </Box>
+          ) : null,
+        )}
+      </Box>
+
+      {locations.some((loc) => loc.result.tokyoEarthquakeRisk.state === "value") ? (
+        <Box
+          component="details"
+          mt="xs"
+          mx="lg"
+          p="sm"
+          style={{
+            border: "1px solid var(--mantine-color-stone-2)",
+            borderRadius: "var(--mantine-radius-lg)",
+          }}
+        >
+          <Text component="summary" fz={11.5} fw={800} c="teal.8" style={{ cursor: "pointer" }}>
+            内訳と根拠を表示
+          </Text>
+          <Box mt="sm">
+            <IndicatorGroupCard
+              icon="倒"
+              iconColor={other.risk.indicatorIcon.building}
+              label="建物倒壊危険度"
+              hint="色＝都公式ランク1〜5"
+              columns={locations.length}
+            >
+              {locations.map((loc) => (
+                <BadgeCell key={loc.id}>
+                  <DataBadge
+                    state={loc.result.buildingCollapseRisk.state}
+                    valueLabel={
+                      loc.result.buildingCollapseRisk.rank
+                        ? `ランク${loc.result.buildingCollapseRisk.rank}／5`
+                        : undefined
+                    }
+                    valueColor={
+                      loc.result.buildingCollapseRisk.rank
+                        ? other.risk.regionalRiskRank[loc.result.buildingCollapseRisk.rank]
+                        : undefined
+                    }
+                    notApplicableLabel="対象外（東京都のみ）"
+                  />
+                  <RegionalRiskMeta
+                    score={loc.result.buildingCollapseRisk.score}
+                    order={loc.result.buildingCollapseRisk.order}
+                    align="center"
+                  />
+                  {loc.result.buildingCollapseRisk.boundaryWarning ? (
+                    <Text mt="4xs" fz={10} fw={700} c="orange.9">
+                      判定境界付近
+                    </Text>
+                  ) : null}
+                </BadgeCell>
+              ))}
+            </IndicatorGroupCard>
+          </Box>
+          <Box mt="xs">
+            <IndicatorGroupCard
+              icon="火"
+              iconColor={other.risk.indicatorIcon.fire}
+              label="火災危険度"
+              hint="色＝都公式ランク1〜5"
+              columns={locations.length}
+            >
+              {locations.map((loc) => (
+                <BadgeCell key={loc.id}>
+                  <DataBadge
+                    state={loc.result.fireRisk.state}
+                    valueLabel={
+                      loc.result.fireRisk.rank ? `ランク${loc.result.fireRisk.rank}／5` : undefined
+                    }
+                    valueColor={
+                      loc.result.fireRisk.rank
+                        ? other.risk.regionalRiskRank[loc.result.fireRisk.rank]
+                        : undefined
+                    }
+                    notApplicableLabel="対象外（東京都のみ）"
+                  />
+                  <RegionalRiskMeta
+                    score={loc.result.fireRisk.score}
+                    order={loc.result.fireRisk.order}
+                    align="center"
+                  />
+                  {loc.result.fireRisk.boundaryWarning ? (
+                    <Text mt="4xs" fz={10} fw={700} c="orange.9">
+                      判定境界付近
+                    </Text>
+                  ) : null}
+                </BadgeCell>
+              ))}
+            </IndicatorGroupCard>
+          </Box>
+          <Box mt="xs">
+            <IndicatorGroupCard
+              icon="係"
+              iconColor={other.risk.indicatorIcon.building}
+              label="災害時活動困難係数"
+              hint="道路などによる活動のしにくさ"
+              columns={locations.length}
+            >
+              {locations.map((loc) => (
+                <BadgeCell key={loc.id}>
+                  <Text fz={13} fw={800} c="var(--mantine-color-stone-9)">
+                    {loc.result.tokyoEarthquakeRisk.activityDifficulty?.toLocaleString("ja-JP") ??
+                      "—"}
+                  </Text>
+                </BadgeCell>
+              ))}
+            </IndicatorGroupCard>
+          </Box>
+          <Box mt="xs">
+            <IndicatorGroupCard
+              icon="地"
+              iconColor={other.risk.indicatorIcon.building}
+              label="地盤分類"
+              hint="町丁目単位"
+              columns={locations.length}
+            >
+              {locations.map((loc) => (
+                <BadgeCell key={loc.id}>
+                  <Text fz={12} fw={800} c="var(--mantine-color-stone-9)">
+                    {loc.result.tokyoEarthquakeRisk.groundClassification ?? "—"}
+                  </Text>
+                </BadgeCell>
+              ))}
+            </IndicatorGroupCard>
+            <Text mt="2xs" fz={10.5} lh={1.6} c="var(--mantine-color-stone-7)">
+              個別敷地の地盤調査や液状化判定ではありません。
+            </Text>
+          </Box>
+          {locations.map((loc) =>
+            loc.result.tokyoEarthquakeRisk.state === "value" ? (
+              <Box key={loc.id}>
+                <Text mt="xs" fz={10.5} fw={700} c="var(--mantine-color-stone-7)">
+                  {loc.name}
+                </Text>
+                <TokyoEarthquakeProvenance risk={loc.result.tokyoEarthquakeRisk} />
+              </Box>
+            ) : null,
+          )}
+        </Box>
+      ) : null}
+    </>
+  );
+}
+
 /**
  * モバイル比較ビュー（デザインの 3g）。列を横スクロールさせる代わりに、
  * 指標ごとにグルーピングして地点間の違いを縦にスキャンできるようにする。
  */
-export function MobileComparisonView({
-  locations,
-  rainfallDenominator = 30,
-}: {
-  locations: readonly ComparisonLocation[];
-  rainfallDenominator?: RainfallDenominator;
-}) {
+export function MobileComparisonView({ locations }: { locations: readonly ComparisonLocation[] }) {
   const { other } = useMantineTheme();
-  const withResult = locations.filter(
-    (loc): loc is ComparisonLocation & { result: NonNullable<ComparisonLocation["result"]> } =>
-      loc.result !== undefined,
-  );
+  const withResult = locations.filter((loc): loc is ResultLocation => loc.result !== undefined);
 
   const boundaryLocations = withResult.filter((loc) => loc.result.maxFloodDepth.boundaryWarning);
   const multiRiverLocation = withResult.find(
@@ -100,6 +295,7 @@ export function MobileComparisonView({
           iconColor={other.risk.indicatorIcon.water}
           label="最大浸水深"
           hint="色＝国交省の浸水深階級"
+          columns={withResult.length}
         >
           {withResult.map((loc) => (
             <BadgeCell key={loc.id}>
@@ -137,85 +333,7 @@ export function MobileComparisonView({
         ))}
       </Box>
 
-      <Box mt="xs" px="lg">
-        <IndicatorGroupCard
-          icon="頻"
-          iconColor={other.risk.indicatorIcon.water}
-          label={`頻度別浸水（${rainfallDenominator}年に1回程度）`}
-        >
-          {withResult.map((loc) => (
-            <BadgeCell key={loc.id}>
-              {(() => {
-                const frequency = floodFrequencyAt(loc.result.floodFrequency, rainfallDenominator);
-                return (
-                  <DataBadge
-                    state={frequency.state}
-                    valueLabel={frequency.sourceLabel}
-                    valueColor={
-                      frequency.category ? other.risk.floodDepth[frequency.category] : undefined
-                    }
-                    notApplicableLabel="対象外（関東）"
-                  />
-                );
-              })()}
-            </BadgeCell>
-          ))}
-        </IndicatorGroupCard>
-      </Box>
-
-      <Box mt="xs" px="lg">
-        <IndicatorGroupCard
-          icon="倒"
-          iconColor={other.risk.indicatorIcon.building}
-          label="建物倒壊危険度"
-          hint="色＝都公式ランク1〜5"
-        >
-          {withResult.map((loc) => (
-            <BadgeCell key={loc.id}>
-              <DataBadge
-                state={loc.result.buildingCollapseRisk.state}
-                valueLabel={
-                  loc.result.buildingCollapseRisk.rank
-                    ? `ランク${loc.result.buildingCollapseRisk.rank}／5`
-                    : undefined
-                }
-                valueColor={
-                  loc.result.buildingCollapseRisk.rank
-                    ? other.risk.regionalRiskRank[loc.result.buildingCollapseRisk.rank]
-                    : undefined
-                }
-                notApplicableLabel="対象外（都のみ）"
-              />
-            </BadgeCell>
-          ))}
-        </IndicatorGroupCard>
-      </Box>
-
-      <Box mt="xs" px="lg">
-        <IndicatorGroupCard
-          icon="火"
-          iconColor={other.risk.indicatorIcon.fire}
-          label="火災危険度"
-          hint="色＝都公式ランク1〜5"
-        >
-          {withResult.map((loc) => (
-            <BadgeCell key={loc.id}>
-              <DataBadge
-                state={loc.result.fireRisk.state}
-                valueLabel={
-                  loc.result.fireRisk.rank ? `ランク${loc.result.fireRisk.rank}／5` : undefined
-                }
-                valueColor={
-                  loc.result.fireRisk.rank
-                    ? other.risk.regionalRiskRank[loc.result.fireRisk.rank]
-                    : undefined
-                }
-                notApplicableLabel="対象外（都のみ）"
-              />
-            </BadgeCell>
-          ))}
-        </IndicatorGroupCard>
-      </Box>
+      <MobileTokyoEarthquakeSection locations={withResult} />
 
       <Box
         mt="sm"

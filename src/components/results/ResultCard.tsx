@@ -3,6 +3,8 @@ import {
   Box,
   Card,
   Group,
+  Paper,
+  Stack,
   Text,
   TextInput,
   ThemeIcon,
@@ -10,11 +12,7 @@ import {
 } from "@mantine/core";
 import { useState } from "react";
 
-import {
-  floodFrequencyAt,
-  type InvestigationResult,
-  type RainfallDenominator,
-} from "../../domain/risk";
+import type { InvestigationResult } from "../../domain/risk";
 import { DataBadge } from "../shared/DataBadge";
 import {
   AiSummaryBox,
@@ -23,6 +21,12 @@ import {
   InvestigationProblemNotice,
   MultiRiverEvidence,
 } from "../shared/InfoBlocks";
+import {
+  RegionalRiskMeta,
+  TOKYO_EARTHQUAKE_EXPLANATION,
+  TokyoEarthquakeProvenance,
+  TokyoEarthquakeSupportingFacts,
+} from "./TokyoEarthquakeRiskDetails";
 
 interface IndicatorRowProps {
   icon: string;
@@ -147,7 +151,6 @@ export function ResultCard({
   result,
   accentColor,
   compact = false,
-  rainfallDenominator = 30,
   retrying = false,
   onRetry,
   onRename,
@@ -159,16 +162,13 @@ export function ResultCard({
   accentColor?: string;
   /** 3列比較グリッドなど横幅が狭い文脈では、名前編集を「✎」アイコンのみで表示する */
   compact?: boolean;
-  rainfallDenominator?: RainfallDenominator;
   retrying?: boolean;
   onRetry?: () => void;
   onRename: (name: string) => void;
 }) {
   const { other } = useMantineTheme();
-  const { maxFloodDepth, floodFrequency, buildingCollapseRisk, fireRisk, aiSummary } = result;
-  const selectedFrequency = floodFrequencyAt(floodFrequency, rainfallDenominator);
-  const showOutOfAreaFootnote =
-    maxFloodDepth.state === "outOfArea" || floodFrequency.state === "outOfArea";
+  const { maxFloodDepth, tokyoEarthquakeRisk, buildingCollapseRisk, fireRisk, aiSummary } = result;
+  const showOutOfAreaFootnote = maxFloodDepth.state === "outOfArea";
 
   return (
     <Card withBorder radius="xl" shadow="xs" p={0}>
@@ -202,6 +202,16 @@ export function ResultCard({
           </Box>
         ) : null}
         <Box py="3xs">
+          <Text
+            pt="sm"
+            fz={10.5}
+            fw={800}
+            c="var(--mantine-color-stone-7)"
+            tt="uppercase"
+            lts=".08em"
+          >
+            洪水
+          </Text>
           <Box pb="md" style={{ borderBottom: "1px solid var(--mantine-color-stone-1)" }}>
             <IndicatorRow
               icon="水"
@@ -233,78 +243,115 @@ export function ResultCard({
             ) : null}
           </Box>
 
-          <IndicatorRow
-            icon="頻"
-            iconColor={other.risk.indicatorIcon.water}
-            label={`頻度別浸水（${rainfallDenominator}年）`}
-          >
-            <DataBadge
-              state={selectedFrequency.state}
-              valueLabel={
-                selectedFrequency.sourceLabel
-                  ? `${rainfallDenominator}年に1回程度・${selectedFrequency.sourceLabel}`
-                  : undefined
-              }
-              valueColor={
-                selectedFrequency.category
-                  ? other.risk.floodDepth[selectedFrequency.category]
-                  : undefined
-              }
-              notApplicableLabel="対象外（関東1都6県）"
-            />
-          </IndicatorRow>
-          {selectedFrequency.boundaryWarning ? (
-            <Box mb="2xs">
-              <BoundaryWarningNote />
-            </Box>
-          ) : null}
-
-          <IndicatorRow
-            icon="倒"
-            iconColor={other.risk.indicatorIcon.building}
-            label="建物倒壊危険度"
-          >
-            <DataBadge
-              state={buildingCollapseRisk.state}
-              valueLabel={
-                buildingCollapseRisk.rank ? `ランク${buildingCollapseRisk.rank}／5` : undefined
-              }
-              valueColor={
-                buildingCollapseRisk.rank
-                  ? other.risk.regionalRiskRank[buildingCollapseRisk.rank]
-                  : undefined
-              }
-            />
-          </IndicatorRow>
-          {buildingCollapseRisk.boundaryWarning ? (
-            <Box mb="2xs">
-              <BoundaryWarningNote />
-            </Box>
-          ) : null}
-
-          <IndicatorRow
-            icon="火"
-            iconColor={other.risk.indicatorIcon.fire}
-            label="火災危険度"
-            withBorder={false}
-          >
-            <DataBadge
-              state={fireRisk.state}
-              valueLabel={fireRisk.rank ? `ランク${fireRisk.rank}／5` : undefined}
-              valueColor={fireRisk.rank ? other.risk.regionalRiskRank[fireRisk.rank] : undefined}
-            />
-          </IndicatorRow>
-          {fireRisk.boundaryWarning ? (
-            <Box mt="2xs">
-              <BoundaryWarningNote />
-            </Box>
-          ) : null}
-          {buildingCollapseRisk.municipalityName && buildingCollapseRisk.townName ? (
-            <Text mt="xs" fz={11} c="var(--mantine-color-stone-7)">
-              地域危険度の根拠：{buildingCollapseRisk.municipalityName}
-              {buildingCollapseRisk.townName}
+          <Paper mt="md" mb="sm" p="md" radius="lg" withBorder bg={other.risk.evidenceBg}>
+            <Text fz={10.5} fw={800} c="var(--mantine-color-stone-7)" tt="uppercase" lts=".08em">
+              東京都の地震地域危険度
             </Text>
-          ) : null}
+            <IndicatorRow
+              icon="総"
+              iconColor={other.risk.indicatorIcon.building}
+              label="東京都・地震時の総合危険度"
+              withBorder={false}
+            >
+              <DataBadge
+                state={tokyoEarthquakeRisk.state}
+                valueLabel={
+                  tokyoEarthquakeRisk.rank ? `ランク${tokyoEarthquakeRisk.rank}／5` : undefined
+                }
+                valueColor={
+                  tokyoEarthquakeRisk.rank
+                    ? other.risk.regionalRiskRank[tokyoEarthquakeRisk.rank]
+                    : undefined
+                }
+                notApplicableLabel="対象外（東京都のみ）"
+              />
+            </IndicatorRow>
+            <RegionalRiskMeta score={tokyoEarthquakeRisk.score} order={tokyoEarthquakeRisk.order} />
+            <Text mt="xs" fz={11.5} lh={1.75} c="var(--mantine-color-stone-8)">
+              {TOKYO_EARTHQUAKE_EXPLANATION}
+            </Text>
+            {tokyoEarthquakeRisk.boundaryWarning ? (
+              <Box mt="xs">
+                <BoundaryWarningNote />
+              </Box>
+            ) : null}
+
+            {tokyoEarthquakeRisk.state === "value" ? (
+              <Box
+                component="details"
+                mt="sm"
+                pt="sm"
+                style={{ borderTop: "1px solid var(--mantine-color-stone-2)" }}
+              >
+                <Text
+                  component="summary"
+                  fz={11.5}
+                  fw={800}
+                  c="teal.8"
+                  style={{ cursor: "pointer" }}
+                >
+                  内訳と根拠を見る
+                </Text>
+                <Stack gap="xs" mt="xs">
+                  <Box>
+                    <IndicatorRow
+                      icon="倒"
+                      iconColor={other.risk.indicatorIcon.building}
+                      label="建物倒壊危険度"
+                      withBorder={false}
+                    >
+                      <DataBadge
+                        state={buildingCollapseRisk.state}
+                        valueLabel={
+                          buildingCollapseRisk.rank
+                            ? `ランク${buildingCollapseRisk.rank}／5`
+                            : undefined
+                        }
+                        valueColor={
+                          buildingCollapseRisk.rank
+                            ? other.risk.regionalRiskRank[buildingCollapseRisk.rank]
+                            : undefined
+                        }
+                      />
+                    </IndicatorRow>
+                    <RegionalRiskMeta
+                      score={buildingCollapseRisk.score}
+                      order={buildingCollapseRisk.order}
+                    />
+                    {buildingCollapseRisk.boundaryWarning ? (
+                      <Box mt="2xs">
+                        <BoundaryWarningNote />
+                      </Box>
+                    ) : null}
+                  </Box>
+                  <Box>
+                    <IndicatorRow
+                      icon="火"
+                      iconColor={other.risk.indicatorIcon.fire}
+                      label="火災危険度"
+                      withBorder={false}
+                    >
+                      <DataBadge
+                        state={fireRisk.state}
+                        valueLabel={fireRisk.rank ? `ランク${fireRisk.rank}／5` : undefined}
+                        valueColor={
+                          fireRisk.rank ? other.risk.regionalRiskRank[fireRisk.rank] : undefined
+                        }
+                      />
+                    </IndicatorRow>
+                    <RegionalRiskMeta score={fireRisk.score} order={fireRisk.order} />
+                    {fireRisk.boundaryWarning ? (
+                      <Box mt="2xs">
+                        <BoundaryWarningNote />
+                      </Box>
+                    ) : null}
+                  </Box>
+                  <TokyoEarthquakeSupportingFacts risk={tokyoEarthquakeRisk} columns={1} />
+                  <TokyoEarthquakeProvenance risk={tokyoEarthquakeRisk} />
+                </Stack>
+              </Box>
+            ) : null}
+          </Paper>
         </Box>
       </Card.Section>
 

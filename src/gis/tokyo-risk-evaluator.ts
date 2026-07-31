@@ -37,6 +37,7 @@ export interface EvaluatedTokyoRegionalRisk {
 }
 
 export interface TokyoBoundaryWarnings {
+  overall: boolean;
   buildingCollapse: boolean;
   fire: boolean;
 }
@@ -91,13 +92,15 @@ export function evaluateTokyoRegionalRiskAtPoint({
 
 function riskKey(
   result: EvaluatedTokyoRegionalRisk,
-  indicator: "buildingCollapse" | "fire",
+  indicator: "overall" | "buildingCollapse" | "fire",
 ): string {
   if (result.state !== "value" || !result.primary) return result.state;
   const rank =
-    indicator === "buildingCollapse"
-      ? result.primary.building_collapse_rank
-      : result.primary.fire_rank;
+    indicator === "overall"
+      ? result.primary.overall_rank
+      : indicator === "buildingCollapse"
+        ? result.primary.building_collapse_rank
+        : result.primary.fire_rank;
   return `value:${rank}`;
 }
 
@@ -120,23 +123,24 @@ export function tokyoBoundaryWarnings({
       isTokyo: true,
     });
   const current = evaluate(location);
-  const warnings: TokyoBoundaryWarnings = { buildingCollapse: false, fire: false };
+  const warnings: TokyoBoundaryWarnings = { overall: false, buildingCollapse: false, fire: false };
 
   for (const candidate of candidates) {
     const boundary = nearestPolygonBoundaryPoint(location, candidate);
     if (boundary.distanceMeters > radiusMeters) continue;
     if (boundary.distanceMeters <= 0.001) {
-      return { buildingCollapse: true, fire: true };
+      return { overall: true, buildingCollapse: true, fire: true };
     }
 
     const remainingDistance = radiusMeters - boundary.distanceMeters;
     const stepMeters = Math.max(0.001, Math.min(0.05, remainingDistance / 2));
     const other = evaluate(pointBeyondBoundary(location, boundary, stepMeters));
+    if (riskKey(other, "overall") !== riskKey(current, "overall")) warnings.overall = true;
     if (riskKey(other, "buildingCollapse") !== riskKey(current, "buildingCollapse")) {
       warnings.buildingCollapse = true;
     }
     if (riskKey(other, "fire") !== riskKey(current, "fire")) warnings.fire = true;
-    if (warnings.buildingCollapse && warnings.fire) return warnings;
+    if (warnings.overall && warnings.buildingCollapse && warnings.fire) return warnings;
   }
 
   return warnings;

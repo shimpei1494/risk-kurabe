@@ -19,6 +19,7 @@ import { AddLocationCard } from "../components/results/AddLocationCard";
 import { DesktopComparisonTable } from "../components/results/DesktopComparisonTable";
 import { MobileComparisonView } from "../components/results/MobileComparisonView";
 import { ResultCard } from "../components/results/ResultCard";
+import { AppFooter } from "../components/shared/AppFooter";
 import { AppHeaderCompact, AppHeaderFull } from "../components/shared/AppHeader";
 import {
   DataSourcesDisclosure,
@@ -43,6 +44,7 @@ import {
 } from "../domain/map-selection";
 import { investigateLocation } from "../features/investigation/investigate-location";
 import { riskDataBaseUrl } from "../gis/config";
+import type { GeoPoint } from "../gis/geometry";
 import { rememberLocation } from "../storage/recent-locations";
 
 export const Route = createFileRoute("/")({
@@ -127,6 +129,33 @@ function Home() {
     }
   }
 
+  async function handleRelocate(order: LocationOrder, point: GeoPoint) {
+    const location = locations.find((item) => item.order === order);
+    if (!location) return;
+
+    const result = await investigateLocation({
+      baseUrl: riskDataBaseUrl(),
+      selection: {
+        address: location.address,
+        point,
+        prefectureCode: location.prefectureCode,
+      },
+      storage: typeof window === "undefined" ? undefined : window.sessionStorage,
+    });
+
+    setLocations((current) =>
+      current.map((item) => (item.id === location.id ? { ...item, point, result } : item)),
+    );
+
+    if (typeof window !== "undefined") {
+      try {
+        rememberLocation(window.localStorage, { address: location.address, point });
+      } catch {
+        // 端末内保存が使えなくてもピン移動後の調査結果は表示する。
+      }
+    }
+  }
+
   function handleReset() {
     setLocations([]);
     setPendingOrder(1);
@@ -148,6 +177,7 @@ function Home() {
         onReset={handleReset}
         onOpenMap={openMap}
         onRetry={handleRetry}
+        onRelocate={handleRelocate}
         retryingLocationIds={retryingLocationIds}
         mapSelection={mapSelection}
         onMapSelectionChange={setMapSelection}
@@ -173,6 +203,7 @@ function Home() {
             }))}
             height={320}
             selection={mapSelection}
+            onRelocate={handleRelocate}
           />
         </Stack>
       </Modal>
@@ -185,13 +216,7 @@ function PageShell({ children }: { children: React.ReactNode }) {
   return (
     <Box mih="100vh" bg={other.risk.appBg} style={{ display: "flex", flexDirection: "column" }}>
       <Box style={{ flex: 1 }}>{children}</Box>
-      {/* Begin Yahoo! JAPAN Web Services Attribution Snippet */}
-      <Box component="footer" ta="center">
-        <span style={{ margin: "15px 15px 15px 15px" }}>
-          <a href="https://developer.yahoo.co.jp/sitemap/">Webサービス by Yahoo! JAPAN</a>
-        </span>
-      </Box>
-      {/* End Yahoo! JAPAN Web Services Attribution Snippet */}
+      <AppFooter />
     </Box>
   );
 }
@@ -274,6 +299,7 @@ function ResultsView({
   onReset,
   onOpenMap,
   onRetry,
+  onRelocate,
   retryingLocationIds,
   mapSelection,
   onMapSelectionChange,
@@ -286,6 +312,7 @@ function ResultsView({
   onReset: () => void;
   onOpenMap: () => void;
   onRetry: (id: string) => Promise<void>;
+  onRelocate: (order: LocationOrder, point: GeoPoint) => Promise<void>;
   retryingLocationIds: readonly string[];
   mapSelection: MapSelection;
   onMapSelectionChange: (selection: MapSelection) => void;
@@ -340,6 +367,7 @@ function ResultsView({
                   compact
                   active={!isDesktop}
                   selection={mapSelection}
+                  onRelocate={onRelocate}
                 />
                 <MapThemeControls
                   selection={mapSelection}
@@ -351,7 +379,6 @@ function ResultsView({
                   name={primary.name}
                   address={primary.address}
                   result={primary.result!}
-                  rainfallDenominator={mapSelection.rainfallDenominator}
                   retrying={retryingLocationIds.includes(primary.id)}
                   onRetry={() => void onRetry(primary.id)}
                   onRename={(name) => onRename(primary.id, name)}
@@ -378,7 +405,6 @@ function ResultsView({
                   name={primary.name}
                   address={primary.address}
                   result={primary.result!}
-                  rainfallDenominator={mapSelection.rainfallDenominator}
                   retrying={retryingLocationIds.includes(primary.id)}
                   onRetry={() => void onRetry(primary.id)}
                   onRename={(name) => onRename(primary.id, name)}
@@ -394,6 +420,7 @@ function ResultsView({
                   locations={[{ order: primary.order, label: primary.name, point: primary.point }]}
                   active={isDesktop}
                   selection={mapSelection}
+                  onRelocate={onRelocate}
                 />
               </Stack>
             </Box>
@@ -409,10 +436,7 @@ function ResultsView({
                   compact
                 />
               </Box>
-              <MobileComparisonView
-                locations={locations}
-                rainfallDenominator={mapSelection.rainfallDenominator}
-              />
+              <MobileComparisonView locations={locations} />
               <Stack px="lg" gap="xs">
                 {locations.map((location) =>
                   location.result && location.result.problems.length > 0 ? (
@@ -440,7 +464,6 @@ function ResultsView({
               <MapThemeControls selection={mapSelection} onChange={onMapSelectionChange} />
               <DesktopComparisonTable
                 locations={locations}
-                rainfallDenominator={mapSelection.rainfallDenominator}
                 selectedIndicator={mapSelection.indicator}
               />
               {locations.map((location) =>

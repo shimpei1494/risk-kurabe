@@ -24,6 +24,18 @@ export interface BoundingBox {
 
 const EARTH_RADIUS_METERS = 6_371_008.8;
 
+export function distanceBetweenPointsMeters(from: GeoPoint, to: GeoPoint): number {
+  const fromLatitude = (from.latitude * Math.PI) / 180;
+  const toLatitude = (to.latitude * Math.PI) / 180;
+  const latitudeDelta = toLatitude - fromLatitude;
+  const longitudeDelta = ((to.longitude - from.longitude) * Math.PI) / 180;
+  const haversine =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(fromLatitude) * Math.cos(toLatitude) * Math.sin(longitudeDelta / 2) ** 2;
+
+  return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(haversine));
+}
+
 export function bboxAroundPoint(point: GeoPoint, radiusMeters: number): BoundingBox {
   const latitudeRadians = (point.latitude * Math.PI) / 180;
   const latitudeDelta = (radiusMeters / EARTH_RADIUS_METERS) * (180 / Math.PI);

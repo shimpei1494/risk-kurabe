@@ -4,13 +4,14 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 WORK_DIR="${RISK_DATA_WORK_DIR:-"$ROOT_DIR/.data"}"
-VERSION_DIR="$WORK_DIR/output/risk-data/v1"
+VERSION_DIR="$WORK_DIR/output/risk-data/v2"
 FGB_PATH="$VERSION_DIR/query/tokyo/regional-risk.fgb"
 BUILDING_PMTILES_PATH="$VERSION_DIR/map/tokyo-building-collapse.pmtiles"
+OVERALL_PMTILES_PATH="$VERSION_DIR/map/tokyo-overall-risk.pmtiles"
 FIRE_PMTILES_PATH="$VERSION_DIR/map/tokyo-fire.pmtiles"
 EXPECTED_FIELDS="dataset_id,source_id,town_key,municipality_name,town_name,ground_classification,building_collapse_score,building_collapse_order,building_collapse_rank,fire_score,fire_order,fire_rank,activity_difficulty,overall_score,overall_order,overall_rank"
 
-for artifact_path in "$FGB_PATH" "$BUILDING_PMTILES_PATH" "$FIRE_PMTILES_PATH"; do
+for artifact_path in "$FGB_PATH" "$OVERALL_PMTILES_PATH" "$BUILDING_PMTILES_PATH" "$FIRE_PMTILES_PATH"; do
   if [[ ! -f "$artifact_path" ]]; then
     echo "artifact not found: $artifact_path" >&2
     exit 1
@@ -75,7 +76,7 @@ if [[ "$UNIQUE_TOWN_COUNT" -ne 5192 ]]; then
   exit 1
 fi
 
-for pmtiles_path in "$BUILDING_PMTILES_PATH" "$FIRE_PMTILES_PATH"; do
+for pmtiles_path in "$OVERALL_PMTILES_PATH" "$BUILDING_PMTILES_PATH" "$FIRE_PMTILES_PATH"; do
   PMTILES_HEADER="$(pmtiles show "$pmtiles_path" --header-json)"
   PMTILES_TYPE="$(jq -r '.tile_type' <<<"$PMTILES_HEADER")"
   PMTILES_MIN_ZOOM="$(jq -r '.minzoom' <<<"$PMTILES_HEADER")"
@@ -101,6 +102,7 @@ TOKYO_CHECKSUM_COUNT="$(
     | keys[]
     | select(
         . == "query/tokyo/regional-risk.fgb"
+        or . == "map/tokyo-overall-risk.pmtiles"
         or . == "map/tokyo-building-collapse.pmtiles"
         or . == "map/tokyo-fire.pmtiles"
       )
@@ -113,7 +115,7 @@ if [[ "$TOKYO_DATASET_COUNT" -ne 1 ]]; then
   echo "unexpected Tokyo dataset count: $TOKYO_DATASET_COUNT" >&2
   exit 1
 fi
-if [[ "$TOKYO_CHECKSUM_COUNT" -ne 3 ]]; then
+if [[ "$TOKYO_CHECKSUM_COUNT" -ne 4 ]]; then
   echo "unexpected Tokyo checksum count: $TOKYO_CHECKSUM_COUNT" >&2
   exit 1
 fi

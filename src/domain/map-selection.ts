@@ -1,15 +1,20 @@
-import type { RainfallDenominator } from "./risk";
-
-export type MapIndicator = "maximum-flood" | "frequency-flood" | "building-collapse" | "fire";
+export type MapIndicator = "maximum-flood" | "tokyo-overall" | "building-collapse" | "fire";
 
 export interface MapSelection {
   indicator: MapIndicator;
-  rainfallDenominator: RainfallDenominator;
 }
 
 export const DEFAULT_MAP_SELECTION: MapSelection = {
   indicator: "maximum-flood",
-  rainfallDenominator: 30,
+};
+
+const FLOOD_DEPTH_LABELS: Readonly<Record<number, string>> = {
+  1: "0〜0.5m",
+  2: "0.5〜3m",
+  3: "3〜5m",
+  4: "5〜10m",
+  5: "10〜20m",
+  6: "20m以上",
 };
 
 export const MAP_INDICATOR_OPTIONS: readonly {
@@ -18,15 +23,27 @@ export const MAP_INDICATOR_OPTIONS: readonly {
   shortLabel: string;
 }[] = [
   { value: "maximum-flood", label: "最大浸水深", shortLabel: "最大浸水" },
-  { value: "frequency-flood", label: "頻度別浸水", shortLabel: "頻度別" },
+  {
+    value: "tokyo-overall",
+    label: "東京都・地震時の総合危険度",
+    shortLabel: "地震総合",
+  },
   { value: "building-collapse", label: "建物倒壊危険度", shortLabel: "建物倒壊" },
   { value: "fire", label: "火災危険度", shortLabel: "火災" },
 ];
 
-export function mapSelectionLabel(selection: MapSelection): string {
-  if (selection.indicator === "frequency-flood") {
-    return `${selection.rainfallDenominator}年に1回程度の浸水深`;
+export function mapFeatureValueLabel(selection: MapSelection, value: unknown): string | undefined {
+  const numericValue = typeof value === "number" ? value : Number(value);
+  if (!Number.isInteger(numericValue)) return undefined;
+
+  if (selection.indicator === "maximum-flood") {
+    return FLOOD_DEPTH_LABELS[numericValue];
   }
+  if (numericValue < 1 || numericValue > 5) return undefined;
+  return `ランク${numericValue} / 5`;
+}
+
+export function mapSelectionLabel(selection: MapSelection): string {
   return (
     MAP_INDICATOR_OPTIONS.find(({ value }) => value === selection.indicator)?.label ?? "リスク指標"
   );

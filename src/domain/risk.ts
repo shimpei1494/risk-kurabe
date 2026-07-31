@@ -16,12 +16,10 @@ export type RegionalRiskRank = 1 | 2 | 3 | 4 | 5;
 export type InvestigationProblemCode =
   | "catalog-unavailable"
   | "a31a-artifact-unavailable"
-  | "a53-artifact-unavailable"
   | "tokyo-regional-risk-artifact-unavailable";
 
 export interface InvestigationProblem {
   code: InvestigationProblemCode;
-  rainfallDenominator?: RainfallDenominator;
 }
 
 export interface RiskDataSourceInfo {
@@ -49,41 +47,24 @@ export interface MaxFloodDepthResult {
   boundaryWarning?: boolean;
 }
 
-export interface FloodFrequencyResult {
-  state: DataStateKind;
-  /** 例: "30年に1回程度から" */
-  frequencyLabel?: string;
-  category?: FloodDepthCategory;
-  sourceLabel?: string;
-  evidences?: FloodDepthEvidence[];
-  boundaryWarning?: boolean;
-  /** 降雨規模ごとの判定。比較表示と地図はこの同じ値を参照する。 */
-  periods: readonly FloodFrequencyPeriodResult[];
-}
-
-export interface FloodFrequencyPeriodResult {
-  rainfallDenominator: RainfallDenominator;
-  state: DataStateKind;
-  category?: FloodDepthCategory;
-  sourceLabel?: string;
-  evidences?: FloodDepthEvidence[];
-  boundaryWarning?: boolean;
-}
-
-export const RAINFALL_DENOMINATORS = [10, 30, 50, 100, 150, 200] as const;
-export type RainfallDenominator = (typeof RAINFALL_DENOMINATORS)[number];
-
 export interface RegionalRiskResult {
   state: DataStateKind;
   rank?: RegionalRiskRank;
+  score?: number;
+  order?: number;
   boundaryWarning?: boolean;
   municipalityName?: string;
   townName?: string;
 }
 
+export interface TokyoEarthquakeRiskResult extends RegionalRiskResult {
+  activityDifficulty?: number;
+  groundClassification?: string;
+}
+
 export interface InvestigationResult {
   maxFloodDepth: MaxFloodDepthResult;
-  floodFrequency: FloodFrequencyResult;
+  tokyoEarthquakeRisk: TokyoEarthquakeRiskResult;
   buildingCollapseRisk: RegionalRiskResult;
   fireRisk: RegionalRiskResult;
   dataVersion?: string;
@@ -92,20 +73,4 @@ export interface InvestigationResult {
   sources: readonly RiskDataSourceInfo[];
   /** AIによる公開データの要約（評価ではない） */
   aiSummary: string;
-}
-
-export function floodFrequencyAt(
-  result: FloodFrequencyResult,
-  rainfallDenominator: RainfallDenominator,
-): FloodFrequencyPeriodResult {
-  return (
-    result.periods.find((period) => period.rainfallDenominator === rainfallDenominator) ?? {
-      rainfallDenominator,
-      state: result.state,
-      category: result.category,
-      sourceLabel: result.sourceLabel,
-      evidences: result.evidences,
-      boundaryWarning: result.boundaryWarning,
-    }
-  );
 }

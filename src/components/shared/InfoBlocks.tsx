@@ -145,8 +145,6 @@ function problemMessage(problem: InvestigationProblem): string {
       return "公開データの一覧を読み込めず、すべての指標を確定できませんでした。";
     case "a31a-artifact-unavailable":
       return "想定最大規模の洪水データを読み込めませんでした。";
-    case "a53-artifact-unavailable":
-      return `${problem.rainfallDenominator ?? ""}年規模の頻度別洪水データを読み込めませんでした。`;
     case "tokyo-regional-risk-artifact-unavailable":
       return "東京都の地域危険度データを読み込めませんでした。";
   }
@@ -178,12 +176,8 @@ export function InvestigationProblemNotice({
     >
       <Stack gap="xs">
         <Box component="ul" m={0} pl="lg">
-          {problems.map((problem, index) => (
-            <Text
-              component="li"
-              key={`${problem.code}-${problem.rainfallDenominator ?? index}`}
-              fz={12}
-            >
+          {problems.map((problem) => (
+            <Text component="li" key={problem.code} fz={12}>
               {problemMessage(problem)}
             </Text>
           ))}

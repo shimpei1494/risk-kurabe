@@ -9,7 +9,7 @@ WORK_DIR="${RISK_DATA_WORK_DIR:-"$ROOT_DIR/.data"}"
 SOURCE_DIR="$WORK_DIR/source"
 EXTRACT_ROOT="$WORK_DIR/extracted/a31a"
 INTERMEDIATE_DIR="$WORK_DIR/intermediate"
-VERSION_DIR="$WORK_DIR/output/risk-data/v1"
+VERSION_DIR="$WORK_DIR/output/risk-data/v2"
 A31A_QUERY_DIR="$VERSION_DIR/query/a31a"
 PMTILES_PATH="$VERSION_DIR/map/a31a.pmtiles"
 MBTILES_PATH="$INTERMEDIATE_DIR/a31a-kanto.mbtiles"
@@ -210,8 +210,8 @@ jq -s \
   --argjson pmtiles_size "$PMTILES_SIZE" \
   '{
     schemaVersion: 1,
-    dataVersion: "risk-data-v1",
-    logicVersion: "flood-evaluator-v1",
+    dataVersion: "risk-data-v2",
+    logicVersion: "risk-evaluator-v3",
     datasets: map(
       . + {
         mapArtifact: {
@@ -228,7 +228,7 @@ jq -n \
   --slurpfile sources "$LOCK_FILE" \
   '{
     schemaVersion: 1,
-    dataVersion: "risk-data-v1",
+    dataVersion: "risk-data-v2",
     a31a: {
       prefectures: (
         $sources[0].sources
