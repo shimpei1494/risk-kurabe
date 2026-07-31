@@ -36,6 +36,64 @@ body {
   transform: rotate(-45deg);
 }
 
+.risk-map-frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--mantine-color-stone-3);
+  background: var(--mantine-color-stone-2);
+}
+
+.risk-map-legend {
+  z-index: 1;
+  width: min(220px, calc(100% - 28px));
+}
+
+.risk-map-legend-scale {
+  display: flex;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 2px;
+  transition: opacity 160ms ease;
+}
+
+.risk-map-legend-scale > * {
+  flex: 1;
+}
+
+.risk-map-legend-scale[data-muted] {
+  opacity: 0.38;
+}
+
+.risk-map-color-swatch {
+  border: 1px solid rgb(255 255 255 / 65%);
+  border-radius: 2px;
+  transition: opacity 160ms ease;
+}
+
+.risk-map-color-swatch[data-muted] {
+  opacity: 0.65;
+}
+
+.risk-map-compact-toggle,
+.risk-map-status {
+  z-index: 2;
+}
+
+.risk-map-move-panel {
+  z-index: 3;
+  max-width: 340px;
+}
+
+.risk-map-move-panel[data-compact] {
+  max-width: none;
+}
+
+.risk-map-instruction {
+  z-index: 1;
+  max-width: calc(100% - 90px);
+  pointer-events: none;
+}
+
 .risk-map-marker > span {
   display: block;
   transform: rotate(45deg);
