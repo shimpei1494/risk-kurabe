@@ -12,9 +12,8 @@ import {
   Title,
   useMantineTheme,
 } from "@mantine/core";
-import { useDisclosure, useMediaQuery } from "@mantine/hooks";
+import { useMediaQuery } from "@mantine/hooks";
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
 
 import { LocationInputCard } from "../components/location-input/LocationInputCard";
 import { AddLocationCard } from "../components/results/AddLocationCard";
@@ -23,7 +22,7 @@ import { LocationSettingsModal } from "../components/results/LocationSettingsMod
 import { MobileComparisonView } from "../components/results/MobileComparisonView";
 import { ResultCard } from "../components/results/ResultCard";
 import { AppFooter } from "../components/shared/AppFooter";
-import { AppHeaderCompact, AppHeaderFull } from "../components/shared/AppHeader";
+import { AppHeader } from "../components/shared/AppHeader";
 import {
   DataSourcesDisclosure,
   InfoBanner,
@@ -31,320 +30,34 @@ import {
 } from "../components/shared/InfoBlocks";
 import { MapThemeControls } from "../components/shared/MapThemeControls";
 import { RiskMap } from "../components/shared/RiskMap";
-import { KANTO_PREFECTURE_CODES, outsideKantoResult } from "../domain/investigation-adapter";
 import {
   MAX_COMPARISON_LOCATIONS,
   defaultLocationName,
-  resequenceLocations,
   type ComparisonLocation,
   type LocationOrder,
   type LocationSelection,
 } from "../domain/location";
-import {
-  DEFAULT_MAP_SELECTION,
-  isMapIndicator,
-  mapSelectionLabel,
-  type MapIndicator,
-  type MapSelection,
-} from "../domain/map-selection";
-import { investigateLocation } from "../features/investigation/investigate-location";
-import { riskDataBaseUrl } from "../gis/config";
+import { mapSelectionLabel, type MapSelection } from "../domain/map-selection";
+import { useComparisonSession, type RemovalUndo } from "../features/comparison/comparison-session";
 import type { GeoPoint } from "../gis/geometry";
-import { rememberLocation } from "../storage/recent-locations";
 
-type HomeSearch = {
-  indicator?: MapIndicator;
-};
-
-type RemovalUndo = {
-  locations: ComparisonLocation[];
-  pendingOrder: LocationOrder | null;
-  address: string;
-};
-
-type LocationUiState = {
-  settingsLocationId: string | null;
-  removalUndo: RemovalUndo | null;
-};
-
-const INITIAL_LOCATION_UI_STATE: LocationUiState = {
-  settingsLocationId: null,
-  removalUndo: null,
-};
-
-export const Route = createFileRoute("/")({
-  validateSearch: (search: Record<string, unknown>): HomeSearch =>
-    isMapIndicator(search.indicator) ? { indicator: search.indicator } : {},
-  component: Home,
-});
+export const Route = createFileRoute("/")({ component: Home });
 
 function Home() {
-  const search = Route.useSearch();
   const navigate = Route.useNavigate();
-  const [locations, setLocations] = useState<ComparisonLocation[]>([]);
-  const [pendingOrder, setPendingOrder] = useState<LocationOrder | null>(1);
-  const [retryingLocationIds, setRetryingLocationIds] = useState<string[]>([]);
-  const [locationUi, setLocationUi] = useState<LocationUiState>(INITIAL_LOCATION_UI_STATE);
-  const removalUndoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [mapOpened, { open: openMap, close: closeMap }] = useDisclosure(false);
-  const mapSelection: MapSelection = {
-    indicator: search.indicator ?? DEFAULT_MAP_SELECTION.indicator,
-  };
+  const { investigate, reset } = useComparisonSession();
 
-  const investigatedCount = locations.length;
-  const isHome = investigatedCount === 0 && pendingOrder === 1;
-  const { settingsLocationId, removalUndo } = locationUi;
-  const settingsLocation =
-    settingsLocationId === null
-      ? undefined
-      : locations.find((location) => location.id === settingsLocationId);
-
-  useEffect(
-    () => () => {
-      if (removalUndoTimer.current) clearTimeout(removalUndoTimer.current);
-    },
-    [],
-  );
-
-  function discardRemovalUndo() {
-    if (!removalUndo) return;
-    if (removalUndoTimer.current) clearTimeout(removalUndoTimer.current);
-    setLocationUi((current) => ({ ...current, removalUndo: null }));
-    removalUndoTimer.current = null;
+  async function handleHomeInvestigate(selection: LocationSelection) {
+    reset();
+    await investigate(1, selection);
+    // oxlint-disable-next-line react-doctor/tanstack-start-no-navigate-in-render
+    void navigate({ to: "/compare", search: {} });
   }
 
-  async function handleInvestigate(order: LocationOrder, selection: LocationSelection) {
-    const result = !KANTO_PREFECTURE_CODES.has(selection.prefectureCode)
-      ? outsideKantoResult()
-      : await investigateLocation({
-          baseUrl: riskDataBaseUrl(),
-          selection,
-          storage: typeof window === "undefined" ? undefined : window.sessionStorage,
-        });
-
-    if (typeof window !== "undefined") {
-      try {
-        rememberLocation(window.localStorage, {
-          address: selection.address,
-          point: selection.point,
-        });
-      } catch {
-        // 端末内保存が使えなくても調査結果は表示する。
-      }
-    }
-
-    discardRemovalUndo();
-    setLocations((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        order,
-        name: defaultLocationName(order),
-        address: selection.address,
-        point: selection.point,
-        prefectureCode: selection.prefectureCode,
-        result,
-      },
-    ]);
-    setPendingOrder(null);
-  }
-
-  function handleAddLocation() {
-    const nextOrder = investigatedCount + 1;
-    if (nextOrder > MAX_COMPARISON_LOCATIONS) return;
-    discardRemovalUndo();
-    setPendingOrder(nextOrder as LocationOrder);
-  }
-
-  async function handleRetry(id: string) {
-    const location = locations.find((item) => item.id === id);
-    if (!location || retryingLocationIds.includes(id)) return;
-
-    setRetryingLocationIds((current) => [...current, id]);
-    try {
-      const result = await investigateLocation({
-        baseUrl: riskDataBaseUrl(),
-        selection: {
-          address: location.address,
-          point: location.point,
-          prefectureCode: location.prefectureCode,
-        },
-        storage: typeof window === "undefined" ? undefined : window.sessionStorage,
-      });
-      setLocations((current) =>
-        current.map((item) => (item.id === id ? { ...item, result } : item)),
-      );
-    } finally {
-      setRetryingLocationIds((current) => current.filter((item) => item !== id));
-    }
-  }
-
-  async function handleRelocate(order: LocationOrder, point: GeoPoint) {
-    const location = locations.find((item) => item.order === order);
-    if (!location) return;
-
-    const result = await investigateLocation({
-      baseUrl: riskDataBaseUrl(),
-      selection: {
-        address: location.address,
-        point,
-        prefectureCode: location.prefectureCode,
-      },
-      storage: typeof window === "undefined" ? undefined : window.sessionStorage,
-    });
-
-    discardRemovalUndo();
-    setLocations((current) =>
-      current.map((item) => (item.id === location.id ? { ...item, point, result } : item)),
-    );
-
-    if (typeof window !== "undefined") {
-      try {
-        rememberLocation(window.localStorage, { address: location.address, point });
-      } catch {
-        // 端末内保存が使えなくてもピン移動後の調査結果は表示する。
-      }
-    }
-  }
-
-  async function handleReplaceLocation(id: string, selection: LocationSelection) {
-    const location = locations.find((item) => item.id === id);
-    if (!location) return;
-
-    const result = await investigateLocation({
-      baseUrl: riskDataBaseUrl(),
-      selection,
-      storage: typeof window === "undefined" ? undefined : window.sessionStorage,
-    });
-
-    discardRemovalUndo();
-    setLocations((current) =>
-      current.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              address: selection.address,
-              point: selection.point,
-              prefectureCode: selection.prefectureCode,
-              result,
-            }
-          : item,
-      ),
-    );
-    setLocationUi((current) => ({ ...current, settingsLocationId: null }));
-
-    if (typeof window !== "undefined") {
-      try {
-        rememberLocation(window.localStorage, {
-          address: selection.address,
-          point: selection.point,
-        });
-      } catch {
-        // 端末内保存が使えなくても住所変更後の調査結果は表示する。
-      }
-    }
-  }
-
-  function handleDeleteLocation(id: string) {
-    const location = locations.find((item) => item.id === id);
-    if (!location) return;
-
-    if (removalUndoTimer.current) clearTimeout(removalUndoTimer.current);
-    setLocationUi({
-      settingsLocationId: null,
-      removalUndo: {
-        locations,
-        pendingOrder,
-        address: location.address,
-      },
-    });
-
-    const remaining = resequenceLocations(locations.filter((item) => item.id !== id));
-    setLocations(remaining);
-    setPendingOrder(remaining.length === 0 ? 1 : null);
-    removalUndoTimer.current = setTimeout(() => {
-      setLocationUi((current) => ({ ...current, removalUndo: null }));
-      removalUndoTimer.current = null;
-    }, 10_000);
-  }
-
-  function handleUndoDelete() {
-    if (!removalUndo) return;
-    if (removalUndoTimer.current) clearTimeout(removalUndoTimer.current);
-    setLocations(removalUndo.locations);
-    setPendingOrder(removalUndo.pendingOrder);
-    setLocationUi((current) => ({ ...current, removalUndo: null }));
-    removalUndoTimer.current = null;
-  }
-
-  const handleReset = useCallback(() => {
-    setLocations([]);
-    setPendingOrder(1);
-    setRetryingLocationIds([]);
-    setLocationUi(INITIAL_LOCATION_UI_STATE);
-    if (removalUndoTimer.current) clearTimeout(removalUndoTimer.current);
-    removalUndoTimer.current = null;
-    closeMap();
-    void navigate({ search: {}, replace: true });
-  }, [closeMap, navigate]);
-
-  const handleMapSelectionChange = useCallback(
-    (selection: MapSelection) => {
-      void navigate({
-        search:
-          selection.indicator === DEFAULT_MAP_SELECTION.indicator
-            ? {}
-            : { indicator: selection.indicator },
-        replace: true,
-      });
-    },
-    [navigate],
-  );
-
-  return (
-    <>
-      {isHome ? (
-        <HomeInitialView onSubmit={(address) => handleInvestigate(1, address)} />
-      ) : (
-        <>
-          <ResultsView
-            locations={locations}
-            pendingOrder={pendingOrder}
-            onInvestigate={handleInvestigate}
-            onAddLocation={handleAddLocation}
-            onReset={handleReset}
-            onOpenMap={openMap}
-            onConfigureLocation={(id) =>
-              setLocationUi((current) => ({ ...current, settingsLocationId: id }))
-            }
-            onRetry={handleRetry}
-            onRelocate={handleRelocate}
-            retryingLocationIds={retryingLocationIds}
-            mapSelection={mapSelection}
-            onMapSelectionChange={handleMapSelectionChange}
-          />
-          <ResultsOverlays
-            locations={locations}
-            mapOpened={mapOpened}
-            mapSelection={mapSelection}
-            settingsLocation={settingsLocation}
-            onCloseMap={closeMap}
-            onMapSelectionChange={handleMapSelectionChange}
-            onRelocate={handleRelocate}
-            onCloseSettings={() =>
-              setLocationUi((current) => ({ ...current, settingsLocationId: null }))
-            }
-            onReplaceLocation={handleReplaceLocation}
-            onDeleteLocation={handleDeleteLocation}
-          />
-        </>
-      )}
-      {removalUndo ? <RemovalUndoNotice removal={removalUndo} onUndo={handleUndoDelete} /> : null}
-    </>
-  );
+  return <HomeInitialView onSubmit={handleHomeInvestigate} />;
 }
 
-function ResultsOverlays({
+export function ResultsOverlays({
   locations,
   mapOpened,
   mapSelection,
@@ -408,7 +121,13 @@ function ResultsOverlays({
   );
 }
 
-function RemovalUndoNotice({ removal, onUndo }: { removal: RemovalUndo; onUndo: () => void }) {
+export function RemovalUndoNotice({
+  removal,
+  onUndo,
+}: {
+  removal: RemovalUndo;
+  onUndo: () => void;
+}) {
   return (
     <Paper
       component="output"
@@ -456,7 +175,7 @@ function HomeInitialView({
 }) {
   return (
     <PageShell>
-      <AppHeaderFull />
+      <AppHeader />
       <Container size={720} pt={{ base: 32, sm: 52 }} pb={40} px={{ base: 20, sm: 40 }}>
         <Stack gap={0} align="center" ta="center">
           <Badge
@@ -517,12 +236,11 @@ function HomeInitialView({
   );
 }
 
-function ResultsView({
+export function ResultsView({
   locations,
   pendingOrder,
   onInvestigate,
   onAddLocation,
-  onReset,
   onOpenMap,
   onConfigureLocation,
   onRetry,
@@ -535,7 +253,6 @@ function ResultsView({
   pendingOrder: LocationOrder | null;
   onInvestigate: (order: LocationOrder, selection: LocationSelection) => Promise<void>;
   onAddLocation: () => void;
-  onReset: () => void;
   onOpenMap: () => void;
   onConfigureLocation: (id: string) => void;
   onRetry: (id: string) => Promise<void>;
@@ -547,7 +264,7 @@ function ResultsView({
   const isDesktop = useMediaQuery("(min-width: 48em)");
   const count = locations.length;
   const remaining = MAX_COMPARISON_LOCATIONS - count;
-  const crumb = count <= 1 ? "調査結果" : `比較結果（${count}地点）`;
+  const pageTitle = count <= 1 ? "調査結果" : `比較結果（${count}地点）`;
   const showAddSlot = pendingOrder === null && remaining > 0;
   const isComparing = count >= 2;
   const primary = locations[0];
@@ -565,19 +282,19 @@ function ResultsView({
 
   return (
     <PageShell>
-      <AppHeaderCompact
-        crumb={crumb}
-        onHome={onReset}
-        action={
-          isComparing ? (
+      <AppHeader />
+
+      <Box px={{ base: "lg", sm: "5xl" }} py={{ base: "md", sm: count === 1 ? 28 : "2xl" }}>
+        <Group justify="space-between" align="end" mb="md" wrap="nowrap">
+          <Title order={1} fz={{ base: 20, sm: 26 }} fw={900} c="var(--mantine-color-stone-9)">
+            {pageTitle}
+          </Title>
+          {isComparing ? (
             <Button onClick={onOpenMap} radius="xl" size="sm">
               地図で見る
             </Button>
-          ) : undefined
-        }
-      />
-
-      <Box px={{ base: "lg", sm: "5xl" }} py={{ base: "md", sm: count === 1 ? 28 : "2xl" }}>
+          ) : null}
+        </Group>
         {count === 1 && primary ? (
           <>
             {/* モバイル: 地図（コンパクト）→ カード → 追加CTA（デザイン 3f） */}

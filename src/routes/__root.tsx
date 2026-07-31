@@ -10,6 +10,7 @@ import {
   APP_OG_IMAGE_URL,
   APP_TITLE,
 } from "../brand";
+import { ComparisonSessionProvider } from "../features/comparison/comparison-session";
 import { theme } from "../theme";
 
 import appCss from "../styles.css?url";
@@ -70,7 +71,9 @@ function RootComponent() {
       </head>
       <body>
         <MantineProvider theme={theme}>
-          <Outlet />
+          <ComparisonSessionProvider>
+            <Outlet />
+          </ComparisonSessionProvider>
         </MantineProvider>
         {import.meta.env.DEV ? <TanStackRouterDevtools position="bottom-right" /> : null}
         <Scripts />
