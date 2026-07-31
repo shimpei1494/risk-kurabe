@@ -41,6 +41,48 @@ body {
   transform: rotate(45deg);
 }
 
+.maplibregl-marker[title*="ドラッグ"] {
+  cursor: grab;
+}
+
+.maplibregl-marker[title*="ドラッグ"]:active {
+  cursor: grabbing;
+}
+
+.risk-map-value-popup {
+  pointer-events: none;
+}
+
+.risk-map-value-popup .maplibregl-popup-content,
+.risk-map-hover-popup .maplibregl-popup-content {
+  border: 1px solid rgb(181 178 169 / 78%);
+  border-radius: 999px;
+  box-shadow: 0 3px 12px rgb(68 66 60 / 18%);
+  color: #403e39;
+  font:
+    700 10.5px/1.2 "Noto Sans JP",
+    sans-serif;
+  padding: 6px 9px;
+}
+
+.risk-map-value-popup .maplibregl-popup-content {
+  background: rgb(255 255 255 / 96%);
+}
+
+.risk-map-hover-popup {
+  pointer-events: none;
+}
+
+.risk-map-hover-popup .maplibregl-popup-content {
+  background: #25776f;
+  border-color: #25776f;
+  color: #fff;
+}
+
+.risk-map-hover-popup .maplibregl-popup-tip {
+  border-top-color: #25776f;
+}
+
 .maplibregl-ctrl-group {
   overflow: hidden;
   border: 1px solid rgb(181 178 169 / 80%);

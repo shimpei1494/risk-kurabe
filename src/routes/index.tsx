@@ -43,6 +43,7 @@ import {
 } from "../domain/map-selection";
 import { investigateLocation } from "../features/investigation/investigate-location";
 import { riskDataBaseUrl } from "../gis/config";
+import type { GeoPoint } from "../gis/geometry";
 import { rememberLocation } from "../storage/recent-locations";
 
 export const Route = createFileRoute("/")({
@@ -127,6 +128,33 @@ function Home() {
     }
   }
 
+  async function handleRelocate(order: LocationOrder, point: GeoPoint) {
+    const location = locations.find((item) => item.order === order);
+    if (!location) return;
+
+    const result = await investigateLocation({
+      baseUrl: riskDataBaseUrl(),
+      selection: {
+        address: location.address,
+        point,
+        prefectureCode: location.prefectureCode,
+      },
+      storage: typeof window === "undefined" ? undefined : window.sessionStorage,
+    });
+
+    setLocations((current) =>
+      current.map((item) => (item.id === location.id ? { ...item, point, result } : item)),
+    );
+
+    if (typeof window !== "undefined") {
+      try {
+        rememberLocation(window.localStorage, { address: location.address, point });
+      } catch {
+        // 端末内保存が使えなくてもピン移動後の調査結果は表示する。
+      }
+    }
+  }
+
   function handleReset() {
     setLocations([]);
     setPendingOrder(1);
@@ -148,6 +176,7 @@ function Home() {
         onReset={handleReset}
         onOpenMap={openMap}
         onRetry={handleRetry}
+        onRelocate={handleRelocate}
         retryingLocationIds={retryingLocationIds}
         mapSelection={mapSelection}
         onMapSelectionChange={setMapSelection}
@@ -173,6 +202,7 @@ function Home() {
             }))}
             height={320}
             selection={mapSelection}
+            onRelocate={handleRelocate}
           />
         </Stack>
       </Modal>
@@ -274,6 +304,7 @@ function ResultsView({
   onReset,
   onOpenMap,
   onRetry,
+  onRelocate,
   retryingLocationIds,
   mapSelection,
   onMapSelectionChange,
@@ -286,6 +317,7 @@ function ResultsView({
   onReset: () => void;
   onOpenMap: () => void;
   onRetry: (id: string) => Promise<void>;
+  onRelocate: (order: LocationOrder, point: GeoPoint) => Promise<void>;
   retryingLocationIds: readonly string[];
   mapSelection: MapSelection;
   onMapSelectionChange: (selection: MapSelection) => void;
@@ -340,6 +372,7 @@ function ResultsView({
                   compact
                   active={!isDesktop}
                   selection={mapSelection}
+                  onRelocate={onRelocate}
                 />
                 <MapThemeControls
                   selection={mapSelection}
@@ -392,6 +425,7 @@ function ResultsView({
                   locations={[{ order: primary.order, label: primary.name, point: primary.point }]}
                   active={isDesktop}
                   selection={mapSelection}
+                  onRelocate={onRelocate}
                 />
               </Stack>
             </Box>
