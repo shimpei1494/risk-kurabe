@@ -96,13 +96,14 @@ export function ResultsOverlays({
           </Text>
           <MapThemeControls selection={mapSelection} onChange={onMapSelectionChange} compact />
           <RiskMap
-            locations={locations.map(({ order, name, point, result }) => ({
+            locations={locations.map(({ order, address, point, result }) => ({
               order,
-              label: name,
+              label: address,
               point,
               floodLabel: result?.maxFloodDepth.sourceLabel,
             }))}
             height={320}
+            showLocationNavigator
             selection={mapSelection}
             onRelocate={onRelocate}
           />
