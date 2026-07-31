@@ -93,7 +93,7 @@ export async function investigateA31a({
     return failed("catalog-unavailable");
   }
 
-  const prefectureCoverage = catalog.coverage.a31a.prefectures[prefectureCode];
+  const prefectureCoverage = catalog.coverage.a31a?.prefectures[prefectureCode];
   const coverage: A31aCoverageSummary = prefectureCoverage ?? {
     status: "unknown",
     datasetIds: [],

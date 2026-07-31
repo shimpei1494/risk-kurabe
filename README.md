@@ -70,13 +70,13 @@ R2の開発用CORSはこのOriginを許可しています。`http://127.0.0.1:51
 通常は次のR2公開URLにある固定スナップショットを使用するため、GDALやローカルの`.data`ディレクトリがなくてもアプリを起動できます。
 
 ```text
-https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v2/
+https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v3/
 ```
 
 別のスナップショットを使う場合は、開発サーバー起動時にベースURLを指定できます。
 
 ```bash
-VITE_RISK_DATA_BASE_URL="https://example.com/risk-data/v2/" vp dev
+VITE_RISK_DATA_BASE_URL="https://example.com/risk-data/v3/" vp dev
 ```
 
 URL末尾には`/`を付けてください。
@@ -91,7 +91,7 @@ URL末尾には`/`を付けてください。
 | Account ID           | `53af804e239e6294ad9a766add0c6e00`                                  |
 | Worker               | `https://risk-kurabe.tokyo-odh-044.workers.dev`                     |
 | R2バケット           | `risk-kurabe-data`                                                  |
-| R2公開データ         | `https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v2/` |
+| R2公開データ         | `https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v3/` |
 
 `wrangler.jsonc`の`account_id`で配置先を固定しています。認証情報は各開発者のローカル環境で管理し、Gitへ保存しません。
 
@@ -119,7 +119,6 @@ vp exec wrangler r2 bucket cors list risk-kurabe-data
 公開URLが変わった場合は、`src/gis/config.ts`、リモート検証スクリプトおよびこのREADMEを更新します。アップロード後は全データセットを確認します。
 
 ```bash
-vp run data:a31a:verify-remote
 vp run data:tokyo-risk:verify-remote
 ```
 
@@ -199,7 +198,6 @@ vp build
 | `vp run fallow`                        | 未使用ファイル・依存関係・エクスポートを検出 |
 | `vp run doctor`                        | React固有のヘルスチェック                    |
 | `vp run data:upload`                   | 全GIS成果物を検証してR2へ重複なく配置        |
-| `vp run data:a31a:verify-remote`       | R2上のA31a成果物を確認                       |
 | `vp run data:tokyo-risk:verify-remote` | R2上の東京都地域危険度成果物を確認           |
 
 詳細な開発ルールは[AGENTS.md](AGENTS.md)、実装計画と設計判断は[docs](docs)を参照してください。

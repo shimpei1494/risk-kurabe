@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 WORK_DIR="${RISK_DATA_WORK_DIR:-"$ROOT_DIR/.data"}"
-VERSION_DIR="$WORK_DIR/output/risk-data/v2"
+VERSION_DIR="$WORK_DIR/output/risk-data/v3"
 FGB_PATH="$VERSION_DIR/query/tokyo/regional-risk.fgb"
 BUILDING_PMTILES_PATH="$VERSION_DIR/map/tokyo-building-collapse.pmtiles"
 OVERALL_PMTILES_PATH="$VERSION_DIR/map/tokyo-overall-risk.pmtiles"
@@ -96,6 +96,15 @@ TOKYO_DATASET_COUNT="$(
   jq '[.datasets[] | select(.indicator == "tokyo-regional-risk")] | length' \
     "$VERSION_DIR/manifest.json"
 )"
+DATA_VERSION="$(jq -r '.dataVersion' "$VERSION_DIR/manifest.json")"
+LEGACY_A31A_DATASET_COUNT="$(
+  jq '[.datasets[] | select(.indicator == "a31a-maximum-flood-depth")] | length' \
+    "$VERSION_DIR/manifest.json"
+)"
+LEGACY_A31A_FILE_COUNT="$(
+  jq '[.files | keys[] | select(startswith("query/a31a/") or . == "map/a31a.pmtiles")] | length' \
+    "$VERSION_DIR/checksums.json"
+)"
 TOKYO_CHECKSUM_COUNT="$(
   jq '[
     .files
@@ -113,6 +122,14 @@ COVERAGE_TOWN_COUNT="$(jq '.tokyoRegionalRisk.townCount' "$VERSION_DIR/coverage.
 
 if [[ "$TOKYO_DATASET_COUNT" -ne 1 ]]; then
   echo "unexpected Tokyo dataset count: $TOKYO_DATASET_COUNT" >&2
+  exit 1
+fi
+if [[ "$DATA_VERSION" != "v3" ]]; then
+  echo "unexpected data version: $DATA_VERSION" >&2
+  exit 1
+fi
+if [[ "$LEGACY_A31A_DATASET_COUNT" -ne 0 || "$LEGACY_A31A_FILE_COUNT" -ne 0 ]]; then
+  echo "legacy A31a artifacts must not be included in v3" >&2
   exit 1
 fi
 if [[ "$TOKYO_CHECKSUM_COUNT" -ne 4 ]]; then

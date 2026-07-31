@@ -68,17 +68,19 @@ const coverageStatusSchema = z.enum([
 export const riskDataCoverageSchema = z.object({
   schemaVersion: z.literal(1),
   dataVersion: z.string().min(1),
-  a31a: z.object({
-    prefectures: z.record(
-      z.string().regex(/^\d{2}$/),
-      z.object({
-        status: coverageStatusSchema,
-        datasetIds: z.array(z.string().min(1)),
-        includedRiverCategories: z.array(z.string().min(1)),
-        excludedRiverCategories: z.array(z.string().min(1)),
-      }),
-    ),
-  }),
+  a31a: z
+    .object({
+      prefectures: z.record(
+        z.string().regex(/^\d{2}$/),
+        z.object({
+          status: coverageStatusSchema,
+          datasetIds: z.array(z.string().min(1)),
+          includedRiverCategories: z.array(z.string().min(1)),
+          excludedRiverCategories: z.array(z.string().min(1)),
+        }),
+      ),
+    })
+    .optional(),
   tokyoRegionalRisk: z
     .object({
       prefectureCode: z.literal("13"),

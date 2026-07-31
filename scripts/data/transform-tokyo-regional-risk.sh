@@ -10,7 +10,7 @@ ARCHIVE_PATH="$SOURCE_DIR/tokyo-regional-risk-all2.zip"
 CSV_SOURCE_PATH="$SOURCE_DIR/tokyo-regional-risk-all2.csv"
 EXTRACT_DIR="$WORK_DIR/extracted/tokyo-regional-risk"
 INTERMEDIATE_DIR="$WORK_DIR/intermediate"
-VERSION_DIR="$WORK_DIR/output/risk-data/v2"
+VERSION_DIR="$WORK_DIR/output/risk-data/v3"
 SHAPEFILE_PATH="$EXTRACT_DIR/regional-risk.shp"
 CSV_PATH="$EXTRACT_DIR/regional-risk.csv"
 GPKG_PATH="$INTERMEDIATE_DIR/tokyo-regional-risk.gpkg"
@@ -25,13 +25,37 @@ DATASET_ID="tokyo-regional-risk-9"
 
 bash "$ROOT_DIR/scripts/data/download-sources.sh" TokyoRegionalRisk
 
-if [[ ! -f "$VERSION_DIR/manifest.json" || ! -f "$VERSION_DIR/coverage.json" || ! -f "$VERSION_DIR/checksums.json" ]]; then
-  echo "A31a metadata is required before Tokyo regional risk" >&2
-  exit 1
-fi
-
 rm -rf "$EXTRACT_DIR"
 mkdir -p "$EXTRACT_DIR" "$INTERMEDIATE_DIR" "$(dirname "$FGB_PATH")" "$VERSION_DIR/map"
+
+if [[ ! -f "$VERSION_DIR/manifest.json" ]]; then
+  cat >"$VERSION_DIR/manifest.json" <<'JSON'
+{
+  "schemaVersion": 1,
+  "dataVersion": "v3",
+  "logicVersion": "risk-evaluator-v4-official-flood-tile",
+  "datasets": []
+}
+JSON
+fi
+if [[ ! -f "$VERSION_DIR/coverage.json" ]]; then
+  cat >"$VERSION_DIR/coverage.json" <<'JSON'
+{
+  "schemaVersion": 1,
+  "dataVersion": "v3",
+  "tokyoRegionalRisk": null
+}
+JSON
+fi
+if [[ ! -f "$VERSION_DIR/checksums.json" ]]; then
+  cat >"$VERSION_DIR/checksums.json" <<'JSON'
+{
+  "schemaVersion": 1,
+  "dataVersion": "v3",
+  "files": {}
+}
+JSON
+fi
 rm -f \
   "$GPKG_PATH" \
   "$FGB_PATH" \
