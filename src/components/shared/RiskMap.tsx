@@ -9,6 +9,7 @@ import {
   type MapSelection,
 } from "../../domain/map-selection";
 import { distanceBetweenPointsMeters, type GeoPoint } from "../../gis/geometry";
+import { fetchOfficialFloodAtPoint } from "../../gis/hazardmap-raster";
 import { collapseMapAttribution } from "../../gis/map-attribution";
 import {
   applyRiskLayerVisibility,
@@ -22,9 +23,90 @@ export interface RiskMapLocation {
   order: LocationOrder;
   label: string;
   point: GeoPoint;
+  floodLabel?: string;
 }
 
 export const MAX_PIN_MOVE_METERS = 2_000;
+const INSPECT_LOADING_DELAY_MS = 250;
+
+async function officialFloodLabelAtPoint(location: GeoPoint): Promise<string | undefined> {
+  const { result } = await fetchOfficialFloodAtPoint({ location, radiusMeters: 0 });
+  return result.state === "value" && result.primary
+    ? mapFeatureValueLabel(DEFAULT_MAP_SELECTION, result.primary.depth.sourceCode)
+    : undefined;
+}
+
+function vectorFeatureLabelAtPoint({
+  map,
+  selection,
+  theme,
+  point,
+}: {
+  map: import("maplibre-gl").Map;
+  selection: MapSelection;
+  theme: Extract<ReturnType<typeof selectedRiskMapTheme>, { kind: "vector" }>;
+  point: import("maplibre-gl").PointLike;
+}): string | undefined {
+  const values: number[] = [];
+  for (const feature of map.queryRenderedFeatures(point, { layers: [RISK_FILL_LAYER_ID] })) {
+    const value = Number(feature.properties?.[theme.valueProperty]);
+    if (Number.isFinite(value)) values.push(value);
+  }
+  return values.length === 0 ? undefined : mapFeatureValueLabel(selection, Math.max(...values));
+}
+
+function createOfficialFloodInspector({
+  map,
+  popup,
+  isBlocked,
+}: {
+  map: import("maplibre-gl").Map;
+  popup: import("maplibre-gl").Popup;
+  isBlocked: () => boolean;
+}) {
+  let requestId = 0;
+  let loadingTimer: ReturnType<typeof setTimeout> | undefined;
+  let disposed = false;
+  const cancel = () => {
+    requestId += 1;
+    clearTimeout(loadingTimer);
+    popup.remove();
+  };
+  const handleClick = (event: import("maplibre-gl").MapMouseEvent) => {
+    cancel();
+    if (isBlocked()) return;
+    const currentRequestId = requestId;
+    loadingTimer = setTimeout(() => {
+      if (!disposed && currentRequestId === requestId)
+        popup.setLngLat(event.lngLat).setText("浸水深を確認中").addTo(map);
+    }, INSPECT_LOADING_DELAY_MS);
+    void officialFloodLabelAtPoint({
+      longitude: event.lngLat.lng,
+      latitude: event.lngLat.lat,
+    })
+      .then((label) => {
+        if (disposed || currentRequestId !== requestId) return;
+        clearTimeout(loadingTimer);
+        popup
+          .setLngLat(event.lngLat)
+          .setText(label ? `ここは ${label}` : "この地点は表示データなし")
+          .addTo(map);
+      })
+      .catch(() => {
+        if (disposed || currentRequestId !== requestId) return;
+        clearTimeout(loadingTimer);
+        popup.setLngLat(event.lngLat).setText("浸水深を確認できませんでした").addTo(map);
+      });
+  };
+  return {
+    cancel,
+    handleClick,
+    dispose() {
+      disposed = true;
+      cancel();
+    },
+  };
+}
 
 function usePendingMapMove(
   onRelocate: ((order: LocationOrder, point: GeoPoint) => Promise<void>) | undefined,
@@ -162,10 +244,11 @@ export function RiskMap({
     let map: import("maplibre-gl").Map | undefined;
     let handleIdle: (() => void) | undefined;
     let handleError: (() => void) | undefined;
-    let handleThemeMouseMove:
+    let handleVectorThemeClick:
       | ((event: import("maplibre-gl").MapLayerMouseEvent) => void)
       | undefined;
-    let handleThemeMouseLeave: (() => void) | undefined;
+    let handleRasterThemeClick: ((event: import("maplibre-gl").MapMouseEvent) => void) | undefined;
+    let disposeFloodInspector: (() => void) | undefined;
     void Promise.all([import("maplibre-gl"), import("pmtiles")])
       .then(([maplibreModule, pmtilesModule]) => {
         if (disposed) return;
@@ -190,26 +273,25 @@ export function RiskMap({
         mapRef.current = map;
 
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-        const hoverPopup = new maplibregl.Popup({
+        const inspectPopup = new maplibregl.Popup({
           closeButton: false,
           closeOnClick: false,
           offset: 12,
-          className: "risk-map-hover-popup",
+          className: "risk-map-inspect-popup",
         });
-        const featureLabelAtPoint = (point: import("maplibre-gl").PointLike) => {
-          if (!map) return undefined;
-          const values: number[] = [];
-          for (const feature of map.queryRenderedFeatures(point, {
-            layers: [RISK_FILL_LAYER_ID],
-          })) {
-            const value = Number(feature.properties?.[theme.valueProperty]);
-            if (Number.isFinite(value)) values.push(value);
-          }
-          if (values.length === 0) return undefined;
-          return mapFeatureValueLabel(selection, Math.max(...values));
-        };
+        const floodInspector = createOfficialFloodInspector({
+          map,
+          popup: inspectPopup,
+          isBlocked: () => Boolean(hoverSuppressedRef.current || pendingMoveRef.current),
+        });
+        disposeFloodInspector = floodInspector.dispose;
+        const featureLabelAtPoint = (point: import("maplibre-gl").PointLike) =>
+          map && theme.kind === "vector"
+            ? vectorFeatureLabelAtPoint({ map, selection, theme, point })
+            : undefined;
 
         const bounds = new maplibregl.LngLatBounds();
+        const locationsByOrder = new Map(locations.map((location) => [location.order, location]));
         markers.clear();
         valuePopups.clear();
         for (const location of locations) {
@@ -249,8 +331,8 @@ export function RiskMap({
 
           if (onRelocate) {
             mapMarker.on("dragstart", () => {
+              floodInspector.cancel();
               hoverSuppressedRef.current = true;
-              hoverPopup.remove();
               beginPinMove();
             });
             mapMarker.on("drag", () => {
@@ -263,7 +345,7 @@ export function RiskMap({
               const distanceMeters = distanceBetweenPointsMeters(location.point, point);
               if (distanceMeters > MAX_PIN_MOVE_METERS) {
                 hoverSuppressedRef.current = false;
-                hoverPopup.remove();
+                inspectPopup.remove();
                 mapMarker.setLngLat([location.point.longitude, location.point.latitude]);
                 valuePopup.setLngLat([location.point.longitude, location.point.latitude]);
                 rejectPinMove();
@@ -279,7 +361,7 @@ export function RiskMap({
                 valueLabel: map ? featureLabelAtPoint(map.project(coordinate)) : undefined,
               };
               stagePinMove(nextMove);
-              hoverPopup.remove();
+              inspectPopup.remove();
               map?.triggerRepaint();
             });
           }
@@ -300,38 +382,42 @@ export function RiskMap({
           for (const [order, markerInstance] of markers) {
             const valuePopup = valuePopups.get(order);
             if (!valuePopup) continue;
-            const label = featureLabelAtPoint(map.project(markerInstance.getLngLat()));
+            const location = locationsByOrder.get(order);
+            const label =
+              theme.kind === "raster"
+                ? location?.floodLabel
+                : featureLabelAtPoint(map.project(markerInstance.getLngLat()));
             valuePopup.setText(label ?? "表示データなし");
           }
         };
 
-        handleThemeMouseMove = (event) => {
+        handleVectorThemeClick = (event) => {
           if (!map) return;
+          floodInspector.cancel();
           if (hoverSuppressedRef.current || pendingMoveRef.current) {
-            hoverPopup.remove();
             return;
           }
           const label = featureLabelAtPoint(event.point);
-          map.getCanvas().style.cursor = label ? "crosshair" : "";
           if (!label) {
-            hoverPopup.remove();
+            inspectPopup.remove();
             return;
           }
-          hoverPopup.setLngLat(event.lngLat).setText(`ここは ${label}`).addTo(map);
+          inspectPopup.setLngLat(event.lngLat).setText(`ここは ${label}`).addTo(map);
         };
-        handleThemeMouseLeave = () => {
-          if (map) map.getCanvas().style.cursor = "";
-          hoverPopup.remove();
-        };
-        map.on("mousemove", RISK_FILL_LAYER_ID, handleThemeMouseMove);
-        map.on("click", RISK_FILL_LAYER_ID, handleThemeMouseMove);
-        map.on("mouseleave", RISK_FILL_LAYER_ID, handleThemeMouseLeave);
+        handleRasterThemeClick = floodInspector.handleClick;
+        if (theme.kind === "vector") {
+          map.on("click", RISK_FILL_LAYER_ID, handleVectorThemeClick);
+        } else {
+          map.on("click", handleRasterThemeClick);
+        }
 
         handleIdle = () => {
           if (!disposed && map) {
             collapseMapAttribution(container);
             container.dataset.visibleRiskFeatures = String(
-              map.queryRenderedFeatures(undefined, { layers: [RISK_FILL_LAYER_ID] }).length,
+              theme.kind === "vector"
+                ? map.queryRenderedFeatures(undefined, { layers: [RISK_FILL_LAYER_ID] }).length
+                : 0,
             );
             updateMarkerValues();
             dispatchStatus("ready");
@@ -349,13 +435,12 @@ export function RiskMap({
 
     return () => {
       disposed = true;
+      disposeFloodInspector?.();
       if (map && handleIdle) map.off("idle", handleIdle);
       if (map && handleError) map.off("error", handleError);
-      if (map && handleThemeMouseMove)
-        map.off("mousemove", RISK_FILL_LAYER_ID, handleThemeMouseMove);
-      if (map && handleThemeMouseMove) map.off("click", RISK_FILL_LAYER_ID, handleThemeMouseMove);
-      if (map && handleThemeMouseLeave)
-        map.off("mouseleave", RISK_FILL_LAYER_ID, handleThemeMouseLeave);
+      if (map && handleVectorThemeClick)
+        map.off("click", RISK_FILL_LAYER_ID, handleVectorThemeClick);
+      if (map && handleRasterThemeClick) map.off("click", handleRasterThemeClick);
       markers.clear();
       valuePopups.clear();
       map?.remove();

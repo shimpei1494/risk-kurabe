@@ -1,6 +1,6 @@
 import { deserialize } from "flatgeobuf/lib/mjs/geojson.js";
 
-const defaultBaseUrl = "https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v2/";
+const defaultBaseUrl = "https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v3/";
 const baseUrl = process.env.RISK_DATA_BASE_URL ?? defaultBaseUrl;
 const artifactUrl = new URL("query/tokyo/regional-risk.fgb", baseUrl).toString();
 const rect = {
@@ -20,6 +20,9 @@ if (!manifestResponse.ok || !coverageResponse.ok) {
 
 const manifest = await manifestResponse.json();
 const coverage = await coverageResponse.json();
+if (manifest.dataVersion !== "v3" || coverage.dataVersion !== "v3") {
+  throw new Error("remote Tokyo regional risk metadata is not v3");
+}
 const dataset = manifest.datasets?.find(({ indicator }) => indicator === "tokyo-regional-risk");
 if (!dataset || dataset.townCount !== 5192) {
   throw new Error("remote manifest does not contain 5192 Tokyo towns");

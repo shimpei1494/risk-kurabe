@@ -14,7 +14,7 @@ function floodMatch(
   maxMeters: number | null,
 ): FloodPolygonMatch {
   return {
-    datasetId: "mock-a31a",
+    datasetId: "mock-official-flood",
     featureId,
     riverOrBasinId: `mock-basin-${featureId}`,
     riverOrBasinName,
@@ -37,10 +37,6 @@ function mockMaxFloodDepth(
   return {
     state: evaluated.state,
     category: evaluated.primary?.depth.sourceLabel as FloodDepthCategory | undefined,
-    evidences: evaluated.evidences.map(({ depth, riverOrBasinName }) => ({
-      riverOrBasinName,
-      category: depth.sourceLabel as FloodDepthCategory,
-    })),
     boundaryWarning,
   };
 }
@@ -49,15 +45,12 @@ function mockMaxFloodDepth(
  * ハッカソン版は固定データスナップショットを使う方針のため（docs/計画/実装制約.md）、
  * 実際のジオコーディング・GIS判定の代わりに、デザインカタログに登場する
  * 3パターンの調査結果を固定で返す。データ状態の全パターン（値あり／区域外／
- * 未公開／対象外／判定不能／境界警告／複数河川根拠）を確認できるようにする。
+ * 未公開／対象外／判定不能／境界警告）を確認できるようにする。
  */
 const FIXTURES: readonly InvestigationResult[] = [
   {
     maxFloodDepth: mockMaxFloodDepth(
-      [
-        floodMatch("arakawa", "荒川", "3〜5m", 3, 5),
-        floodMatch("shibakawa", "芝川", "0.5〜3m", 0.5, 3),
-      ],
+      [floodMatch("official", "重ねるハザードマップ（統合タイル）", "3〜5m", 3, 5)],
       "available",
       true,
     ),
@@ -67,7 +60,7 @@ const FIXTURES: readonly InvestigationResult[] = [
     problems: [],
     sources: [],
     aiSummary:
-      "荒川・芝川の浸水想定が重なる地点で、想定最大規模では3〜5mの浸水が想定されています。地域危険度は東京都のみの指標のため対象外です。",
+      "想定最大規模では3〜5mの浸水が想定されています。地域危険度は東京都のみの指標のため対象外です。",
   },
   {
     maxFloodDepth: mockMaxFloodDepth([], "available"),

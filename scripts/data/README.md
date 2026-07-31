@@ -23,19 +23,16 @@ pmtiles version
 
 ## 生成と検証
 
-A31aは関東1都6県の洪水予報河川・水位周知河川について、想定最大規模ポリゴンを
-都県別FlatGeobufと関東共通PMTilesへ変換する。東京都地域危険度は第9回調査の
+浸水判定は重ねるハザードマップ公式統合タイルを実行時に参照する。東京都地域危険度は第9回調査の
 ShapefileとCSVを町丁目名で結合し、地盤分類、3種の危険度と活動困難係数を保持する。
 
 ```bash
-vp run data:sources:download
-vp run data:a31a:build
+vp run data:tokyo-risk:download
 vp run data:tokyo-risk:build
-vp run data:a31a:validate
 vp run data:tokyo-risk:validate
 ```
 
-生成物は`.data/output/risk-data/v2/`へ出力される。FlatGeobufは地点検索用の空間
+生成物は`.data/output/risk-data/v3/`へ出力される。FlatGeobufは地点検索用の空間
 インデックスを持ち、PMTilesは地図描画に必要な属性だけを持つ。
 
 ## R2へのアップロード
@@ -43,17 +40,15 @@ vp run data:tokyo-risk:validate
 全成果物を再検証し、`checksums.json`に記録された各ファイルを1回ずつ配置する。
 
 ```bash
-vp run data:upload
+vp run data:tokyo-risk:upload
 ```
 
-既定の配置先はR2バケット`risk-kurabe-data`の`risk-data/v2/`。別バケットの場合は
-`RISK_DATA_BUCKET="別のバケット名" vp run data:upload`とする。個別更新には
-`data:a31a:upload`または`data:tokyo-risk:upload`を使えるが、通常は全量配置を使う。
+既定の配置先はR2バケット`risk-kurabe-data`の`risk-data/v3/`。別バケットの場合は
+`RISK_DATA_BUCKET="別のバケット名" vp run data:tokyo-risk:upload`とする。
 
 配置後にbbox Range取得とPMTilesのHTTP Range応答を確認する。
 
 ```bash
-vp run data:a31a:verify-remote
 vp run data:tokyo-risk:verify-remote
 ```
 

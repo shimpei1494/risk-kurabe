@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 WORK_DIR="${RISK_DATA_WORK_DIR:-"$ROOT_DIR/.data"}"
-VERSION_DIR="$WORK_DIR/output/risk-data/v2"
+VERSION_DIR="$WORK_DIR/output/risk-data/v3"
 BUCKET_NAME="${RISK_DATA_BUCKET:-risk-kurabe-data}"
 
 bash "$ROOT_DIR/scripts/data/validate-tokyo-regional-risk.sh"
@@ -24,7 +24,7 @@ while IFS= read -r artifact_path; do
   esac
 
   vp exec wrangler r2 object put \
-    "$BUCKET_NAME/risk-data/v2/$artifact_path" \
+    "$BUCKET_NAME/risk-data/v3/$artifact_path" \
     --file "$VERSION_DIR/$artifact_path" \
     --content-type "$CONTENT_TYPE" \
     --cache-control 'public, max-age=31536000, immutable' \
@@ -43,7 +43,7 @@ done < <(
 
 for metadata_file in manifest.json coverage.json checksums.json; do
   vp exec wrangler r2 object put \
-    "$BUCKET_NAME/risk-data/v2/$metadata_file" \
+    "$BUCKET_NAME/risk-data/v3/$metadata_file" \
     --file "$VERSION_DIR/$metadata_file" \
     --content-type application/json \
     --cache-control 'public, max-age=300' \

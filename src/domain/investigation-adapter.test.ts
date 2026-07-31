@@ -14,10 +14,10 @@ const result: EvidenceBasedInvestigationResult = {
     result: {
       state: "value",
       primary: {
-        datasetId: "a31a",
+        datasetId: "gsi-hazardmap-flood-integrated",
         featureId: "1",
         riverOrBasinId: "830301",
-        riverOrBasinName: "利根川",
+        riverOrBasinName: "重ねるハザードマップ（統合タイル）",
         depth: {
           sourceCode: "2",
           sourceLabel: "0.5m以上3.0m未満",
@@ -91,9 +91,9 @@ describe("toUiInvestigationResult", () => {
   it("部分失敗をUIモデルへ残す", () => {
     const adapted = toUiInvestigationResult({
       ...result,
-      issues: [{ code: "a31a-artifact-unavailable" }],
+      issues: [{ code: "official-flood-tile-unavailable" }],
     });
 
-    expect(adapted.problems).toEqual([{ code: "a31a-artifact-unavailable" }]);
+    expect(adapted.problems).toEqual([{ code: "official-flood-tile-unavailable" }]);
   });
 });

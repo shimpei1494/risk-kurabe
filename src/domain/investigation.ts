@@ -6,7 +6,7 @@ import type {
 import type { EvaluatedFloodResult } from "./flood-evaluator";
 import type { RiskDataSourceInfo } from "./risk";
 
-export const INVESTIGATION_LOGIC_VERSION = "risk-evaluator-v3";
+export const INVESTIGATION_LOGIC_VERSION = "risk-evaluator-v4-official-flood-tile";
 
 export interface FloodIndicatorInvestigation {
   result: EvaluatedFloodResult;
@@ -19,7 +19,7 @@ export interface TokyoRegionalRiskInvestigation {
 }
 
 export type InvestigationIssueCode =
-  | "a31a-artifact-unavailable"
+  | "official-flood-tile-unavailable"
   | "tokyo-regional-risk-artifact-unavailable";
 
 export interface InvestigationIssue {

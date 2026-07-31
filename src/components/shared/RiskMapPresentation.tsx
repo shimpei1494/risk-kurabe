@@ -251,7 +251,7 @@ function MapInteractionOverlay({
       className="risk-map-instruction"
     >
       <Text fz={compact ? 9.5 : 10.5} fw={700} c="var(--mantine-color-stone-8)">
-        {compact ? "ピンを動かして再判定" : "ホバーで値を確認 · ピンを動かして再判定"}
+        クリックで値を確認・ピンを動かして再設定
       </Text>
     </Paper>
   );

@@ -2,7 +2,7 @@ import { Box, Card, Group, SimpleGrid, Text, ThemeIcon, useMantineTheme } from "
 
 import type { ComparisonLocation } from "../../domain/location";
 import { DataBadge } from "../shared/DataBadge";
-import { AiSummaryBox, BoundaryWarningNote, MultiRiverEvidence } from "../shared/InfoBlocks";
+import { AiSummaryBox, BoundaryWarningNote } from "../shared/InfoBlocks";
 import {
   RegionalRiskMeta,
   TOKYO_EARTHQUAKE_EXPLANATION,
@@ -260,10 +260,6 @@ export function MobileComparisonView({ locations }: { locations: readonly Compar
   const withResult = locations.filter((loc): loc is ResultLocation => loc.result !== undefined);
 
   const boundaryLocations = withResult.filter((loc) => loc.result.maxFloodDepth.boundaryWarning);
-  const multiRiverLocation = withResult.find(
-    (loc) => loc.result.maxFloodDepth.evidences && loc.result.maxFloodDepth.evidences.length > 1,
-  );
-
   return (
     <div>
       <SimpleGrid cols={withResult.length} spacing="2xs" px="lg" pt="sm">
@@ -316,15 +312,6 @@ export function MobileComparisonView({ locations }: { locations: readonly Compar
             </BadgeCell>
           ))}
         </IndicatorGroupCard>
-
-        {multiRiverLocation?.result.maxFloodDepth.evidences ? (
-          <Box mt="2xs">
-            <Text fz={10.5} c="var(--mantine-color-stone-7)" mb="4xs">
-              {multiRiverLocation.name}の根拠：
-            </Text>
-            <MultiRiverEvidence evidences={multiRiverLocation.result.maxFloodDepth.evidences} />
-          </Box>
-        ) : null}
 
         {boundaryLocations.map((loc) => (
           <Box key={loc.id} mt="2xs">

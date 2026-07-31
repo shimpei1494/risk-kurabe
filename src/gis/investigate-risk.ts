@@ -1,12 +1,11 @@
-import type { FloodCoverageStatus } from "../domain/flood-evaluator";
+import { evaluateFloodMatches } from "../domain/flood-evaluator";
 import type { EvidenceBasedInvestigation, InvestigationIssue } from "../domain/investigation";
 import { INVESTIGATION_LOGIC_VERSION } from "../domain/investigation";
 import type { RiskDataSourceInfo } from "../domain/risk";
-import { evaluateA31aAtPoint, hasA31aBoundaryWarning, type A31aFeature } from "./a31a-evaluator";
-import { fetchA31aCandidates, fetchTokyoRegionalRiskCandidates } from "./flatgeobuf-source";
+import { fetchTokyoRegionalRiskCandidates } from "./flatgeobuf-source";
 import type { GeoPoint } from "./geometry";
+import { fetchOfficialFloodAtPoint, OFFICIAL_FLOOD_SOURCE_URL } from "./hazardmap-raster";
 import {
-  a31aArtifactUrl,
   loadRiskDataCatalog,
   tokyoRegionalRiskArtifactUrl,
   type RiskDataCoverage,
@@ -23,11 +22,14 @@ export interface InvestigationDependencies {
     baseUrl: string,
     signal?: AbortSignal,
   ) => Promise<{ manifest: RiskDataManifest; coverage: RiskDataCoverage }>;
-  fetchA31aCandidates: (options: {
-    url: string;
+  fetchOfficialFlood: (options: {
     location: GeoPoint;
     radiusMeters?: number;
-  }) => Promise<readonly A31aFeature[]>;
+    signal?: AbortSignal;
+  }) => Promise<{
+    result: import("../domain/flood-evaluator").EvaluatedFloodResult;
+    boundaryWarning: boolean;
+  }>;
   fetchTokyoCandidates: (options: {
     url: string;
     location: GeoPoint;
@@ -37,12 +39,12 @@ export interface InvestigationDependencies {
 
 const defaultDependencies: InvestigationDependencies = {
   loadCatalog: loadRiskDataCatalog,
-  fetchA31aCandidates,
+  fetchOfficialFlood: fetchOfficialFloodAtPoint,
   fetchTokyoCandidates: fetchTokyoRegionalRiskCandidates,
 };
 
 /**
- * カタログを一度だけ読み、A31aと東京都地域危険度を地点ごとに取得する。
+ * カタログを一度だけ読み、公式洪水タイルと東京都地域危険度を地点ごとに取得する。
  * 各成果物の一時失敗は他指標を巻き込まず、issuesと判定不能結果として返す。
  */
 export async function investigateRisk({
@@ -72,41 +74,16 @@ export async function investigateRisk({
   }
 
   const issues: InvestigationIssue[] = [];
-  const prefectureCoverage = catalog.coverage.a31a.prefectures[prefectureCode];
-  let a31aCoverage: FloodCoverageStatus = prefectureCoverage?.status ?? "unknown";
-  let a31aCandidates: readonly A31aFeature[] = [];
-  const a31aUrl = a31aArtifactUrl({
-    baseUrl,
-    manifest: catalog.manifest,
-    prefectureCode,
-  });
-
-  if (a31aCoverage === "available" || a31aCoverage === "partial") {
-    if (a31aUrl) {
-      try {
-        a31aCandidates = await dependencies.fetchA31aCandidates({
-          url: a31aUrl,
-          location,
-          radiusMeters,
-        });
-      } catch {
-        a31aCoverage = "failed";
-        issues.push({ code: "a31a-artifact-unavailable" });
-      }
-    } else {
-      a31aCoverage = "failed";
-      issues.push({ code: "a31a-artifact-unavailable" });
-    }
+  let maximumFlood: Awaited<ReturnType<InvestigationDependencies["fetchOfficialFlood"]>>;
+  try {
+    maximumFlood = await dependencies.fetchOfficialFlood({ location, radiusMeters, signal });
+  } catch {
+    issues.push({ code: "official-flood-tile-unavailable" });
+    maximumFlood = {
+      result: evaluateFloodMatches([], "failed"),
+      boundaryWarning: false,
+    };
   }
-
-  const a31aResult = evaluateA31aAtPoint(location, a31aCandidates, a31aCoverage);
-  const maximumFlood = {
-    result: a31aResult,
-    boundaryWarning:
-      a31aCoverage === "available" || a31aCoverage === "partial"
-        ? hasA31aBoundaryWarning(location, a31aCandidates, a31aCoverage, radiusMeters)
-        : false,
-  };
 
   const isTokyo = prefectureCode === "13";
   const tokyoCoverage = catalog.coverage.tokyoRegionalRisk?.status ?? "unknown";
@@ -149,20 +126,19 @@ export async function investigateRisk({
 
   const sources: RiskDataSourceInfo[] = [];
   for (const dataset of catalog.manifest.datasets) {
-    let isRelevant = dataset.indicator !== "tokyo-regional-risk" || isTokyo;
-    if (dataset.indicator === "a31a-maximum-flood-depth") {
-      isRelevant = false;
-      for (const datasetPrefectureCode of dataset.prefectures) {
-        if (datasetPrefectureCode === prefectureCode) {
-          isRelevant = true;
-          break;
-        }
-      }
-    }
-    if (!isRelevant) continue;
+    if (!isTokyo) continue;
     const { id, name, provider, referencePeriod, acquiredAt, license, sourceUrl } = dataset;
     sources.push({ id, name, provider, referencePeriod, acquiredAt, license, sourceUrl });
   }
+  sources.unshift({
+    id: "gsi-hazardmap-flood-integrated",
+    name: "重ねるハザードマップ 洪水浸水想定区域（想定最大規模）",
+    provider: "国土交通省・国土地理院",
+    referencePeriod: "公式配信タイル（更新型）",
+    acquiredAt: "調査時に取得",
+    license: "公共データ利用規約（PDL1.0）",
+    sourceUrl: OFFICIAL_FLOOD_SOURCE_URL,
+  });
 
   return {
     kind: "completed",

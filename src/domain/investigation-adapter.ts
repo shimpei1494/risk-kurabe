@@ -12,18 +12,6 @@ function floodCategory(depth: NormalizedFloodDepth): FloodDepthCategory {
   return "5m以上";
 }
 
-function evidences(result: {
-  evidences: readonly {
-    riverOrBasinName: string;
-    depth: NormalizedFloodDepth;
-  }[];
-}) {
-  return result.evidences.map(({ riverOrBasinName, depth }) => ({
-    riverOrBasinName,
-    category: depth.sourceLabel,
-  }));
-}
-
 export function toUiInvestigationResult(
   investigation: EvidenceBasedInvestigationResult,
 ): InvestigationResult {
@@ -37,7 +25,6 @@ export function toUiInvestigationResult(
       state: maximum.result.state,
       category: maximumPrimary ? floodCategory(maximumPrimary.depth) : undefined,
       sourceLabel: maximumPrimary?.depth.sourceLabel,
-      evidences: evidences(maximum.result),
       boundaryWarning: maximum.boundaryWarning,
     },
     tokyoEarthquakeRisk: {

@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import {
-  a31aArtifactUrl,
-  a31aMapArtifactUrl,
   riskDataCoverageSchema,
   riskDataManifestSchema,
   tokyoRegionalRiskArtifactUrl,
@@ -25,22 +23,9 @@ const mapArtifact = (path: string) => ({
 
 const manifest = riskDataManifestSchema.parse({
   schemaVersion: 1,
-  dataVersion: "risk-data-v2",
-  logicVersion: "risk-evaluator-v3",
+  dataVersion: "v3",
+  logicVersion: "risk-evaluator-v4-official-flood-tile",
   datasets: [
-    {
-      id: "a31a-tokyo",
-      indicator: "a31a-maximum-flood-depth",
-      name: "洪水浸水想定区域",
-      provider: "国土交通省",
-      referencePeriod: "2024",
-      acquiredAt: "2026-07-30",
-      license: "CC BY 4.0",
-      sourceUrl: "https://example.com/a31a",
-      prefectures: ["13"],
-      artifact: artifact("query/a31a/13.fgb"),
-      mapArtifact: mapArtifact("map/a31a.pmtiles"),
-    },
     {
       id: "tokyo-risk",
       indicator: "tokyo-regional-risk",
@@ -63,14 +48,32 @@ const manifest = riskDataManifestSchema.parse({
 });
 
 describe("risk data catalog", () => {
-  it("A31aと東京都地域危険度の成果物URLを組み立てる", () => {
-    const baseUrl = "https://data.example.com/risk-data/v2/";
-    expect(a31aArtifactUrl({ baseUrl, manifest, prefectureCode: "13" })).toBe(
-      `${baseUrl}query/a31a/13.fgb`,
-    );
-    expect(a31aMapArtifactUrl({ baseUrl, manifest, prefectureCode: "13" })).toBe(
-      `${baseUrl}map/a31a.pmtiles`,
-    );
+  it("V3カタログを受け入れる", () => {
+    const v3Manifest = riskDataManifestSchema.parse({
+      schemaVersion: 1,
+      dataVersion: "v3",
+      logicVersion: "risk-evaluator-v4-official-flood-tile",
+      datasets: [manifest.datasets[0]],
+    });
+    const v3Coverage = riskDataCoverageSchema.parse({
+      schemaVersion: 1,
+      dataVersion: "v3",
+      tokyoRegionalRisk: {
+        prefectureCode: "13",
+        status: "available",
+        datasetId: "tokyo-risk",
+        townCount: 5_192,
+        municipalityCount: 51,
+        excludedAreas: ["島しょ部"],
+      },
+    });
+
+    expect(v3Manifest.datasets).toHaveLength(1);
+    expect(v3Coverage.tokyoRegionalRisk?.townCount).toBe(5_192);
+  });
+
+  it("東京都地域危険度の成果物URLを組み立てる", () => {
+    const baseUrl = "https://data.example.com/risk-data/v3/";
     expect(tokyoRegionalRiskArtifactUrl({ baseUrl, manifest })).toBe(
       `${baseUrl}query/tokyo-regional-risk.fgb`,
     );
@@ -82,20 +85,10 @@ describe("risk data catalog", () => {
     );
   });
 
-  it("A31aと東京都地域危険度のカバレッジを受け入れる", () => {
+  it("東京都地域危険度のみのV3カバレッジを受け入れる", () => {
     const coverage = riskDataCoverageSchema.parse({
       schemaVersion: 1,
-      dataVersion: "risk-data-v2",
-      a31a: {
-        prefectures: {
-          "13": {
-            status: "partial",
-            datasetIds: ["a31a-tokyo"],
-            includedRiverCategories: ["国管理"],
-            excludedRiverCategories: ["都管理"],
-          },
-        },
-      },
+      dataVersion: "v3",
       tokyoRegionalRisk: {
         prefectureCode: "13",
         status: "available",
@@ -105,7 +98,6 @@ describe("risk data catalog", () => {
         excludedAreas: ["島しょ部"],
       },
     });
-    expect(coverage.a31a.prefectures["13"]?.status).toBe("partial");
     expect(coverage.tokyoRegionalRisk?.townCount).toBe(5_192);
   });
 });

@@ -11,15 +11,10 @@ const dataStateSchema = z.enum([
   "undetermined",
 ]);
 const floodCategorySchema = z.enum(["0.5m未満", "0.5〜3m", "3〜5m", "5m以上"]);
-const evidenceSchema = z.object({
-  riverOrBasinName: z.string(),
-  category: z.string(),
-});
 const floodValueSchema = z.object({
   state: dataStateSchema,
   category: floodCategorySchema.optional(),
   sourceLabel: z.string().optional(),
-  evidences: z.array(evidenceSchema).optional(),
   boundaryWarning: z.boolean().optional(),
 });
 const regionalRiskSchema = z.object({
@@ -34,7 +29,7 @@ const regionalRiskSchema = z.object({
 const problemSchema = z.object({
   code: z.enum([
     "catalog-unavailable",
-    "a31a-artifact-unavailable",
+    "official-flood-tile-unavailable",
     "tokyo-regional-risk-artifact-unavailable",
   ]),
 });
