@@ -286,16 +286,29 @@ export function ResultsView({
       <AppHeader />
 
       <Box px={{ base: "lg", sm: "5xl" }} py={{ base: "md", sm: count === 1 ? 28 : "2xl" }}>
-        <Group justify="space-between" align="end" mb="md" wrap="nowrap">
-          <Title order={1} fz={{ base: 20, sm: 26 }} fw={900} c="var(--mantine-color-stone-9)">
-            {pageTitle}
-          </Title>
-          {isComparing ? (
-            <Button onClick={onOpenMap} radius="xl" size="sm">
-              地図で見る
-            </Button>
-          ) : null}
-        </Group>
+        <Box className="comparison-sticky-toolbar">
+          <Group justify="space-between" align="center" wrap="nowrap">
+            <Title
+              order={1}
+              fz={{ base: 20, sm: 26 }}
+              fw={900}
+              c="var(--mantine-color-stone-9)"
+              style={{
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {pageTitle}
+            </Title>
+            {isComparing ? (
+              <Button onClick={onOpenMap} radius="xl" size="sm" flex="none">
+                地図で見る
+              </Button>
+            ) : null}
+          </Group>
+        </Box>
         {count === 1 && primary ? (
           <>
             {/* モバイル: 地図（コンパクト）→ カード → 追加CTA（デザイン 3f） */}
