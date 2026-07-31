@@ -26,13 +26,6 @@ const datasetBaseSchema = z.object({
   sourceUrl: z.url(),
 });
 
-const a31aDatasetSchema = datasetBaseSchema.extend({
-  indicator: z.literal("a31a-maximum-flood-depth"),
-  prefectures: z.array(z.string().regex(/^\d{2}$/)).min(1),
-  artifact: artifactSchema,
-  mapArtifact: mapArtifactSchema.optional(),
-});
-
 const tokyoRegionalRiskDatasetSchema = datasetBaseSchema.extend({
   indicator: z.literal("tokyo-regional-risk"),
   prefectures: z.tuple([z.literal("13")]),
@@ -45,16 +38,11 @@ const tokyoRegionalRiskDatasetSchema = datasetBaseSchema.extend({
   }),
 });
 
-const datasetSchema = z.discriminatedUnion("indicator", [
-  a31aDatasetSchema,
-  tokyoRegionalRiskDatasetSchema,
-]);
-
 export const riskDataManifestSchema = z.object({
   schemaVersion: z.literal(1),
   dataVersion: z.string().min(1),
   logicVersion: z.string().min(1),
-  datasets: z.array(datasetSchema),
+  datasets: z.array(tokyoRegionalRiskDatasetSchema),
 });
 
 const coverageStatusSchema = z.enum([
@@ -68,19 +56,6 @@ const coverageStatusSchema = z.enum([
 export const riskDataCoverageSchema = z.object({
   schemaVersion: z.literal(1),
   dataVersion: z.string().min(1),
-  a31a: z
-    .object({
-      prefectures: z.record(
-        z.string().regex(/^\d{2}$/),
-        z.object({
-          status: coverageStatusSchema,
-          datasetIds: z.array(z.string().min(1)),
-          includedRiverCategories: z.array(z.string().min(1)),
-          excludedRiverCategories: z.array(z.string().min(1)),
-        }),
-      ),
-    })
-    .optional(),
   tokyoRegionalRisk: z
     .object({
       prefectureCode: z.literal("13"),
@@ -124,52 +99,7 @@ export async function loadRiskDataCatalog(
   return { manifest, coverage };
 }
 
-type A31aDataset = Extract<
-  RiskDataManifest["datasets"][number],
-  { indicator: "a31a-maximum-flood-depth" }
->;
-
-function a31aDatasetForPrefecture(
-  manifest: RiskDataManifest,
-  prefectureCode: string,
-): A31aDataset | undefined {
-  return manifest.datasets.find(
-    (dataset): dataset is A31aDataset =>
-      dataset.indicator === "a31a-maximum-flood-depth" &&
-      dataset.prefectures.includes(prefectureCode),
-  );
-}
-
-export function a31aArtifactUrl({
-  baseUrl,
-  manifest,
-  prefectureCode,
-}: {
-  baseUrl: string;
-  manifest: RiskDataManifest;
-  prefectureCode: string;
-}): string | undefined {
-  const dataset = a31aDatasetForPrefecture(manifest, prefectureCode);
-  return dataset ? urlFromBase(baseUrl, dataset.artifact.path) : undefined;
-}
-
-export function a31aMapArtifactUrl({
-  baseUrl,
-  manifest,
-  prefectureCode,
-}: {
-  baseUrl: string;
-  manifest: RiskDataManifest;
-  prefectureCode: string;
-}): string | undefined {
-  const dataset = a31aDatasetForPrefecture(manifest, prefectureCode);
-  return dataset?.mapArtifact ? urlFromBase(baseUrl, dataset.mapArtifact.path) : undefined;
-}
-
-type TokyoRegionalRiskDataset = Extract<
-  RiskDataManifest["datasets"][number],
-  { indicator: "tokyo-regional-risk" }
->;
+type TokyoRegionalRiskDataset = RiskDataManifest["datasets"][number];
 
 function tokyoRegionalRiskDataset(
   manifest: RiskDataManifest,

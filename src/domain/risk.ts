@@ -32,18 +32,10 @@ export interface RiskDataSourceInfo {
   sourceUrl: string;
 }
 
-export interface FloodDepthEvidence {
-  riverOrBasinName: string;
-  /** 公開元の区分名をそのまま表示する。 */
-  category: string;
-}
-
 export interface MaxFloodDepthResult {
   state: DataStateKind;
   category?: FloodDepthCategory;
   sourceLabel?: string;
-  /** 重複判定: 複数河川が該当した場合の全根拠 */
-  evidences?: FloodDepthEvidence[];
   boundaryWarning?: boolean;
 }
 

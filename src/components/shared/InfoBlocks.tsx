@@ -110,35 +110,6 @@ export function BoundaryWarningNote() {
   );
 }
 
-/** 重複判定: 複数河川・水系が該当した場合の全根拠（docs/CONTEXT.md の「重複判定」） */
-export function MultiRiverEvidence({
-  evidences,
-}: {
-  evidences: readonly { riverOrBasinName: string; category: string }[];
-}) {
-  const { other } = useMantineTheme();
-  const summary = evidences.map((e) => `${e.riverOrBasinName}（${e.category}）`).join("・");
-  return (
-    <Paper radius="sm" py="3xs" px="xs" bg={other.risk.evidenceBg}>
-      <Text fz={11.5} lh={1.7} c="var(--mantine-color-stone-8)">
-        複数河川のうち
-        <Text component="span" fw={700}>
-          最大の想定
-        </Text>
-        を表示しています。
-      </Text>
-      <Box component="details" mt="4xs">
-        <Text component="summary" fz={11.5} fw={700} c="teal.8" style={{ cursor: "pointer" }}>
-          判定に使った全河川・水系
-        </Text>
-        <Text mt="4xs" fz={11.5} lh={1.7} c="var(--mantine-color-stone-8)">
-          {summary}
-        </Text>
-      </Box>
-    </Paper>
-  );
-}
-
 function problemMessage(problem: InvestigationProblem): string {
   switch (problem.code) {
     case "catalog-unavailable":

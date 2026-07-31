@@ -19,7 +19,6 @@ import {
   BoundaryWarningNote,
   DataSourcesDisclosure,
   InvestigationProblemNotice,
-  MultiRiverEvidence,
 } from "../shared/InfoBlocks";
 import {
   RegionalRiskMeta,
@@ -229,13 +228,6 @@ export function ResultCard({
                 notApplicableLabel="対象外（関東1都6県）"
               />
             </IndicatorRow>
-            {maxFloodDepth.state === "value" &&
-            maxFloodDepth.evidences &&
-            maxFloodDepth.evidences.length > 1 ? (
-              <Box mt="2xs">
-                <MultiRiverEvidence evidences={maxFloodDepth.evidences} />
-              </Box>
-            ) : null}
             {maxFloodDepth.boundaryWarning ? (
               <Box mt="2xs">
                 <BoundaryWarningNote />

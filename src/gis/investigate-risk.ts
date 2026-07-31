@@ -126,9 +126,7 @@ export async function investigateRisk({
 
   const sources: RiskDataSourceInfo[] = [];
   for (const dataset of catalog.manifest.datasets) {
-    let isRelevant = dataset.indicator !== "tokyo-regional-risk" || isTokyo;
-    if (dataset.indicator === "a31a-maximum-flood-depth") isRelevant = false;
-    if (!isRelevant) continue;
+    if (!isTokyo) continue;
     const { id, name, provider, referencePeriod, acquiredAt, license, sourceUrl } = dataset;
     sources.push({ id, name, provider, referencePeriod, acquiredAt, license, sourceUrl });
   }

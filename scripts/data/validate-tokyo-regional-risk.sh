@@ -97,14 +97,6 @@ TOKYO_DATASET_COUNT="$(
     "$VERSION_DIR/manifest.json"
 )"
 DATA_VERSION="$(jq -r '.dataVersion' "$VERSION_DIR/manifest.json")"
-LEGACY_A31A_DATASET_COUNT="$(
-  jq '[.datasets[] | select(.indicator == "a31a-maximum-flood-depth")] | length' \
-    "$VERSION_DIR/manifest.json"
-)"
-LEGACY_A31A_FILE_COUNT="$(
-  jq '[.files | keys[] | select(startswith("query/a31a/") or . == "map/a31a.pmtiles")] | length' \
-    "$VERSION_DIR/checksums.json"
-)"
 TOKYO_CHECKSUM_COUNT="$(
   jq '[
     .files
@@ -126,10 +118,6 @@ if [[ "$TOKYO_DATASET_COUNT" -ne 1 ]]; then
 fi
 if [[ "$DATA_VERSION" != "v3" ]]; then
   echo "unexpected data version: $DATA_VERSION" >&2
-  exit 1
-fi
-if [[ "$LEGACY_A31A_DATASET_COUNT" -ne 0 || "$LEGACY_A31A_FILE_COUNT" -ne 0 ]]; then
-  echo "legacy A31a artifacts must not be included in v3" >&2
   exit 1
 fi
 if [[ "$TOKYO_CHECKSUM_COUNT" -ne 4 ]]; then
