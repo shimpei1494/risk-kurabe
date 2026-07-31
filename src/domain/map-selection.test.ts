@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { DEFAULT_MAP_SELECTION, mapFeatureValueLabel, mapSelectionLabel } from "./map-selection";
+import {
+  DEFAULT_MAP_SELECTION,
+  isMapIndicator,
+  mapFeatureValueLabel,
+  mapSelectionLabel,
+} from "./map-selection";
 
 describe("mapSelectionLabel", () => {
   it("東京都の指標名を返す", () => {
@@ -12,5 +17,14 @@ describe("mapSelectionLabel", () => {
     expect(mapFeatureValueLabel(DEFAULT_MAP_SELECTION, 2)).toBe("0.5〜3m");
     expect(mapFeatureValueLabel({ indicator: "tokyo-overall" }, 4)).toBe("ランク4 / 5");
     expect(mapFeatureValueLabel({ indicator: "fire" }, 8)).toBeUndefined();
+  });
+});
+
+describe("isMapIndicator", () => {
+  it("URLで利用できる指標だけを受け付ける", () => {
+    expect(isMapIndicator("maximum-flood")).toBe(true);
+    expect(isMapIndicator("fire")).toBe(true);
+    expect(isMapIndicator("unknown")).toBe(false);
+    expect(isMapIndicator(1)).toBe(false);
   });
 });

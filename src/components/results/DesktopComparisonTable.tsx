@@ -99,10 +99,13 @@ export function DesktopComparisonTable({
                     {location.order}
                   </ThemeIcon>
                   <Box miw={0}>
-                    <Text fz={13} fw={800} c="var(--mantine-color-stone-9)" truncate>
-                      地点{location.order}
-                    </Text>
-                    <Text fz={10.5} fw={500} c="var(--mantine-color-stone-7)" truncate>
+                    <Text
+                      fz={12.5}
+                      fw={800}
+                      c="var(--mantine-color-stone-9)"
+                      truncate
+                      title={location.address}
+                    >
                       {location.address}
                     </Text>
                   </Box>

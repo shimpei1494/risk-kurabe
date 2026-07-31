@@ -12,7 +12,7 @@ import {
 } from "@mantine/core";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { LocationInputCard } from "../components/location-input/LocationInputCard";
 import { AddLocationCard } from "../components/results/AddLocationCard";
@@ -38,7 +38,9 @@ import {
 } from "../domain/location";
 import {
   DEFAULT_MAP_SELECTION,
+  isMapIndicator,
   mapSelectionLabel,
+  type MapIndicator,
   type MapSelection,
 } from "../domain/map-selection";
 import { investigateLocation } from "../features/investigation/investigate-location";
@@ -46,16 +48,26 @@ import { riskDataBaseUrl } from "../gis/config";
 import type { GeoPoint } from "../gis/geometry";
 import { rememberLocation } from "../storage/recent-locations";
 
+type HomeSearch = {
+  indicator?: MapIndicator;
+};
+
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>): HomeSearch =>
+    isMapIndicator(search.indicator) ? { indicator: search.indicator } : {},
   component: Home,
 });
 
 function Home() {
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
   const [locations, setLocations] = useState<ComparisonLocation[]>([]);
   const [pendingOrder, setPendingOrder] = useState<LocationOrder | null>(1);
-  const [mapSelection, setMapSelection] = useState<MapSelection>(DEFAULT_MAP_SELECTION);
   const [retryingLocationIds, setRetryingLocationIds] = useState<string[]>([]);
   const [mapOpened, { open: openMap, close: closeMap }] = useDisclosure(false);
+  const mapSelection: MapSelection = {
+    indicator: search.indicator ?? DEFAULT_MAP_SELECTION.indicator,
+  };
 
   const investigatedCount = locations.length;
   const isHome = investigatedCount === 0 && pendingOrder === 1;
@@ -151,11 +163,25 @@ function Home() {
     }
   }
 
-  function handleReset() {
+  const handleReset = useCallback(() => {
     setLocations([]);
     setPendingOrder(1);
     setRetryingLocationIds([]);
-  }
+    void navigate({ search: {}, replace: true });
+  }, [navigate]);
+
+  const handleMapSelectionChange = useCallback(
+    (selection: MapSelection) => {
+      void navigate({
+        search:
+          selection.indicator === DEFAULT_MAP_SELECTION.indicator
+            ? {}
+            : { indicator: selection.indicator },
+        replace: true,
+      });
+    },
+    [navigate],
+  );
 
   if (isHome) {
     return <HomeInitialView onSubmit={(address) => handleInvestigate(1, address)} />;
@@ -174,7 +200,7 @@ function Home() {
         onRelocate={handleRelocate}
         retryingLocationIds={retryingLocationIds}
         mapSelection={mapSelection}
-        onMapSelectionChange={setMapSelection}
+        onMapSelectionChange={handleMapSelectionChange}
       />
       <Modal
         opened={mapOpened}
@@ -188,7 +214,7 @@ function Home() {
           <Text fz={12.5} c="var(--mantine-color-stone-8)">
             各地点の位置と、{mapSelectionLabel(mapSelection)}を重ねて表示しています。
           </Text>
-          <MapThemeControls selection={mapSelection} onChange={setMapSelection} compact />
+          <MapThemeControls selection={mapSelection} onChange={handleMapSelectionChange} compact />
           <RiskMap
             locations={locations.map(({ order, name, point, result }) => ({
               order,
@@ -332,7 +358,7 @@ function ResultsView({
     <PageShell>
       <AppHeaderCompact
         crumb={crumb}
-        onBack={onReset}
+        onHome={onReset}
         action={
           isComparing ? (
             <Button onClick={onOpenMap} radius="xl" size="sm">

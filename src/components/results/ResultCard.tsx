@@ -83,9 +83,6 @@ export function ResultCard({
             {order}
           </ThemeIcon>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <Text fz={11.5} fw={800} c="var(--mantine-color-stone-7)">
-              地点{order}
-            </Text>
             <Text fz={14} fw={700} c="var(--mantine-color-stone-9)">
               {address}
             </Text>

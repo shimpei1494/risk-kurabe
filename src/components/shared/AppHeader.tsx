@@ -1,4 +1,4 @@
-import { Anchor, Button, Group, Text, ThemeIcon } from "@mantine/core";
+import { Anchor, Button, Group, Text, ThemeIcon, UnstyledButton } from "@mantine/core";
 import type { ReactNode } from "react";
 
 import { APP_DESCRIPTION, APP_NAME } from "../../brand";
@@ -81,11 +81,11 @@ export function AppHeaderFull() {
 export function AppHeaderCompact({
   crumb,
   action,
-  onBack,
+  onHome,
 }: {
   crumb: string;
   action?: ReactNode;
-  onBack: () => void;
+  onHome: () => void;
 }) {
   return (
     <Group
@@ -95,17 +95,25 @@ export function AppHeaderCompact({
       bg="white"
       style={{ borderBottom: "1px solid var(--mantine-color-stone-2)" }}
     >
-      <Group gap="sm">
-        <Logo size={30} />
-        <Text
-          fw={900}
-          fz={16}
-          c="var(--mantine-color-stone-9)"
-          style={{ fontFamily: "'Zen Maru Gothic', sans-serif" }}
-          visibleFrom="sm"
+      <Group gap="sm" wrap="nowrap">
+        <UnstyledButton
+          onClick={onHome}
+          aria-label={`${APP_NAME}のホームへ戻る`}
+          style={{ borderRadius: "var(--mantine-radius-sm)" }}
         >
-          {APP_NAME}
-        </Text>
+          <Group gap="sm" wrap="nowrap">
+            <Logo size={30} />
+            <Text
+              fw={900}
+              fz={16}
+              c="var(--mantine-color-stone-9)"
+              style={{ fontFamily: "'Zen Maru Gothic', sans-serif" }}
+              visibleFrom="sm"
+            >
+              {APP_NAME}
+            </Text>
+          </Group>
+        </UnstyledButton>
         <Text fz={12} c="var(--mantine-color-stone-6)" visibleFrom="sm">
           ／
         </Text>
@@ -113,20 +121,7 @@ export function AppHeaderCompact({
           {crumb}
         </Text>
       </Group>
-      <Group gap="xs">
-        <Button
-          onClick={onBack}
-          variant="outline"
-          radius="xl"
-          size="sm"
-          fw={700}
-          color="teal"
-          styles={{ root: { borderColor: "var(--mantine-color-teal-2)" } }}
-        >
-          ← {crumb.startsWith("調査結果") ? "住所を変更する" : "地点を編集する"}
-        </Button>
-        {action}
-      </Group>
+      {action}
     </Group>
   );
 }

@@ -278,10 +278,14 @@ export function MobileComparisonView({ locations }: { locations: readonly Compar
             >
               {loc.order}
             </ThemeIcon>
-            <Text fz={11} fw={700} c="var(--mantine-color-stone-8)" mt="4xs" lh={1.4}>
-              地点{loc.order}
-            </Text>
-            <Text fz={9.5} c="var(--mantine-color-stone-7)" mt="3xs" lh={1.35} lineClamp={2}>
+            <Text
+              fz={10.5}
+              fw={700}
+              c="var(--mantine-color-stone-8)"
+              mt="4xs"
+              lh={1.4}
+              lineClamp={2}
+            >
               {loc.address}
             </Text>
           </Box>
