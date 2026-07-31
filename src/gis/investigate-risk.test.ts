@@ -5,14 +5,13 @@ import type { RiskDataCoverage, RiskDataManifest } from "./manifest";
 
 const manifest: RiskDataManifest = {
   schemaVersion: 1,
-  dataVersion: "risk-data-v2",
+  dataVersion: "v3",
   logicVersion: "risk-evaluator-v3",
   datasets: [],
 };
 const coverage: RiskDataCoverage = {
   schemaVersion: 1,
-  dataVersion: "risk-data-v2",
-  a31a: { prefectures: {} },
+  dataVersion: "v3",
 };
 const floodResult = {
   result: {
@@ -46,14 +45,14 @@ describe("investigateRisk", () => {
   it("公式洪水タイルを判定し、データ版とロジック版を返す", async () => {
     const deps = dependencies();
     const result = await investigateRisk({
-      baseUrl: "https://data.example.com/risk-data/v2/",
+      baseUrl: "https://data.example.com/risk-data/v3/",
       prefectureCode: "11",
       location: { longitude: 139.7, latitude: 35.69 },
       dependencies: deps,
     });
     expect(result).toMatchObject({
       kind: "completed",
-      dataVersion: "risk-data-v2",
+      dataVersion: "v3",
       logicVersion: "risk-evaluator-v4-official-flood-tile",
       maximumFlood: { result: { state: "value" } },
       issues: [],
@@ -69,7 +68,7 @@ describe("investigateRisk", () => {
     const deps = dependencies();
     vi.mocked(deps.fetchOfficialFlood).mockRejectedValue(new Error("tile request failed"));
     const result = await investigateRisk({
-      baseUrl: "https://data.example.com/risk-data/v2/",
+      baseUrl: "https://data.example.com/risk-data/v3/",
       prefectureCode: "11",
       location: { longitude: 139.7, latitude: 35.69 },
       dependencies: deps,

@@ -112,7 +112,7 @@ body {
 }
 
 .risk-map-value-popup .maplibregl-popup-content,
-.risk-map-hover-popup .maplibregl-popup-content {
+.risk-map-inspect-popup .maplibregl-popup-content {
   border: 1px solid rgb(181 178 169 / 78%);
   border-radius: 999px;
   box-shadow: 0 3px 12px rgb(68 66 60 / 18%);
@@ -127,17 +127,17 @@ body {
   background: rgb(255 255 255 / 96%);
 }
 
-.risk-map-hover-popup {
+.risk-map-inspect-popup {
   pointer-events: none;
 }
 
-.risk-map-hover-popup .maplibregl-popup-content {
+.risk-map-inspect-popup .maplibregl-popup-content {
   background: #25776f;
   border-color: #25776f;
   color: #fff;
 }
 
-.risk-map-hover-popup .maplibregl-popup-tip {
+.risk-map-inspect-popup .maplibregl-popup-tip {
   border-top-color: #25776f;
 }
 

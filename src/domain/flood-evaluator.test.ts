@@ -11,7 +11,7 @@ function match(
   sourceLabel: string,
   minMeters: number,
   maxMeters: number | null,
-  datasetId = "a31a-tokyo",
+  datasetId = "gsi-hazardmap-flood-integrated",
 ): FloodPolygonMatch {
   return {
     datasetId,
