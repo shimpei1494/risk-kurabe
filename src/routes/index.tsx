@@ -19,6 +19,7 @@ import { AddLocationCard } from "../components/results/AddLocationCard";
 import { DesktopComparisonTable } from "../components/results/DesktopComparisonTable";
 import { MobileComparisonView } from "../components/results/MobileComparisonView";
 import { ResultCard } from "../components/results/ResultCard";
+import { AppFooter } from "../components/shared/AppFooter";
 import { AppHeaderCompact, AppHeaderFull } from "../components/shared/AppHeader";
 import {
   DataSourcesDisclosure,
@@ -215,13 +216,7 @@ function PageShell({ children }: { children: React.ReactNode }) {
   return (
     <Box mih="100vh" bg={other.risk.appBg} style={{ display: "flex", flexDirection: "column" }}>
       <Box style={{ flex: 1 }}>{children}</Box>
-      {/* Begin Yahoo! JAPAN Web Services Attribution Snippet */}
-      <Box component="footer" ta="center">
-        <span style={{ margin: "15px 15px 15px 15px" }}>
-          <a href="https://developer.yahoo.co.jp/sitemap/">Webサービス by Yahoo! JAPAN</a>
-        </span>
-      </Box>
-      {/* End Yahoo! JAPAN Web Services Attribution Snippet */}
+      <AppFooter />
     </Box>
   );
 }
