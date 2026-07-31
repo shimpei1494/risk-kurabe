@@ -9,7 +9,13 @@ export type DataStateKind =
   | "notApplicable" // 対象外
   | "undetermined"; // 判定不能
 
-export type FloodDepthCategory = "0.5m未満" | "0.5〜3m" | "3〜5m" | "5m以上";
+export type FloodDepthCategory =
+  | "0.5m未満"
+  | "0.5〜3m"
+  | "3〜5m"
+  | "5〜10m"
+  | "10〜20m"
+  | "20m以上";
 
 export type RegionalRiskRank = 1 | 2 | 3 | 4 | 5;
 

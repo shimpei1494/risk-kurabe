@@ -5,11 +5,13 @@ import type { FloodDepthCategory, InvestigationResult } from "./risk";
 export const KANTO_PREFECTURE_CODES = new Set(["08", "09", "10", "11", "12", "13", "14"]);
 
 function floodCategory(depth: NormalizedFloodDepth): FloodDepthCategory {
-  if (depth.maxMeters === null) return "5m以上";
+  if (depth.maxMeters === null) return "20m以上";
   if (depth.maxMeters <= 0.5) return "0.5m未満";
   if (depth.maxMeters <= 3) return "0.5〜3m";
   if (depth.maxMeters <= 5) return "3〜5m";
-  return "5m以上";
+  if (depth.maxMeters <= 10) return "5〜10m";
+  if (depth.maxMeters <= 20) return "10〜20m";
+  return "20m以上";
 }
 
 export function toUiInvestigationResult(

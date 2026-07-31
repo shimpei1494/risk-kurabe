@@ -53,7 +53,7 @@ describe("investigateRisk", () => {
     expect(result).toMatchObject({
       kind: "completed",
       dataVersion: "v3",
-      logicVersion: "risk-evaluator-v4-official-flood-tile",
+      logicVersion: "risk-evaluator-v5-official-flood-legend",
       maximumFlood: { result: { state: "value" } },
       issues: [],
     });

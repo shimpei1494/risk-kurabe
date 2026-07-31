@@ -10,7 +10,14 @@ const dataStateSchema = z.enum([
   "notApplicable",
   "undetermined",
 ]);
-const floodCategorySchema = z.enum(["0.5m未満", "0.5〜3m", "3〜5m", "5m以上"]);
+const floodCategorySchema = z.enum([
+  "0.5m未満",
+  "0.5〜3m",
+  "3〜5m",
+  "5〜10m",
+  "10〜20m",
+  "20m以上",
+]);
 const floodValueSchema = z.object({
   state: dataStateSchema,
   category: floodCategorySchema.optional(),

@@ -1,6 +1,7 @@
 import { Box, Card, Group, Table, Text, ThemeIcon, useMantineTheme } from "@mantine/core";
+import { useEffect, useRef } from "react";
 
-import { formatCoordinates, type ComparisonLocation } from "../../domain/location";
+import type { ComparisonLocation } from "../../domain/location";
 import type { MapIndicator } from "../../domain/map-selection";
 import type { RegionalRiskResult } from "../../domain/risk";
 import { DataBadge } from "../shared/DataBadge";
@@ -46,6 +47,7 @@ export function DesktopComparisonTable({
   selectedIndicator: MapIndicator;
 }) {
   const { other } = useMantineTheme();
+  const detailsRef = useRef<HTMLDetailsElement>(null);
   const withResult = locations.filter(
     (
       location,
@@ -53,6 +55,15 @@ export function DesktopComparisonTable({
       result: NonNullable<ComparisonLocation["result"]>;
     } => location.result !== undefined,
   );
+
+  useEffect(() => {
+    if (
+      detailsRef.current &&
+      (selectedIndicator === "building-collapse" || selectedIndicator === "fire")
+    ) {
+      detailsRef.current.open = true;
+    }
+  }, [selectedIndicator]);
 
   return (
     <Card withBorder radius="xl" shadow="xs" p={0}>
@@ -93,9 +104,6 @@ export function DesktopComparisonTable({
                     </Text>
                     <Text fz={10.5} fw={500} c="var(--mantine-color-stone-7)" truncate>
                       {location.address}
-                    </Text>
-                    <Text fz={9.5} fw={500} c="var(--mantine-color-stone-7)" ff="monospace">
-                      {formatCoordinates(location.point)}
                     </Text>
                   </Box>
                 </Group>
@@ -148,7 +156,7 @@ export function DesktopComparisonTable({
                 {TOKYO_EARTHQUAKE_EXPLANATION}
               </Text>
               {withResult.some(({ result }) => result.tokyoEarthquakeRisk.state === "value") ? (
-                <Box component="details" mt="sm">
+                <Box component="details" ref={detailsRef} mt="sm">
                   <Text
                     component="summary"
                     fz={11.5}

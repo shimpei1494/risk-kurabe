@@ -18,11 +18,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useId, useReducer } from "react";
 
 import { KANTO_PREFECTURE_CODES } from "../../domain/investigation-adapter";
-import {
-  formatCoordinates,
-  prefectureCodeFromAddress,
-  type LocationSelection,
-} from "../../domain/location";
+import { prefectureCodeFromAddress, type LocationSelection } from "../../domain/location";
 import { reverseGeocode } from "../../features/geocoding/reverse-geocode";
 import { searchAddress } from "../../features/geocoding/search-address";
 import type { AddressCandidate } from "../../features/geocoding/yahoo-geocoder";
@@ -266,14 +262,9 @@ function AddressInput({
             point={point}
             onPointChange={(nextPoint) => onUpdate({ point: nextPoint })}
           />
-          <Group justify="space-between" align="center" gap="xs">
-            <Text fz={11.5} c="var(--mantine-color-stone-7)">
-              ピンをドラッグして建物の位置へ調整できます
-            </Text>
-            <Text fz={10.5} c="var(--mantine-color-stone-7)">
-              {formatCoordinates(point)}
-            </Text>
-          </Group>
+          <Text fz={11.5} c="var(--mantine-color-stone-7)">
+            ピンをドラッグして建物の位置へ調整できます
+          </Text>
 
           {isOutsideKanto ? (
             <Alert color="orange" variant="light" py="sm">
@@ -340,16 +331,11 @@ function MapInput({
         point={mapPoint}
         onPointChange={(nextPoint) => onUpdate({ mapPoint: nextPoint, message: null })}
       />
-      <Group justify="space-between" align="center" gap="xs">
-        <Text fz={11.5} c="var(--mantine-color-stone-7)">
-          {mapPoint ? "選択したピン座標" : "追加したい場所をクリックしてください"}
-        </Text>
-        {mapPoint ? (
-          <Text fz={10.5} c="var(--mantine-color-stone-7)" ff="monospace">
-            {formatCoordinates(mapPoint)}
-          </Text>
-        ) : null}
-      </Group>
+      <Text fz={11.5} c="var(--mantine-color-stone-7)">
+        {mapPoint
+          ? "ピンを置きました。位置を確認して追加してください。"
+          : "追加したい場所をクリックしてください"}
+      </Text>
       <Button
         fullWidth
         size="md"

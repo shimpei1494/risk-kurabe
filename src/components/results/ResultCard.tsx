@@ -1,8 +1,6 @@
 import { Box, Card, Group, Paper, Stack, Text, ThemeIcon, useMantineTheme } from "@mantine/core";
 
-import { formatCoordinates } from "../../domain/location";
 import type { InvestigationResult } from "../../domain/risk";
-import type { GeoPoint } from "../../gis/geometry";
 import { DataBadge } from "../shared/DataBadge";
 import {
   AiSummaryBox,
@@ -56,7 +54,6 @@ function IndicatorRow({ icon, iconColor, label, children, withBorder = true }: I
 export function ResultCard({
   order,
   address,
-  point,
   result,
   accentColor,
   retrying = false,
@@ -64,7 +61,6 @@ export function ResultCard({
 }: {
   order: number;
   address: string;
-  point: GeoPoint;
   result: InvestigationResult;
   accentColor?: string;
   retrying?: boolean;
@@ -92,9 +88,6 @@ export function ResultCard({
             </Text>
             <Text fz={14} fw={700} c="var(--mantine-color-stone-9)">
               {address}
-            </Text>
-            <Text mt="3xs" fz={10.5} c="var(--mantine-color-stone-7)" ff="monospace">
-              ピン座標 {formatCoordinates(point)}
             </Text>
           </div>
         </Group>

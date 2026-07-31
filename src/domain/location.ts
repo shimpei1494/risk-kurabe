@@ -31,10 +31,6 @@ export function defaultLocationName(order: LocationOrder): string {
   return `地点${order}`;
 }
 
-export function formatCoordinates(point: GeoPoint): string {
-  return `${point.latitude.toFixed(6)}, ${point.longitude.toFixed(6)}`;
-}
-
 const KANTO_PREFECTURE_NAMES = {
   茨城県: "08",
   栃木県: "09",

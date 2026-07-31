@@ -27,7 +27,13 @@ const stone: MantineColorsTuple = [
   "#55524A",
 ];
 
-export type FloodDepthCategory = "0.5m未満" | "0.5〜3m" | "3〜5m" | "5m以上";
+export type FloodDepthCategory =
+  | "0.5m未満"
+  | "0.5〜3m"
+  | "3〜5m"
+  | "5〜10m"
+  | "10〜20m"
+  | "20m以上";
 
 interface SwatchToken {
   bg: string;
@@ -63,10 +69,12 @@ const risk = {
     fire: { bg: "#F9EBE4", text: "#B05B2C" },
   } satisfies Record<string, SwatchToken>,
   floodDepth: {
-    "0.5m未満": { bg: "#D5E5F3", text: "#2A4E80" },
-    "0.5〜3m": { bg: "#93BFE3", text: "#1E3A5C" },
-    "3〜5m": { bg: "#5A8FC7", text: "#FFFFFF" },
-    "5m以上": { bg: "#33619E", text: "#FFFFFF" },
+    "0.5m未満": { bg: "#F7F5A9", text: "#4F4A16" },
+    "0.5〜3m": { bg: "#FFD8C0", text: "#633A25" },
+    "3〜5m": { bg: "#FFB7B7", text: "#642B2B" },
+    "5〜10m": { bg: "#FF9191", text: "#5E2020" },
+    "10〜20m": { bg: "#F285C9", text: "#572044" },
+    "20m以上": { bg: "#DC7ADC", text: "#4D194D" },
   } satisfies Record<FloodDepthCategory, SwatchToken>,
   regionalRiskRank: {
     1: { bg: "#F7F0CB", text: "#5C4A0A" },

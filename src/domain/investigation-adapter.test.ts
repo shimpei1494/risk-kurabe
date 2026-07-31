@@ -96,4 +96,32 @@ describe("toUiInvestigationResult", () => {
 
     expect(adapted.problems).toEqual([{ code: "official-flood-tile-unavailable" }]);
   });
+
+  it.each([
+    { maxMeters: 0.5, category: "0.5m未満" },
+    { maxMeters: 3, category: "0.5〜3m" },
+    { maxMeters: 5, category: "3〜5m" },
+    { maxMeters: 10, category: "5〜10m" },
+    { maxMeters: 20, category: "10〜20m" },
+    { maxMeters: null, category: "20m以上" },
+  ] as const)("公式の6階級をUI区分へ保ったまま移す: $category", ({ maxMeters, category }) => {
+    const primary = result.maximumFlood.result.primary;
+    if (!primary) throw new Error("テスト用の洪水判定がありません");
+
+    const adapted = toUiInvestigationResult({
+      ...result,
+      maximumFlood: {
+        ...result.maximumFlood,
+        result: {
+          ...result.maximumFlood.result,
+          primary: {
+            ...primary,
+            depth: { ...primary.depth, maxMeters },
+          },
+        },
+      },
+    });
+
+    expect(adapted.maxFloodDepth.category).toBe(category);
+  });
 });
