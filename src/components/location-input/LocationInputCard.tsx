@@ -26,6 +26,7 @@ import {
   removeRecentLocation,
   type RecentLocation,
 } from "../../storage/recent-locations";
+import { isAddressSearchEnter } from "./address-search-keyboard";
 import { LocationConfirmMap } from "./LocationConfirmMap";
 
 type RequestState = "idle" | "searching" | "investigating";
@@ -168,7 +169,7 @@ export function LocationInputCard({
   }
 
   async function handleInvestigate() {
-    if (!selected || !point) return;
+    if (!selected || !point || !KANTO_PREFECTURE_CODES.has(selected.prefectureCode)) return;
     updateState({ requestState: "investigating", message: null });
     try {
       await onSubmit({
@@ -232,7 +233,16 @@ export function LocationInputCard({
             value={query}
             onChange={(event) => updateState({ query: event.currentTarget.value })}
             onKeyDown={(event) => {
-              if (event.key === "Enter") void handleSearch();
+              if (
+                isAddressSearchEnter({
+                  key: event.key,
+                  isComposing: event.nativeEvent.isComposing,
+                  keyCode: event.nativeEvent.keyCode,
+                })
+              ) {
+                event.preventDefault();
+                void handleSearch();
+              }
             }}
             style={{ flex: 1 }}
             radius="md"
@@ -324,9 +334,12 @@ export function LocationInputCard({
             </Group>
 
             {isOutsideKanto ? (
-              <Alert color="gray" variant="light" py="xs">
-                <Text fz={12}>
-                  この住所は関東1都6県の対象外です。調査結果では「対象外」と表示します。
+              <Alert color="orange" variant="light" py="sm">
+                <Text fz={12.5} fw={800}>
+                  この住所は現在の調査対象外です
+                </Text>
+                <Text mt="4xs" fz={11.5} lh={1.7}>
+                  対応地域は関東1都6県です。「候補を選び直す」から関東の住所を選んでください。
                 </Text>
               </Alert>
             ) : null}
@@ -336,9 +349,11 @@ export function LocationInputCard({
               size="md"
               radius="md"
               onClick={() => void handleInvestigate()}
-              disabled={requestState !== "idle"}
+              disabled={requestState !== "idle" || isOutsideKanto}
             >
-              {requestState === "investigating" ? (
+              {isOutsideKanto ? (
+                "対象地域外のため調査できません"
+              ) : requestState === "investigating" ? (
                 <Group gap="xs">
                   <Loader size="xs" color="white" />
                   公開データを調べています
