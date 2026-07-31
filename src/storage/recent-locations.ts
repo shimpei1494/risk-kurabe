@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { KANTO_PREFECTURE_CODES } from "../domain/investigation-adapter";
+import { prefectureCodeFromAddress } from "../domain/location";
 import type { GeoPoint } from "../gis/geometry";
 
 const STORAGE_KEY = "risk-kurabe:recent-locations:v1";
@@ -32,6 +34,10 @@ function locationKey({ point }: Pick<RecentLocation, "point">): string {
   return `${point.longitude.toFixed(6)}:${point.latitude.toFixed(6)}`;
 }
 
+function isSupportedLocation({ address }: Pick<RecentLocation, "address">): boolean {
+  return KANTO_PREFECTURE_CODES.has(prefectureCodeFromAddress(address));
+}
+
 export function loadRecentLocations(
   storage: LocalStorage,
   now = new Date(),
@@ -45,13 +51,14 @@ export function loadRecentLocations(
       return [];
     }
     const minimumTime = now.getTime() - EXPIRATION_MS;
-    const active = parsed.data.locations.filter(
-      ({ lastUsedAt }) => new Date(lastUsedAt).getTime() >= minimumTime,
+    const available = parsed.data.locations.filter(
+      (location) =>
+        new Date(location.lastUsedAt).getTime() >= minimumTime && isSupportedLocation(location),
     );
-    if (active.length !== parsed.data.locations.length) {
-      saveAll(storage, active);
+    if (available.length !== parsed.data.locations.length) {
+      saveAll(storage, available);
     }
-    return active;
+    return available;
   } catch {
     return [];
   }
@@ -71,6 +78,9 @@ export function rememberLocation(
   location: Omit<RecentLocation, "lastUsedAt">,
   now = new Date(),
 ): readonly RecentLocation[] {
+  if (!isSupportedLocation(location)) {
+    return loadRecentLocations(storage, now);
+  }
   const nextLocation = { ...location, lastUsedAt: now.toISOString() };
   const key = locationKey(nextLocation);
   const next = [
