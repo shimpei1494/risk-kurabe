@@ -15,7 +15,7 @@ export type RegionalRiskRank = 1 | 2 | 3 | 4 | 5;
 
 export type InvestigationProblemCode =
   | "catalog-unavailable"
-  | "a31a-artifact-unavailable"
+  | "official-flood-tile-unavailable"
   | "tokyo-regional-risk-artifact-unavailable";
 
 export interface InvestigationProblem {

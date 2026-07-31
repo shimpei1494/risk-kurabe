@@ -91,9 +91,9 @@ describe("toUiInvestigationResult", () => {
   it("部分失敗をUIモデルへ残す", () => {
     const adapted = toUiInvestigationResult({
       ...result,
-      issues: [{ code: "a31a-artifact-unavailable" }],
+      issues: [{ code: "official-flood-tile-unavailable" }],
     });
 
-    expect(adapted.problems).toEqual([{ code: "a31a-artifact-unavailable" }]);
+    expect(adapted.problems).toEqual([{ code: "official-flood-tile-unavailable" }]);
   });
 });

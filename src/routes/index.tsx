@@ -196,10 +196,11 @@ function Home() {
           </Text>
           <MapThemeControls selection={mapSelection} onChange={setMapSelection} compact />
           <RiskMap
-            locations={locations.map(({ order, name, point }) => ({
+            locations={locations.map(({ order, name, point, result }) => ({
               order,
               label: name,
               point,
+              floodLabel: result?.maxFloodDepth.sourceLabel,
             }))}
             height={320}
             selection={mapSelection}
@@ -362,7 +363,14 @@ function ResultsView({
             <Box hiddenFrom="sm">
               <Stack gap="md">
                 <RiskMap
-                  locations={[{ order: primary.order, label: primary.name, point: primary.point }]}
+                  locations={[
+                    {
+                      order: primary.order,
+                      label: primary.name,
+                      point: primary.point,
+                      floodLabel: primary.result?.maxFloodDepth.sourceLabel,
+                    },
+                  ]}
                   height={150}
                   compact
                   active={!isDesktop}
@@ -417,7 +425,14 @@ function ResultsView({
               <Stack gap="sm">
                 <MapThemeControls selection={mapSelection} onChange={onMapSelectionChange} />
                 <RiskMap
-                  locations={[{ order: primary.order, label: primary.name, point: primary.point }]}
+                  locations={[
+                    {
+                      order: primary.order,
+                      label: primary.name,
+                      point: primary.point,
+                      floodLabel: primary.result?.maxFloodDepth.sourceLabel,
+                    },
+                  ]}
                   active={isDesktop}
                   selection={mapSelection}
                   onRelocate={onRelocate}

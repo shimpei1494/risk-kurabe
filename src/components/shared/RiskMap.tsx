@@ -22,6 +22,7 @@ export interface RiskMapLocation {
   order: LocationOrder;
   label: string;
   point: GeoPoint;
+  floodLabel?: string;
 }
 
 export const MAX_PIN_MOVE_METERS = 2_000;
@@ -197,7 +198,7 @@ export function RiskMap({
           className: "risk-map-hover-popup",
         });
         const featureLabelAtPoint = (point: import("maplibre-gl").PointLike) => {
-          if (!map) return undefined;
+          if (!map || theme.kind === "raster") return undefined;
           const values: number[] = [];
           for (const feature of map.queryRenderedFeatures(point, {
             layers: [RISK_FILL_LAYER_ID],
@@ -210,6 +211,7 @@ export function RiskMap({
         };
 
         const bounds = new maplibregl.LngLatBounds();
+        const locationsByOrder = new Map(locations.map((location) => [location.order, location]));
         markers.clear();
         valuePopups.clear();
         for (const location of locations) {
@@ -300,7 +302,11 @@ export function RiskMap({
           for (const [order, markerInstance] of markers) {
             const valuePopup = valuePopups.get(order);
             if (!valuePopup) continue;
-            const label = featureLabelAtPoint(map.project(markerInstance.getLngLat()));
+            const location = locationsByOrder.get(order);
+            const label =
+              theme.kind === "raster"
+                ? location?.floodLabel
+                : featureLabelAtPoint(map.project(markerInstance.getLngLat()));
             valuePopup.setText(label ?? "表示データなし");
           }
         };
@@ -323,15 +329,19 @@ export function RiskMap({
           if (map) map.getCanvas().style.cursor = "";
           hoverPopup.remove();
         };
-        map.on("mousemove", RISK_FILL_LAYER_ID, handleThemeMouseMove);
-        map.on("click", RISK_FILL_LAYER_ID, handleThemeMouseMove);
-        map.on("mouseleave", RISK_FILL_LAYER_ID, handleThemeMouseLeave);
+        if (theme.kind === "vector") {
+          map.on("mousemove", RISK_FILL_LAYER_ID, handleThemeMouseMove);
+          map.on("click", RISK_FILL_LAYER_ID, handleThemeMouseMove);
+          map.on("mouseleave", RISK_FILL_LAYER_ID, handleThemeMouseLeave);
+        }
 
         handleIdle = () => {
           if (!disposed && map) {
             collapseMapAttribution(container);
             container.dataset.visibleRiskFeatures = String(
-              map.queryRenderedFeatures(undefined, { layers: [RISK_FILL_LAYER_ID] }).length,
+              theme.kind === "vector"
+                ? map.queryRenderedFeatures(undefined, { layers: [RISK_FILL_LAYER_ID] }).length
+                : 0,
             );
             updateMarkerValues();
             dispatchStatus("ready");

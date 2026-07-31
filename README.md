@@ -2,14 +2,14 @@
 
 関東1都6県の洪水浸水リスクと、東京都の地震に関する地域危険度を、1〜3地点で確認・比較するWebアプリです。
 
-住所検索にはYahoo!ジオコーダAPI、地点判定にはCloudflare R2上のFlatGeobuf、地図表示にはPMTilesを使用します。住所検索はCloudflare Workerを経由し、Yahoo!のClient IDをブラウザへ公開しません。
+住所検索にはYahoo!ジオコーダAPI、洪水の地点判定と地図表示には国土地理院「ハザードマップポータルサイト」の公式統合タイル、東京都の地域危険度にはCloudflare R2上のFlatGeobuf／PMTilesを使用します。住所検索はCloudflare Workerを経由し、Yahoo!のClient IDをブラウザへ公開しません。
 
 ## 主な技術
 
 - TanStack Start / TanStack Router
 - React 19 / TypeScript
 - Mantine
-- MapLibre GL / PMTiles / FlatGeobuf / Turf
+- MapLibre GL / 公式洪水ラスタタイル / PMTiles / FlatGeobuf / Turf
 - Cloudflare Workers / R2
 - Vite+
 
@@ -218,7 +218,7 @@ vp build
 
 ### 洪水指標が「判定データなし」
 
-取得失敗とは限りません。A31aは都県によって部分収録であり、「その他の河川」は含みません。カバレッジを確認できない地点を、誤って「区域外」にはしません。
+取得失敗とは限りません。公式タイルの透明部分は浸水区域外または未整備の可能性があります。表示がない地点を、安全と解釈しないでください。
 
 ## ライセンス
 

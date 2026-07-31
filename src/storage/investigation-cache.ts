@@ -34,7 +34,7 @@ const regionalRiskSchema = z.object({
 const problemSchema = z.object({
   code: z.enum([
     "catalog-unavailable",
-    "a31a-artifact-unavailable",
+    "official-flood-tile-unavailable",
     "tokyo-regional-risk-artifact-unavailable",
   ]),
 });

@@ -143,8 +143,8 @@ function problemMessage(problem: InvestigationProblem): string {
   switch (problem.code) {
     case "catalog-unavailable":
       return "公開データの一覧を読み込めず、すべての指標を確定できませんでした。";
-    case "a31a-artifact-unavailable":
-      return "想定最大規模の洪水データを読み込めませんでした。";
+    case "official-flood-tile-unavailable":
+      return "重ねるハザードマップの洪水データを読み込めませんでした。";
     case "tokyo-regional-risk-artifact-unavailable":
       return "東京都の地域危険度データを読み込めませんでした。";
   }

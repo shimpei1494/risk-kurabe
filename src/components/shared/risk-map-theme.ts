@@ -1,6 +1,6 @@
 import type { MapSelection } from "../../domain/map-selection";
 import {
-  a31aPmtilesUrl,
+  officialFloodTileUrl,
   tokyoBuildingCollapsePmtilesUrl,
   tokyoFirePmtilesUrl,
   tokyoOverallRiskPmtilesUrl,
@@ -18,6 +18,15 @@ const depthColors = {
   6: "#172F52",
 } as const;
 
+const officialDepthColors = {
+  1: "#F7F5A9",
+  2: "#FFD8C0",
+  3: "#FFB7B7",
+  4: "#FF9191",
+  5: "#F285C9",
+  6: "#DC7ADC",
+} as const;
+
 const rankColors = {
   1: "#F7F0CB",
   2: "#F2DC86",
@@ -30,6 +39,7 @@ export function selectedRiskMapTheme(selection: MapSelection) {
   switch (selection.indicator) {
     case "tokyo-overall":
       return {
+        kind: "vector" as const,
         url: tokyoOverallRiskPmtilesUrl(),
         sourceLayer: "tokyo_overall_risk",
         valueProperty: "overall_rank",
@@ -39,6 +49,7 @@ export function selectedRiskMapTheme(selection: MapSelection) {
       };
     case "building-collapse":
       return {
+        kind: "vector" as const,
         url: tokyoBuildingCollapsePmtilesUrl(),
         sourceLayer: "tokyo_building_collapse",
         valueProperty: "building_collapse_rank",
@@ -48,6 +59,7 @@ export function selectedRiskMapTheme(selection: MapSelection) {
       };
     case "fire":
       return {
+        kind: "vector" as const,
         url: tokyoFirePmtilesUrl(),
         sourceLayer: "tokyo_fire",
         valueProperty: "fire_rank",
@@ -57,12 +69,11 @@ export function selectedRiskMapTheme(selection: MapSelection) {
       };
     default:
       return {
-        url: a31aPmtilesUrl(),
-        sourceLayer: "a31a",
-        valueProperty: "depth_code",
-        palette: depthColors,
+        kind: "raster" as const,
+        tiles: [officialFloodTileUrl()],
+        palette: officialDepthColors,
         outline: "rgba(42, 78, 128, 0.35)",
-        attribution: "洪水浸水想定区域: 国土交通省 国土数値情報",
+        attribution: "洪水浸水想定区域: ハザードマップポータルサイト",
       };
   }
 }
@@ -88,11 +99,10 @@ export function createRiskMapStyle({
         attribution:
           '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       },
-      riskTheme: {
-        type: "vector",
-        url: `pmtiles://${theme.url}`,
-        attribution: theme.attribution,
-      },
+      riskTheme:
+        theme.kind === "raster"
+          ? { type: "raster", tiles: theme.tiles, tileSize: 256, attribution: theme.attribution }
+          : { type: "vector", url: `pmtiles://${theme.url}`, attribution: theme.attribution },
     },
     layers: [
       {
@@ -110,32 +120,39 @@ export function createRiskMapStyle({
           "raster-contrast": riskLayerVisible ? -0.08 : 0,
         },
       },
-      {
-        id: RISK_FILL_LAYER_ID,
-        type: "fill",
-        source: "riskTheme",
-        "source-layer": theme.sourceLayer,
-        paint: {
-          "fill-color": [
-            "match",
-            ["to-number", ["get", theme.valueProperty]],
-            1,
-            theme.palette[1],
-            2,
-            theme.palette[2],
-            3,
-            theme.palette[3],
-            4,
-            theme.palette[4],
-            5,
-            theme.palette[5],
-            ...(selection.indicator === "maximum-flood" ? [6, depthColors[6]] : []),
-            "#B5B2A9",
-          ],
-          "fill-opacity": riskLayerVisible ? 0.78 : 0,
-          "fill-outline-color": riskLayerVisible ? theme.outline : "rgba(0,0,0,0)",
-        },
-      },
+      theme.kind === "raster"
+        ? {
+            id: RISK_FILL_LAYER_ID,
+            type: "raster",
+            source: "riskTheme",
+            paint: { "raster-opacity": riskLayerVisible ? 0.78 : 0 },
+          }
+        : {
+            id: RISK_FILL_LAYER_ID,
+            type: "fill",
+            source: "riskTheme",
+            "source-layer": theme.sourceLayer,
+            paint: {
+              "fill-color": [
+                "match",
+                ["to-number", ["get", theme.valueProperty]],
+                1,
+                theme.palette[1],
+                2,
+                theme.palette[2],
+                3,
+                theme.palette[3],
+                4,
+                theme.palette[4],
+                5,
+                theme.palette[5],
+                ...(selection.indicator === "maximum-flood" ? [6, depthColors[6]] : []),
+                "#B5B2A9",
+              ],
+              "fill-opacity": riskLayerVisible ? 0.78 : 0,
+              "fill-outline-color": riskLayerVisible ? theme.outline : "rgba(0,0,0,0)",
+            },
+          },
     ],
   };
 }
@@ -150,12 +167,17 @@ export function applyRiskLayerVisibility({
   outline: string;
 }) {
   if (!map) return;
-  map.setPaintProperty(RISK_FILL_LAYER_ID, "fill-opacity", visible ? 0.78 : 0);
-  map.setPaintProperty(
-    RISK_FILL_LAYER_ID,
-    "fill-outline-color",
-    visible ? outline : "rgba(0,0,0,0)",
-  );
+  const riskLayerType = map.getLayer(RISK_FILL_LAYER_ID)?.type;
+  if (riskLayerType === "raster") {
+    map.setPaintProperty(RISK_FILL_LAYER_ID, "raster-opacity", visible ? 0.78 : 0);
+  } else {
+    map.setPaintProperty(RISK_FILL_LAYER_ID, "fill-opacity", visible ? 0.78 : 0);
+    map.setPaintProperty(
+      RISK_FILL_LAYER_ID,
+      "fill-outline-color",
+      visible ? outline : "rgba(0,0,0,0)",
+    );
+  }
   map.setPaintProperty(BACKGROUND_MAP_LAYER_ID, "raster-opacity", visible ? 0.62 : 0.9);
   map.setPaintProperty(BACKGROUND_MAP_LAYER_ID, "raster-saturation", visible ? -0.75 : -0.35);
   map.setPaintProperty(BACKGROUND_MAP_LAYER_ID, "raster-contrast", visible ? -0.08 : 0);

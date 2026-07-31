@@ -45,7 +45,7 @@ describe("investigation cache", () => {
     const storage = memoryStorage();
     const failed = {
       ...outsideKantoResult(),
-      problems: [{ code: "a31a-artifact-unavailable" as const }],
+      problems: [{ code: "official-flood-tile-unavailable" as const }],
     };
     writeInvestigationCache(storage, identity, failed);
     expect(readInvestigationCache(storage, identity)).toBeNull();
