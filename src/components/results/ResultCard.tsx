@@ -1,18 +1,8 @@
-import {
-  ActionIcon,
-  Box,
-  Card,
-  Group,
-  Paper,
-  Stack,
-  Text,
-  TextInput,
-  ThemeIcon,
-  useMantineTheme,
-} from "@mantine/core";
-import { useState } from "react";
+import { Box, Card, Group, Paper, Stack, Text, ThemeIcon, useMantineTheme } from "@mantine/core";
 
+import { formatCoordinates } from "../../domain/location";
 import type { InvestigationResult } from "../../domain/risk";
+import type { GeoPoint } from "../../gis/geometry";
 import { DataBadge } from "../shared/DataBadge";
 import {
   AiSummaryBox,
@@ -59,111 +49,26 @@ function IndicatorRow({ icon, iconColor, label, children, withBorder = true }: I
   );
 }
 
-function EditableName({
-  order,
-  name,
-  compact,
-  onRename,
-}: {
-  order: number;
-  name: string;
-  compact: boolean;
-  onRename: (name: string) => void;
-}) {
-  // editingは下のif分岐の描画切り替えに使っており、useRef化すると編集モードに
-  // 切り替わらなくなる（意図的な再描画トリガーのためuseStateのままにする）。
-  // oxlint-disable-next-line react-doctor/rerender-state-only-in-handlers
-  const [editing, setEditing] = useState(false);
-  // draftはpropと常時同期させたいのではなく、編集開始時(下のonClickでsetDraft(name))
-  // にのみコピーする一時編集バッファとして意図的にuseStateで保持している。
-  // oxlint-disable-next-line react-doctor/no-derived-useState
-  const [draft, setDraft] = useState(name);
-
-  if (editing) {
-    return (
-      <TextInput
-        ref={(el) => el?.focus()}
-        size="xs"
-        value={draft}
-        onChange={(event) => setDraft(event.currentTarget.value)}
-        onBlur={() => {
-          setEditing(false);
-          const trimmed = draft.trim();
-          if (trimmed.length > 0) onRename(trimmed);
-          else setDraft(name);
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") event.currentTarget.blur();
-        }}
-        aria-label={`地点${order}の名前`}
-        styles={{ input: { fontSize: 12, height: 22, minHeight: 22, padding: "0 6px" } }}
-      />
-    );
-  }
-
-  return (
-    <Group gap="3xs" fz={12} c="var(--mantine-color-stone-7)" wrap="nowrap">
-      <span>
-        地点{order}「{name}」
-      </span>
-      {compact ? (
-        <ActionIcon
-          variant="subtle"
-          color="teal"
-          size="xs"
-          aria-label={`地点${order}の名前を編集`}
-          onClick={() => {
-            setDraft(name);
-            setEditing(true);
-          }}
-        >
-          ✎
-        </ActionIcon>
-      ) : (
-        <Text
-          component="button"
-          type="button"
-          fz={12}
-          fw={700}
-          c="teal.8"
-          onClick={() => {
-            setDraft(name);
-            setEditing(true);
-          }}
-          style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
-        >
-          ✎ 名前を編集
-        </Text>
-      )}
-    </Group>
-  );
-}
-
 /**
  * 1地点分の調査結果カード。docs/CONTEXT.md の「データ状態」5区分と
- * 「境界警告」「重複判定」の全パターンを表示できる構造にする（デザインの 3d 参照）。
+ * 「境界警告」の全パターンを表示できる構造にする（デザインの 3d 参照）。
  */
 export function ResultCard({
   order,
-  name,
   address,
+  point,
   result,
   accentColor,
-  compact = false,
   retrying = false,
   onRetry,
-  onRename,
 }: {
   order: number;
-  name: string;
   address: string;
+  point: GeoPoint;
   result: InvestigationResult;
   accentColor?: string;
-  /** 3列比較グリッドなど横幅が狭い文脈では、名前編集を「✎」アイコンのみで表示する */
-  compact?: boolean;
   retrying?: boolean;
   onRetry?: () => void;
-  onRename: (name: string) => void;
 }) {
   const { other } = useMantineTheme();
   const { maxFloodDepth, tokyoEarthquakeRisk, buildingCollapseRisk, fireRisk, aiSummary } = result;
@@ -182,9 +87,14 @@ export function ResultCard({
             {order}
           </ThemeIcon>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <EditableName order={order} name={name} compact={compact} onRename={onRename} />
-            <Text fz={14} fw={700} c="var(--mantine-color-stone-9)" truncate>
+            <Text fz={11.5} fw={800} c="var(--mantine-color-stone-7)">
+              地点{order}
+            </Text>
+            <Text fz={14} fw={700} c="var(--mantine-color-stone-9)">
               {address}
+            </Text>
+            <Text mt="3xs" fz={10.5} c="var(--mantine-color-stone-7)" ff="monospace">
+              ピン座標 {formatCoordinates(point)}
             </Text>
           </div>
         </Group>

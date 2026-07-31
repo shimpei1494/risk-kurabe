@@ -102,10 +102,6 @@ function Home() {
     setPendingOrder(nextOrder as LocationOrder);
   }
 
-  function handleRename(id: string, name: string) {
-    setLocations((prev) => prev.map((loc) => (loc.id === id ? { ...loc, name } : loc)));
-  }
-
   async function handleRetry(id: string) {
     const location = locations.find((item) => item.id === id);
     if (!location || retryingLocationIds.includes(id)) return;
@@ -173,7 +169,6 @@ function Home() {
         pendingOrder={pendingOrder}
         onInvestigate={handleInvestigate}
         onAddLocation={handleAddLocation}
-        onRename={handleRename}
         onReset={handleReset}
         onOpenMap={openMap}
         onRetry={handleRetry}
@@ -268,7 +263,6 @@ function HomeInitialView({
           <LocationInputCard
             order={1}
             defaultName="地点1"
-            hint="名前はあとから変更できます（例：自宅、候補A）"
             submitLabel="この地点を調べる"
             onSubmit={onSubmit}
           />
@@ -296,7 +290,6 @@ function ResultsView({
   pendingOrder,
   onInvestigate,
   onAddLocation,
-  onRename,
   onReset,
   onOpenMap,
   onRetry,
@@ -309,7 +302,6 @@ function ResultsView({
   pendingOrder: LocationOrder | null;
   onInvestigate: (order: LocationOrder, selection: LocationSelection) => Promise<void>;
   onAddLocation: () => void;
-  onRename: (id: string, name: string) => void;
   onReset: () => void;
   onOpenMap: () => void;
   onRetry: (id: string) => Promise<void>;
@@ -332,6 +324,7 @@ function ResultsView({
       order={pendingOrder}
       defaultName={defaultLocationName(pendingOrder)}
       submitLabel="この地点を調べる"
+      mapStartPoint={primary?.point}
       onSubmit={(selection) => onInvestigate(pendingOrder, selection)}
     />
   );
@@ -384,12 +377,11 @@ function ResultsView({
                 />
                 <ResultCard
                   order={primary.order}
-                  name={primary.name}
                   address={primary.address}
+                  point={primary.point}
                   result={primary.result!}
                   retrying={retryingLocationIds.includes(primary.id)}
                   onRetry={() => void onRetry(primary.id)}
-                  onRename={(name) => onRename(primary.id, name)}
                 />
                 {showAddSlot ? (
                   <AddLocationCard remaining={remaining} onClick={onAddLocation} />
@@ -410,12 +402,11 @@ function ResultsView({
               <Stack gap="md">
                 <ResultCard
                   order={primary.order}
-                  name={primary.name}
                   address={primary.address}
+                  point={primary.point}
                   result={primary.result!}
                   retrying={retryingLocationIds.includes(primary.id)}
                   onRetry={() => void onRetry(primary.id)}
-                  onRename={(name) => onRename(primary.id, name)}
                 />
                 {showAddSlot ? (
                   <AddLocationCard remaining={remaining} onClick={onAddLocation} />

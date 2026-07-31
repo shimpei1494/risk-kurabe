@@ -1,6 +1,6 @@
 import { Box, Card, Group, Table, Text, ThemeIcon, useMantineTheme } from "@mantine/core";
 
-import type { ComparisonLocation } from "../../domain/location";
+import { formatCoordinates, type ComparisonLocation } from "../../domain/location";
 import type { MapIndicator } from "../../domain/map-selection";
 import type { RegionalRiskResult } from "../../domain/risk";
 import { DataBadge } from "../shared/DataBadge";
@@ -89,10 +89,13 @@ export function DesktopComparisonTable({
                   </ThemeIcon>
                   <Box miw={0}>
                     <Text fz={13} fw={800} c="var(--mantine-color-stone-9)" truncate>
-                      {location.name}
+                      地点{location.order}
                     </Text>
                     <Text fz={10.5} fw={500} c="var(--mantine-color-stone-7)" truncate>
                       {location.address}
+                    </Text>
+                    <Text fz={9.5} fw={500} c="var(--mantine-color-stone-7)" ff="monospace">
+                      {formatCoordinates(location.point)}
                     </Text>
                   </Box>
                 </Group>

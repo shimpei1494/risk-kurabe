@@ -15,9 +15,9 @@ export interface LocationSelection {
 export interface ComparisonLocation {
   id: string;
   order: LocationOrder;
-  /** 端末内だけで使う任意の地点名。初期値は「地点1」など */
+  /** 画面内で地点を識別する固定名（「地点1」など） */
   name: string;
-  /** 住所候補選択で確定した表示住所 */
+  /** 住所検索または逆ジオコーディングで得た表示住所 */
   address: string;
   /** 住所候補またはピン操作で確定した座標 */
   point: GeoPoint;
@@ -29,6 +29,10 @@ export interface ComparisonLocation {
 
 export function defaultLocationName(order: LocationOrder): string {
   return `地点${order}`;
+}
+
+export function formatCoordinates(point: GeoPoint): string {
+  return `${point.latitude.toFixed(6)}, ${point.longitude.toFixed(6)}`;
 }
 
 const KANTO_PREFECTURE_NAMES = {

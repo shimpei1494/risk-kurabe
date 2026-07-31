@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vite-plus/test";
 import {
   GeocodingError,
   normalizeYahooGeocoderResponse,
+  normalizeYahooReverseGeocoderResponse,
+  reverseYahooAddress,
   searchYahooAddresses,
 } from "./yahoo-geocoder";
 
@@ -16,6 +18,21 @@ const yahooResponse = {
         Address: "東京都港区六本木",
         GovernmentCode: "13103",
         AddressMatchingLevel: "3",
+      },
+    },
+  ],
+};
+
+const yahooReverseResponse = {
+  Feature: [
+    {
+      Property: {
+        Address: "東京都港区赤坂９丁目",
+        AddressElement: [
+          { Level: "prefecture", Code: "13", Name: "東京都" },
+          { Level: "city", Code: "13103", Name: "港区" },
+          { Level: "oaza", Name: "赤坂" },
+        ],
       },
     },
   ],
@@ -73,5 +90,46 @@ describe("searchYahooAddresses", () => {
     await expect(
       searchYahooAddresses({ query: "東京都港区", clientId: "client-id", fetcher }),
     ).rejects.toEqual(new GeocodingError("upstream-unavailable"));
+  });
+});
+
+describe("normalizeYahooReverseGeocoderResponse", () => {
+  it("ピン座標の住所と都道府県コードを取り出す", () => {
+    expect(normalizeYahooReverseGeocoderResponse(yahooReverseResponse)).toEqual({
+      address: "東京都港区赤坂９丁目",
+      prefectureCode: "13",
+    });
+  });
+
+  it("住所が見つからない場合を明示的なエラーにする", () => {
+    expect(() => normalizeYahooReverseGeocoderResponse({ ResultInfo: { Count: 0 } })).toThrowError(
+      new GeocodingError("not-found"),
+    );
+  });
+});
+
+describe("reverseYahooAddress", () => {
+  it("座標をYahooの逆ジオコーダーへ1回だけ送信する", async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(yahooReverseResponse), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await reverseYahooAddress({
+      point: { longitude: 139.731, latitude: 35.668 },
+      clientId: "secret-client-id",
+      fetcher,
+    });
+
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    const requestedUrl = new URL(String(fetcher.mock.calls[0]?.[0]));
+    expect(requestedUrl.origin + requestedUrl.pathname).toBe(
+      "https://map.yahooapis.jp/geoapi/V1/reverseGeoCoder",
+    );
+    expect(requestedUrl.searchParams.get("lat")).toBe("35.668");
+    expect(requestedUrl.searchParams.get("lon")).toBe("139.731");
+    expect(requestedUrl.searchParams.get("datum")).toBe("wgs");
   });
 });

@@ -1,6 +1,6 @@
 import { Box, Card, Group, SimpleGrid, Text, ThemeIcon, useMantineTheme } from "@mantine/core";
 
-import type { ComparisonLocation } from "../../domain/location";
+import { formatCoordinates, type ComparisonLocation } from "../../domain/location";
 import { DataBadge } from "../shared/DataBadge";
 import { AiSummaryBox, BoundaryWarningNote } from "../shared/InfoBlocks";
 import {
@@ -278,8 +278,14 @@ export function MobileComparisonView({ locations }: { locations: readonly Compar
             >
               {loc.order}
             </ThemeIcon>
-            <Text fz={11} c="var(--mantine-color-stone-8)" mt="4xs" lh={1.4} truncate>
-              {loc.name}
+            <Text fz={11} fw={700} c="var(--mantine-color-stone-8)" mt="4xs" lh={1.4}>
+              地点{loc.order}
+            </Text>
+            <Text fz={9.5} c="var(--mantine-color-stone-7)" mt="3xs" lh={1.35} lineClamp={2}>
+              {loc.address}
+            </Text>
+            <Text fz={8.5} c="var(--mantine-color-stone-7)" mt="3xs" ff="monospace">
+              {formatCoordinates(loc.point)}
             </Text>
           </Box>
         ))}
