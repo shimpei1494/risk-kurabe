@@ -25,6 +25,9 @@
   "dependencies": {
     "@mantine/core": "^9.4.1",
     "@mantine/hooks": "^9.4.1",
+    "@openuidev/react-headless": "^0.9.4",
+    "@openuidev/react-lang": "^0.2.9",
+    "@openuidev/react-ui": "^0.13.2",
     "@tanstack/react-router": "^1.169.2",
     "@tanstack/react-start": "^1.167.65",
     "@turf/boolean-point-in-polygon": "^7.3.5",
@@ -36,10 +39,14 @@
     "pmtiles": "^4.4.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.45.0",
+    "@openuidev/cli": "^0.2.3",
+    "@openuidev/devtools": "^0.0.2",
+    "@openuidev/observability": "^0.0.1",
     "@rolldown/plugin-babel": "^0.2.3",
     "@tanstack/react-router-devtools": "^1.166.13",
     "@types/geojson": "^7946.0.16",
