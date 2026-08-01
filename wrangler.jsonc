@@ -10,8 +10,11 @@
   "observability": {
     "enabled": true,
   },
+  "vars": {
+    "AI_GATEWAY_BASE_URL": "https://gateway.ai.cloudflare.com/v1/53af804e239e6294ad9a766add0c6e00/risk-kurabe-ai-gateway/compat",
+  },
   "secrets": {
-    "required": ["YAHOO_CLIENT_ID"],
+    "required": ["YAHOO_CLIENT_ID", "CF_AIG_TOKEN"],
   },
   "r2_buckets": [
     {

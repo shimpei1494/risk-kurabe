@@ -30,6 +30,8 @@ type Fact = {
   boundaryWarning: boolean;
 };
 
+export type AssistantFact = Omit<Fact, "boundaryWarning"> & { boundaryWarning: boolean };
+
 function factsFor(location: ComparisonLocation): Fact[] {
   const result = location.result;
   if (!result) return [];
@@ -78,6 +80,13 @@ function factsFor(location: ComparisonLocation): Fact[] {
   }
 
   return facts;
+}
+
+/**
+ * AIへ渡す公開データの最小コンテキスト。住所・座標・出典URLは含めない。
+ */
+export function buildAssistantFacts(locations: readonly ComparisonLocation[]): AssistantFact[] {
+  return locations.flatMap(factsFor);
 }
 
 function responseTitle(question: string, locationCount: number): string {

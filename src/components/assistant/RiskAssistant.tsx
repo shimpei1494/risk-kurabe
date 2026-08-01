@@ -17,10 +17,12 @@ import { Renderer } from "@openuidev/react-lang";
 import { useState } from "react";
 
 import type { ComparisonLocation } from "../../domain/location";
+import { askRiskAssistant } from "../../features/assistant/ask-risk-assistant";
 import { riskAssistantLibrary } from "../../features/assistant/risk-assistant-library";
 import {
   ASSISTANT_STARTERS,
   assistantContextKey,
+  buildAssistantFacts,
   buildDemoAssistantResponse,
 } from "../../features/assistant/risk-assistant-response";
 import { useRiskAssistantStore } from "../../features/assistant/risk-assistant-store";
@@ -83,6 +85,7 @@ export function RiskAssistantLauncher() {
 
 function RiskAssistantSurface({ locations }: { locations: readonly ComparisonLocation[] }) {
   const [question, setQuestion] = useState("");
+  const [isAsking, setIsAsking] = useState(false);
   const close = useRiskAssistantStore((state) => state.close);
   const addMessage = useRiskAssistantStore((state) => state.addMessage);
   const clearMessages = useRiskAssistantStore((state) => state.clearMessages);
@@ -91,11 +94,26 @@ function RiskAssistantSurface({ locations }: { locations: readonly ComparisonLoc
     (state) => state.messagesByContext[contextKey] ?? EMPTY_MESSAGES,
   );
 
-  function ask(nextQuestion: string) {
+  async function ask(nextQuestion: string) {
     const normalized = nextQuestion.trim();
-    if (!normalized) return;
-    addMessage(contextKey, normalized, buildDemoAssistantResponse(locations, normalized));
+    if (!normalized || isAsking) return;
+    const fallbackResponse = buildDemoAssistantResponse(locations, normalized);
+    setIsAsking(true);
     setQuestion("");
+    try {
+      const response = await askRiskAssistant({
+        data: {
+          question: normalized,
+          facts: buildAssistantFacts(locations),
+          fallbackResponse,
+        },
+      });
+      addMessage(contextKey, normalized, response);
+    } catch {
+      addMessage(contextKey, normalized, fallbackResponse);
+    } finally {
+      setIsAsking(false);
+    }
   }
 
   return (
@@ -116,7 +134,7 @@ function RiskAssistantSurface({ locations }: { locations: readonly ComparisonLoc
                 公開データ説明アシスタント
               </Text>
               <Badge size="xs" variant="light" tt="none">
-                仮実装
+                AI
               </Badge>
             </Group>
             <Text mt={2} fz={11.5} c="var(--mantine-color-stone-7)">
@@ -149,6 +167,7 @@ function RiskAssistantSurface({ locations }: { locations: readonly ComparisonLoc
                   rightSection={<span aria-hidden>→</span>}
                   onClick={() => ask(starter)}
                   className="risk-assistant-starter"
+                  disabled={isAsking}
                 >
                   {starter}
                 </Button>
@@ -218,13 +237,13 @@ function RiskAssistantSurface({ locations }: { locations: readonly ComparisonLoc
             size={42}
             radius="md"
             aria-label="質問を送る"
-            disabled={question.trim().length === 0}
+            disabled={question.trim().length === 0 || isAsking}
           >
             ↑
           </ActionIcon>
         </Group>
         <Text mt="2xs" fz={10.5} c="var(--mantine-color-stone-7)" ta="center">
-          仮実装では入力内容を外部へ送信しません
+          AIには表示中の公開データと質問だけを送信します。住所・座標は送信しません。
         </Text>
       </Box>
     </Box>
