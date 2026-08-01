@@ -193,6 +193,165 @@ body {
   background: var(--mantine-color-stone-0);
 }
 
+.risk-comparison-card {
+  overflow: hidden;
+  border-color: var(--mantine-color-stone-2);
+  background: linear-gradient(180deg, rgb(233 243 242 / 58%), transparent 54px), #fff;
+}
+
+.risk-comparison-chart {
+  position: relative;
+  min-width: 0;
+  margin-top: var(--mantine-spacing-sm);
+  padding-left: 27px;
+}
+
+.risk-comparison-axis {
+  position: absolute;
+  top: 0;
+  bottom: 43px;
+  left: 0;
+  width: 25px;
+  border-right: 1px solid var(--mantine-color-stone-4);
+}
+
+.risk-comparison-axis-label {
+  position: absolute;
+  right: 5px;
+  color: var(--mantine-color-stone-7);
+  font-size: 8.5px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  transform: translateY(50%);
+}
+
+.risk-comparison-columns {
+  display: grid;
+  min-width: 0;
+  column-gap: 6px;
+}
+
+.risk-comparison-column {
+  min-width: 0;
+  text-align: center;
+}
+
+.risk-comparison-plot-area {
+  position: relative;
+  height: 112px;
+  border-bottom: 1px solid var(--mantine-color-stone-4);
+  background-image: linear-gradient(to top, var(--mantine-color-stone-2) 1px, transparent 1px);
+  background-size: 100% 50%;
+}
+
+.risk-comparison-flood-range {
+  position: absolute;
+  left: 50%;
+  width: clamp(15px, 26%, 28px);
+  min-height: 3px;
+  border: 1px solid;
+  border-radius: 4px 4px 1px 1px;
+  box-shadow:
+    inset 0 1px rgb(255 255 255 / 55%),
+    0 2px 5px rgb(68 66 60 / 8%);
+  transform: translateX(-50%);
+}
+
+.risk-comparison-flood-no-zone {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  display: grid;
+  width: max-content;
+  justify-items: center;
+  row-gap: 2px;
+  transform: translateX(-50%);
+}
+
+.risk-comparison-flood-no-zone > span {
+  display: block;
+  width: 15px;
+  height: 7px;
+  border: 2px solid var(--mantine-color-stone-6);
+  border-radius: 999px;
+  background: #fff;
+}
+
+.risk-comparison-open-end {
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  transform: translateX(-50%);
+}
+
+.risk-comparison-rank-stem {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 3px;
+  border-radius: 999px 999px 0 0;
+  opacity: 0.72;
+  transform: translateX(-50%);
+}
+
+.risk-comparison-rank-dot {
+  position: absolute;
+  left: 50%;
+  display: grid;
+  width: 25px;
+  height: 25px;
+  border: 2px solid;
+  border-radius: 50%;
+  place-items: center;
+  box-shadow:
+    0 0 0 3px #fff,
+    0 3px 10px rgb(68 66 60 / 14%);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  transform: translate(-50%, 50%);
+}
+
+.risk-comparison-state {
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  left: 3px;
+  padding: 7px 3px;
+  border: 1px dashed var(--mantine-color-stone-4);
+  border-radius: var(--mantine-radius-sm);
+  background: rgb(250 250 248 / 88%);
+  transform: translateY(-50%);
+}
+
+.risk-comparison-location,
+.risk-comparison-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.risk-comparison-location {
+  margin-top: 8px;
+  color: var(--mantine-color-teal-8);
+  font-size: 10.5px;
+  font-weight: 900;
+}
+
+.risk-comparison-location span {
+  color: #b7830f;
+}
+
+.risk-comparison-value {
+  margin-top: 1px;
+  color: var(--mantine-color-stone-8);
+  font-size: 9px;
+  font-weight: 700;
+}
+
 .risk-assistant-evidence {
   padding-top: var(--mantine-spacing-xs);
   border-top: 1px dashed var(--mantine-color-stone-3);

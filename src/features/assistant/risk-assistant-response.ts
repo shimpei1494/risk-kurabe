@@ -129,6 +129,25 @@ function noteFor(question: string, hasBoundary: boolean): { kind: string; text: 
   };
 }
 
+function comparisonGroups(facts: readonly Fact[]): Array<{ indicator: string; items: Fact[] }> {
+  const groups = new Map<string, Fact[]>();
+  for (const fact of facts) {
+    const items = groups.get(fact.indicator) ?? [];
+    items.push(fact);
+    groups.set(fact.indicator, items);
+  }
+  const comparisons: Array<{ indicator: string; items: Fact[] }> = [];
+  for (const [indicator, items] of groups) {
+    if (items.length >= 2) comparisons.push({ indicator, items });
+    if (comparisons.length === 4) break;
+  }
+  return comparisons;
+}
+
+function wantsVisualComparison(question: string, locationCount: number): boolean {
+  return locationCount >= 2 && /違い|比較|差|どちら|高い|低い/.test(question);
+}
+
 export function buildDemoAssistantResponse(
   locations: readonly ComparisonLocation[],
   question: string,
@@ -136,19 +155,37 @@ export function buildDemoAssistantResponse(
   const facts = locations.flatMap(factsFor);
   const hasBoundary = facts.some((fact) => fact.boundaryWarning);
   const note = noteFor(question, hasBoundary);
+  const comparisons = wantsVisualComparison(question, locations.length)
+    ? comparisonGroups(facts)
+    : [];
+  const useComparisons = comparisons.length > 0;
   const references = [
     "summary",
-    ...facts.map((_, index) => `fact${index + 1}`),
+    ...(useComparisons
+      ? comparisons.map((_, index) => `comparison${index + 1}`)
+      : facts.map((_, index) => `fact${index + 1}`)),
     "note",
     "evidence",
   ];
   const lines = [
     `root = AssistantCard([${references.join(", ")}])`,
     `summary = AssistantSummary("公開データの説明", ${literal(responseTitle(question, locations.length))}, ${literal(responseBody(question, locations.length))})`,
-    ...facts.map(
-      (fact, index) =>
-        `fact${index + 1} = RiskFact(${literal(fact.location)}, ${literal(fact.indicator)}, ${literal(fact.value)}, ${literal(fact.state)})`,
-    ),
+    ...(useComparisons
+      ? comparisons.map(
+          ({ indicator, items }, index) =>
+            `comparison${index + 1} = RiskComparison(${literal(indicator)}, ${JSON.stringify(
+              items.map(({ location, value, state, boundaryWarning }) => ({
+                location,
+                value,
+                state,
+                boundaryWarning,
+              })),
+            )})`,
+        )
+      : facts.map(
+          (fact, index) =>
+            `fact${index + 1} = RiskFact(${literal(fact.location)}, ${literal(fact.indicator)}, ${literal(fact.value)}, ${literal(fact.state)})`,
+        )),
     `note = AssistantNote(${literal(note.kind)}, ${literal(note.text)})`,
     `evidence = EvidenceFooter("画面に表示中の地点判定と出典情報だけを使った仮の説明です。住所と座標は含めていません。")`,
   ];
