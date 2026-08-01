@@ -39,6 +39,7 @@ import {
   type LocationSelection,
 } from "../domain/location";
 import { mapSelectionLabel, type MapSelection } from "../domain/map-selection";
+import { useRiskAssistantStore } from "../features/assistant/risk-assistant-store";
 import { useComparisonSession, type RemovalUndo } from "../features/comparison/comparison-session";
 import type { GeoPoint } from "../gis/geometry";
 
@@ -264,6 +265,8 @@ export function ResultsView({
   onMapSelectionChange: (selection: MapSelection) => void;
 }) {
   const isDesktop = useMediaQuery("(min-width: 48em)");
+  const usesInlineAssistant = useMediaQuery("(min-width: 75em)");
+  const assistantOpened = useRiskAssistantStore((state) => state.opened);
   const count = locations.length;
   const remaining = MAX_COMPARISON_LOCATIONS - count;
   const pageTitle = count <= 1 ? "調査結果" : `比較結果（${count}地点）`;
@@ -284,134 +287,180 @@ export function ResultsView({
 
   return (
     <PageShell>
-      <RiskAssistantPanel locations={locations} />
       <AppHeader />
 
-      <Box px={{ base: "lg", sm: "5xl" }} py={{ base: "md", sm: count === 1 ? 28 : "2xl" }}>
-        <Box className="comparison-sticky-toolbar">
-          <Group justify="space-between" align="center" wrap="nowrap">
-            <Title
-              order={1}
-              fz={{ base: 20, sm: 26 }}
-              fw={900}
-              c="var(--mantine-color-stone-9)"
-              style={{
-                minWidth: 0,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {pageTitle}
-            </Title>
-            <Group gap="xs" wrap="nowrap" flex="none">
-              {isComparing ? (
-                <Button onClick={onOpenMap} radius="xl" size="sm">
-                  地図で見る
-                </Button>
-              ) : null}
-              <RiskAssistantLauncher />
+      <Box
+        className="results-assistant-layout"
+        data-assistant-open={usesInlineAssistant && assistantOpened ? "true" : "false"}
+      >
+        <Box
+          miw={0}
+          px={{ base: "lg", sm: usesInlineAssistant && assistantOpened ? "xl" : "5xl" }}
+          py={{ base: "md", sm: count === 1 ? 28 : "2xl" }}
+        >
+          <Box className="comparison-sticky-toolbar">
+            <Group justify="space-between" align="center" wrap="nowrap">
+              <Title
+                order={1}
+                fz={{ base: 20, sm: 26 }}
+                fw={900}
+                c="var(--mantine-color-stone-9)"
+                style={{
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {pageTitle}
+              </Title>
+              <Group gap="xs" wrap="nowrap" flex="none">
+                {isComparing ? (
+                  <Button onClick={onOpenMap} radius="xl" size="sm">
+                    地図で見る
+                  </Button>
+                ) : null}
+                <RiskAssistantLauncher />
+              </Group>
             </Group>
-          </Group>
-        </Box>
-        {count === 1 && primary ? (
-          <>
-            {/* モバイル: 地図（コンパクト）→ カード → 追加CTA（デザイン 3f） */}
-            <Box hiddenFrom="sm">
-              <Stack gap="md">
-                <RiskMap
-                  locations={[
-                    {
-                      order: primary.order,
-                      label: primary.name,
-                      point: primary.point,
-                      floodLabel: primary.result?.maxFloodDepth.sourceLabel,
-                    },
-                  ]}
-                  height={150}
-                  compact
-                  active={!isDesktop}
-                  selection={mapSelection}
-                  onRelocate={onRelocate}
+          </Box>
+          {count === 1 && primary ? (
+            <>
+              {/* モバイル: 地図（コンパクト）→ カード → 追加CTA（デザイン 3f） */}
+              <Box hiddenFrom="sm">
+                <Stack gap="md">
+                  <RiskMap
+                    locations={[
+                      {
+                        order: primary.order,
+                        label: primary.name,
+                        point: primary.point,
+                        floodLabel: primary.result?.maxFloodDepth.sourceLabel,
+                      },
+                    ]}
+                    height={150}
+                    compact
+                    active={!isDesktop}
+                    selection={mapSelection}
+                    onRelocate={onRelocate}
+                  />
+                  <MapThemeControls
+                    selection={mapSelection}
+                    onChange={onMapSelectionChange}
+                    compact
+                  />
+                  <ResultCard
+                    order={primary.order}
+                    address={primary.address}
+                    result={primary.result!}
+                    retrying={retryingLocationIds.includes(primary.id)}
+                    onRetry={() => void onRetry(primary.id)}
+                    onConfigure={() => onConfigureLocation(primary.id)}
+                  />
+                  {showAddSlot ? (
+                    <AddLocationCard remaining={remaining} onClick={onAddLocation} />
+                  ) : null}
+                  {pendingInput}
+                </Stack>
+              </Box>
+              {/* デスクトップ: カード＋地図の2カラム（デザイン 3b） */}
+              <Box
+                visibleFrom="sm"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    usesInlineAssistant && assistantOpened
+                      ? "minmax(400px, 480px) minmax(260px, 1fr)"
+                      : "480px 1fr",
+                  gap:
+                    usesInlineAssistant && assistantOpened
+                      ? "var(--mantine-spacing-xl)"
+                      : "var(--mantine-spacing-3xl)",
+                  alignItems: "start",
+                }}
+              >
+                <Stack gap="md">
+                  <ResultCard
+                    order={primary.order}
+                    address={primary.address}
+                    result={primary.result!}
+                    retrying={retryingLocationIds.includes(primary.id)}
+                    onRetry={() => void onRetry(primary.id)}
+                    onConfigure={() => onConfigureLocation(primary.id)}
+                  />
+                  {showAddSlot ? (
+                    <AddLocationCard remaining={remaining} onClick={onAddLocation} />
+                  ) : null}
+                  {pendingInput}
+                </Stack>
+                <Stack gap="sm">
+                  <MapThemeControls selection={mapSelection} onChange={onMapSelectionChange} />
+                  <RiskMap
+                    locations={[
+                      {
+                        order: primary.order,
+                        label: primary.name,
+                        point: primary.point,
+                        floodLabel: primary.result?.maxFloodDepth.sourceLabel,
+                      },
+                    ]}
+                    active={isDesktop}
+                    selection={mapSelection}
+                    onRelocate={onRelocate}
+                  />
+                </Stack>
+              </Box>
+            </>
+          ) : (
+            <>
+              {/* モバイル: 指標別グルーピング比較（デザイン 3g） */}
+              <Box hiddenFrom="sm">
+                <Box px="lg">
+                  <MapThemeControls
+                    selection={mapSelection}
+                    onChange={onMapSelectionChange}
+                    compact
+                    showScale
+                  />
+                </Box>
+                <MobileComparisonView
+                  locations={locations}
+                  onConfigureLocation={onConfigureLocation}
                 />
+                <Stack px="lg" gap="xs">
+                  {locations.map((location) =>
+                    location.result && location.result.problems.length > 0 ? (
+                      <InvestigationProblemNotice
+                        key={location.id}
+                        locationName={location.name}
+                        problems={location.result.problems}
+                        retrying={retryingLocationIds.includes(location.id)}
+                        onRetry={() => void onRetry(location.id)}
+                      />
+                    ) : null,
+                  )}
+                  <DataSourcesDisclosure sources={sources} />
+                </Stack>
+                {showAddSlot ? (
+                  <Box mt="sm">
+                    <AddLocationCard remaining={remaining} onClick={onAddLocation} />
+                  </Box>
+                ) : null}
+                {pendingOrder !== null ? <Box mt="sm">{pendingInput}</Box> : null}
+              </Box>
+
+              {/* デスクトップ: 指標を行、地点を列に揃えた比較表 */}
+              <Stack visibleFrom="sm" gap="md">
                 <MapThemeControls
                   selection={mapSelection}
                   onChange={onMapSelectionChange}
-                  compact
-                />
-                <ResultCard
-                  order={primary.order}
-                  address={primary.address}
-                  result={primary.result!}
-                  retrying={retryingLocationIds.includes(primary.id)}
-                  onRetry={() => void onRetry(primary.id)}
-                  onConfigure={() => onConfigureLocation(primary.id)}
-                />
-                {showAddSlot ? (
-                  <AddLocationCard remaining={remaining} onClick={onAddLocation} />
-                ) : null}
-                {pendingInput}
-              </Stack>
-            </Box>
-            {/* デスクトップ: カード＋地図の2カラム（デザイン 3b） */}
-            <Box
-              visibleFrom="sm"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "480px 1fr",
-                gap: "var(--mantine-spacing-3xl)",
-                alignItems: "start",
-              }}
-            >
-              <Stack gap="md">
-                <ResultCard
-                  order={primary.order}
-                  address={primary.address}
-                  result={primary.result!}
-                  retrying={retryingLocationIds.includes(primary.id)}
-                  onRetry={() => void onRetry(primary.id)}
-                  onConfigure={() => onConfigureLocation(primary.id)}
-                />
-                {showAddSlot ? (
-                  <AddLocationCard remaining={remaining} onClick={onAddLocation} />
-                ) : null}
-                {pendingInput}
-              </Stack>
-              <Stack gap="sm">
-                <MapThemeControls selection={mapSelection} onChange={onMapSelectionChange} />
-                <RiskMap
-                  locations={[
-                    {
-                      order: primary.order,
-                      label: primary.name,
-                      point: primary.point,
-                      floodLabel: primary.result?.maxFloodDepth.sourceLabel,
-                    },
-                  ]}
-                  active={isDesktop}
-                  selection={mapSelection}
-                  onRelocate={onRelocate}
-                />
-              </Stack>
-            </Box>
-          </>
-        ) : (
-          <>
-            {/* モバイル: 指標別グルーピング比較（デザイン 3g） */}
-            <Box hiddenFrom="sm">
-              <Box px="lg">
-                <MapThemeControls
-                  selection={mapSelection}
-                  onChange={onMapSelectionChange}
-                  compact
                   showScale
                 />
-              </Box>
-              <MobileComparisonView
-                locations={locations}
-                onConfigureLocation={onConfigureLocation}
-              />
-              <Stack px="lg" gap="xs">
+                <DesktopComparisonTable
+                  locations={locations}
+                  selectedIndicator={mapSelection.indicator}
+                  onConfigureLocation={onConfigureLocation}
+                />
                 {locations.map((location) =>
                   location.result && location.result.problems.length > 0 ? (
                     <InvestigationProblemNotice
@@ -423,54 +472,30 @@ export function ResultsView({
                     />
                   ) : null,
                 )}
+                {pendingOrder !== null || showAddSlot ? (
+                  <SimpleGrid cols={3} spacing="2xl">
+                    {pendingOrder !== null ? pendingInput : null}
+                    {showAddSlot ? (
+                      <AddLocationCard
+                        remaining={remaining}
+                        variant="slot"
+                        onClick={onAddLocation}
+                      />
+                    ) : null}
+                  </SimpleGrid>
+                ) : null}
+                <InfoBanner variant="neutral">
+                  色は各公開データ固有の階級（浸水深・東京都公式ランク1〜5）をそのまま示したもので、当サービスによる安全・危険の判定ではありません。グレーは「値のない状態」を示し、安全を意味しません。
+                </InfoBanner>
                 <DataSourcesDisclosure sources={sources} />
               </Stack>
-              {showAddSlot ? (
-                <Box mt="sm">
-                  <AddLocationCard remaining={remaining} onClick={onAddLocation} />
-                </Box>
-              ) : null}
-              {pendingOrder !== null ? <Box mt="sm">{pendingInput}</Box> : null}
-            </Box>
-
-            {/* デスクトップ: 指標を行、地点を列に揃えた比較表 */}
-            <Stack visibleFrom="sm" gap="md">
-              <MapThemeControls
-                selection={mapSelection}
-                onChange={onMapSelectionChange}
-                showScale
-              />
-              <DesktopComparisonTable
-                locations={locations}
-                selectedIndicator={mapSelection.indicator}
-                onConfigureLocation={onConfigureLocation}
-              />
-              {locations.map((location) =>
-                location.result && location.result.problems.length > 0 ? (
-                  <InvestigationProblemNotice
-                    key={location.id}
-                    locationName={location.name}
-                    problems={location.result.problems}
-                    retrying={retryingLocationIds.includes(location.id)}
-                    onRetry={() => void onRetry(location.id)}
-                  />
-                ) : null,
-              )}
-              {pendingOrder !== null || showAddSlot ? (
-                <SimpleGrid cols={3} spacing="2xl">
-                  {pendingOrder !== null ? pendingInput : null}
-                  {showAddSlot ? (
-                    <AddLocationCard remaining={remaining} variant="slot" onClick={onAddLocation} />
-                  ) : null}
-                </SimpleGrid>
-              ) : null}
-              <InfoBanner variant="neutral">
-                色は各公開データ固有の階級（浸水深・東京都公式ランク1〜5）をそのまま示したもので、当サービスによる安全・危険の判定ではありません。グレーは「値のない状態」を示し、安全を意味しません。
-              </InfoBanner>
-              <DataSourcesDisclosure sources={sources} />
-            </Stack>
-          </>
-        )}
+            </>
+          )}
+        </Box>
+        <RiskAssistantPanel
+          locations={locations}
+          displayMode={usesInlineAssistant ? "inline" : "overlay"}
+        />
       </Box>
     </PageShell>
   );
