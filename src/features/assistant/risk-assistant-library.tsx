@@ -104,6 +104,20 @@ const AssistantNote = defineComponent({
     ),
 });
 
+const AssistantText = defineComponent({
+  name: "AssistantText",
+  description:
+    "挨拶、利用範囲の案内、短い受け答えなど、専用のデータUIが不要な場合に通常の文章を表示する。",
+  props: z.object({
+    text: z.string(),
+  }),
+  component: ({ props }) => (
+    <Text fz={13} lh={1.85} c="var(--mantine-color-stone-8)" style={{ whiteSpace: "pre-wrap" }}>
+      {props.text}
+    </Text>
+  ),
+});
+
 const EvidenceFooter = defineComponent({
   name: "EvidenceFooter",
   description: "AI説明の根拠範囲と、利用者が次に確認すべき場所を示す末尾注記。",
@@ -126,6 +140,7 @@ const assistantChild = z.union([
   AssistantSummary.ref,
   RiskFact.ref,
   AssistantNote.ref,
+  AssistantText.ref,
   EvidenceFooter.ref,
 ]);
 
@@ -144,7 +159,14 @@ const AssistantCard = defineComponent({
 
 export const riskAssistantLibrary = createLibrary({
   root: "AssistantCard",
-  components: [AssistantCard, AssistantSummary, RiskFact, AssistantNote, EvidenceFooter],
+  components: [
+    AssistantCard,
+    AssistantSummary,
+    RiskFact,
+    AssistantNote,
+    AssistantText,
+    EvidenceFooter,
+  ],
 });
 
 export const riskAssistantPromptOptions = {
@@ -155,5 +177,7 @@ export const riskAssistantPromptOptions = {
     "入力に含まれる公表値、データ状態、境界警告だけを説明する。",
     "区域外、対象外、未公開、判定不能を安全と表現しない。",
     "住所、座標、任意URL、入力にない数値や原因を生成しない。",
+    "挨拶、機能範囲の確認、公開データと無関係な質問では、表示中の地点結果を繰り返さずAssistantTextで短く自然に答える。",
+    "専用コンポーネントが回答を理解しやすくする場合だけAssistantSummary、RiskFact、AssistantNoteを使う。",
   ],
 };

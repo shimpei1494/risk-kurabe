@@ -5,6 +5,7 @@ import {
   Button,
   Drawer,
   Group,
+  Loader,
   Paper,
   ScrollArea,
   Stack,
@@ -42,20 +43,39 @@ function AssistantMark() {
   );
 }
 
-function AssistantResponse({ response }: { response: string }) {
+function AssistantResponse({ response, isStreaming }: { response: string; isStreaming: boolean }) {
   const [hasError, setHasError] = useState(false);
   return (
-    <Paper withBorder radius="lg" p="md" className="risk-assistant-response">
+    <Paper
+      withBorder
+      radius="lg"
+      p="md"
+      className="risk-assistant-response"
+      aria-live="polite"
+      aria-busy={isStreaming}
+    >
       {hasError ? (
         <Text mb="sm" fz={12} c="red.8" role="alert">
           説明UIの一部を表示できませんでした。
         </Text>
       ) : null}
-      <Renderer
-        response={response}
-        library={riskAssistantLibrary}
-        onError={(errors) => setHasError(errors.length > 0)}
-      />
+      {response ? (
+        <Renderer
+          response={response}
+          library={riskAssistantLibrary}
+          isStreaming={isStreaming}
+          onError={(errors) => {
+            if (!isStreaming) setHasError(errors.length > 0);
+          }}
+        />
+      ) : (
+        <Group gap="xs" py="2xs">
+          <Loader size="xs" color="teal" />
+          <Text fz={12} c="var(--mantine-color-stone-7)">
+            回答を考えています…
+          </Text>
+        </Group>
+      )}
     </Paper>
   );
 }
@@ -87,7 +107,10 @@ function RiskAssistantSurface({ locations }: { locations: readonly ComparisonLoc
   const [question, setQuestion] = useState("");
   const [isAsking, setIsAsking] = useState(false);
   const close = useRiskAssistantStore((state) => state.close);
-  const addMessage = useRiskAssistantStore((state) => state.addMessage);
+  const beginMessage = useRiskAssistantStore((state) => state.beginMessage);
+  const appendResponse = useRiskAssistantStore((state) => state.appendResponse);
+  const replaceResponse = useRiskAssistantStore((state) => state.replaceResponse);
+  const completeMessage = useRiskAssistantStore((state) => state.completeMessage);
   const clearMessages = useRiskAssistantStore((state) => state.clearMessages);
   const contextKey = assistantContextKey(locations);
   const messages = useRiskAssistantStore(
@@ -98,19 +121,30 @@ function RiskAssistantSurface({ locations }: { locations: readonly ComparisonLoc
     const normalized = nextQuestion.trim();
     if (!normalized || isAsking) return;
     const fallbackResponse = buildDemoAssistantResponse(locations, normalized);
+    const messageId = beginMessage(contextKey, normalized);
     setIsAsking(true);
     setQuestion("");
     try {
-      const response = await askRiskAssistant({
+      const stream = await askRiskAssistant({
         data: {
           question: normalized,
           facts: buildAssistantFacts(locations),
           fallbackResponse,
         },
       });
-      addMessage(contextKey, normalized, response);
+      const reader = stream.getReader();
+      while (true) {
+        // ストリームのチャンクは到着順に反映する必要がある。
+        // oxlint-disable-next-line react-doctor/async-await-in-loop
+        const { value, done } = await reader.read();
+        if (done) break;
+        if (value.type === "delta") appendResponse(contextKey, messageId, value.content);
+        if (value.type === "replace") replaceResponse(contextKey, messageId, value.content);
+        if (value.type === "done") completeMessage(contextKey, messageId);
+      }
     } catch {
-      addMessage(contextKey, normalized, fallbackResponse);
+      replaceResponse(contextKey, messageId, fallbackResponse);
+      completeMessage(contextKey, messageId);
     } finally {
       setIsAsking(false);
     }
@@ -189,7 +223,10 @@ function RiskAssistantSurface({ locations }: { locations: readonly ComparisonLoc
                     公開データからの説明
                   </Text>
                 </Group>
-                <AssistantResponse response={message.response} />
+                <AssistantResponse
+                  response={message.response}
+                  isStreaming={message.status === "streaming"}
+                />
               </Box>
             </Box>
           ))}
@@ -200,6 +237,7 @@ function RiskAssistantSurface({ locations }: { locations: readonly ComparisonLoc
               color="stone"
               size="compact-sm"
               onClick={() => clearMessages(contextKey)}
+              disabled={isAsking}
               style={{ alignSelf: "center" }}
             >
               この説明をクリア

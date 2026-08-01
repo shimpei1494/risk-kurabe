@@ -41,6 +41,21 @@ function isValidOpenUiResponse(response: string): boolean {
   return (result.meta?.errors?.length ?? 0) === 0;
 }
 
+export type RiskAssistantStreamEvent =
+  | { type: "delta"; content: string }
+  | { type: "replace"; content: string }
+  | { type: "done" };
+
+function fallbackStream(response: string): ReadableStream<RiskAssistantStreamEvent> {
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue({ type: "replace", content: response });
+      controller.enqueue({ type: "done" });
+      controller.close();
+    },
+  });
+}
+
 export const askRiskAssistant = createServerFn({ method: "POST" })
   .inputValidator((value) => inputSchema.parse(value))
   .handler(async ({ data }) => {
@@ -48,7 +63,7 @@ export const askRiskAssistant = createServerFn({ method: "POST" })
       RISK_ASSISTANT_MODEL_CONFIG[data.purpose as RiskAssistantPurpose] ??
       RISK_ASSISTANT_MODEL_CONFIG.publicDataExplanation;
     const gatewayConfigured = Boolean(env.AI_GATEWAY_BASE_URL && env.CF_AIG_TOKEN);
-    if (!gatewayConfigured && !env.OPENAI_API_KEY) return data.fallbackResponse;
+    if (!gatewayConfigured && !env.OPENAI_API_KEY) return fallbackStream(data.fallbackResponse);
 
     const client = new OpenAI({
       // BYOK利用時はOpenAIキーではなくCloudflare APIトークンでGatewayを認証する。
@@ -66,25 +81,44 @@ export const askRiskAssistant = createServerFn({ method: "POST" })
         : {}),
     });
 
-    try {
-      const response = await client.chat.completions.create({
-        model: modelConfig.model,
-        messages: [
-          {
-            role: "system",
-            content: [
-              riskAssistantLibrary.prompt(riskAssistantPromptOptions),
-              "事実の値は入力データをそのまま使い、評価・推奨・独自順位を作らないでください。",
-            ].join("\n\n"),
-          },
-          { role: "user", content: makePrompt(data.question, data.facts) },
-        ],
-        reasoning_effort: modelConfig.reasoningEffort,
-        max_completion_tokens: 1800,
-      });
-      const output = response.choices[0]?.message.content?.trim() ?? "";
-      return output && isValidOpenUiResponse(output) ? output : data.fallbackResponse;
-    } catch {
-      return data.fallbackResponse;
-    }
+    return new ReadableStream<RiskAssistantStreamEvent>({
+      async start(controller) {
+        let output = "";
+        try {
+          const stream = await client.chat.completions.create({
+            model: modelConfig.model,
+            messages: [
+              {
+                role: "system",
+                content: [
+                  riskAssistantLibrary.prompt(riskAssistantPromptOptions),
+                  "事実の値は入力データをそのまま使い、評価・推奨・独自順位を作らないでください。",
+                ].join("\n\n"),
+              },
+              { role: "user", content: makePrompt(data.question, data.facts) },
+            ],
+            reasoning_effort: modelConfig.reasoningEffort,
+            max_completion_tokens: 1800,
+            stream: true,
+          });
+
+          for await (const chunk of stream) {
+            const content = chunk.choices[0]?.delta.content;
+            if (!content) continue;
+            output += content;
+            controller.enqueue({ type: "delta", content });
+          }
+
+          if (!output.trim() || !isValidOpenUiResponse(output)) {
+            controller.enqueue({ type: "replace", content: data.fallbackResponse });
+          }
+          controller.enqueue({ type: "done" });
+          controller.close();
+        } catch {
+          controller.enqueue({ type: "replace", content: data.fallbackResponse });
+          controller.enqueue({ type: "done" });
+          controller.close();
+        }
+      },
+    });
   });
