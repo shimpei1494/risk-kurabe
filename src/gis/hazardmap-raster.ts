@@ -97,7 +97,9 @@ export function evaluateOfficialFloodPixels(
   nearby: readonly OfficialFloodPixel[] = [],
 ): OfficialFloodSampleResult {
   const centerMatch = matchFromPixel(center, { url: "official", pixelX: 0, pixelY: 0 });
-  const result = evaluateFloodMatches(centerMatch ? [centerMatch] : [], "available");
+  const result = centerMatch
+    ? evaluateFloodMatches([centerMatch], "available")
+    : ({ state: "uncolored", evidences: [] } as const);
   const centerCode = centerMatch?.depth.sourceCode ?? null;
   const boundaryWarning = nearby.some((pixel) => {
     const match = matchFromPixel(pixel, { url: "official", pixelX: 0, pixelY: 0 });

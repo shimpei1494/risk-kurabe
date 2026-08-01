@@ -12,6 +12,7 @@ function literal(value: string): string {
 }
 
 const STATE_LABELS: Record<Exclude<DataStateKind, "value">, string> = {
+  uncolored: "浸水深表示なし",
   outOfArea: "区域外",
   unpublished: "未公開",
   notApplicable: "対象外",

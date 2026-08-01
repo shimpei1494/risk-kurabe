@@ -22,7 +22,10 @@ export interface FloodPolygonMatch {
 export type FloodCoverageStatus = "available" | "partial" | "unpublished" | "failed" | "unknown";
 
 export interface EvaluatedFloodResult {
-  state: Extract<DataStateKind, "value" | "outOfArea" | "unpublished" | "undetermined">;
+  state: Extract<
+    DataStateKind,
+    "value" | "uncolored" | "outOfArea" | "unpublished" | "undetermined"
+  >;
   primary?: FloodPolygonMatch;
   /** 主結果以外も含む、地点に一致した全地物。表示順も決定的に固定する。 */
   evidences: readonly FloodPolygonMatch[];

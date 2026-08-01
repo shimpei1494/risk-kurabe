@@ -1,4 +1,4 @@
-import { Box, Group, Paper, Stack, Text, ThemeIcon, useMantineTheme } from "@mantine/core";
+import { Box, Group, Paper, Stack, Text, ThemeIcon, Tooltip, useMantineTheme } from "@mantine/core";
 import { createLibrary, defineComponent } from "@openuidev/react-lang";
 import { z } from "zod/v4";
 
@@ -8,6 +8,7 @@ import type { DataStateKind, FloodDepthCategory, RegionalRiskRank } from "../../
 
 const dataStateSchema = z.enum([
   "value",
+  "uncolored",
   "outOfArea",
   "unpublished",
   "notApplicable",
@@ -151,12 +152,9 @@ function FloodPlot({ items }: { items: ComparisonItem[] }) {
                   >
                     {range.openEnded ? <span className="risk-comparison-open-end">↑</span> : null}
                   </Box>
-                ) : item.state === "outOfArea" ? (
-                  <Box className="risk-comparison-flood-no-zone">
+                ) : item.state === "uncolored" ? (
+                  <Box className="risk-comparison-flood-no-display">
                     <span aria-hidden />
-                    <Text fz={8.5} fw={800} c="var(--mantine-color-stone-7)">
-                      区分なし
-                    </Text>
                   </Box>
                 ) : (
                   <ComparisonState item={item} />
@@ -167,7 +165,11 @@ function FloodPlot({ items }: { items: ComparisonItem[] }) {
                 {item.boundaryWarning ? <span aria-label="境界警告あり"> ▲</span> : null}
               </Text>
               <Text className="risk-comparison-value">
-                {item.state === "value" ? value : item.state === "outOfArea" ? "区域外" : "\u00a0"}
+                {item.state === "value"
+                  ? value
+                  : item.state === "uncolored"
+                    ? "浸水深表示なし"
+                    : "\u00a0"}
               </Text>
             </Box>
           );
@@ -254,9 +256,23 @@ const RiskComparison = defineComponent({
   component: ({ props }) => (
     <Paper withBorder radius="lg" p="sm" className="risk-comparison-card">
       <Group justify="space-between" align="baseline" gap="xs" wrap="nowrap">
-        <Text fz={12.5} fw={900} c="var(--mantine-color-stone-9)">
-          {props.indicator}
-        </Text>
+        <Group gap="4xs" wrap="nowrap">
+          <Text fz={12.5} fw={900} c="var(--mantine-color-stone-9)">
+            {props.indicator}
+          </Text>
+          {props.indicator === "最大浸水深" ? (
+            <Tooltip
+              label="「浸水深表示なし」は取得成功時の着色区分なしです。0m付近に置きますが、浸水しない・安全を意味しません。"
+              multiline
+              w={250}
+              withArrow
+            >
+              <ThemeIcon variant="light" radius="xl" size={16} fz={10} aria-label="表示の補足">
+                i
+              </ThemeIcon>
+            </Tooltip>
+          ) : null}
+        </Group>
         <Text fz={9.5} fw={700} c="var(--mantine-color-stone-6)" flex="none">
           {props.indicator === "最大浸水深" ? "単位 m" : "ランク 1–5"}
         </Text>
@@ -268,9 +284,7 @@ const RiskComparison = defineComponent({
       )}
       <Text mt="xs" fz={9.5} lh={1.45} c="var(--mantine-color-stone-7)">
         {props.indicator === "最大浸水深"
-          ? props.items.some((item) => item.state === "outOfArea")
-            ? "帯は公表区分の範囲です。区域外は0mではなく、公開タイル上に浸水深区分がない状態です。"
-            : "帯は公表された浸水深の範囲です。"
+          ? "帯は公表された浸水深の範囲です。"
           : "上にあるほど公表ランクが高いことを示します。"}
       </Text>
     </Paper>
@@ -441,12 +455,14 @@ export const riskAssistantPromptOptions = {
   additionalRules: [
     "必ずAssistantCardをルートにし、1列の読み取り専用UIを作る。",
     "入力に含まれる公表値、データ状態、境界警告だけを説明する。",
-    "区域外、対象外、未公開、判定不能を安全と表現しない。",
+    "浸水深表示なし、区域外、対象外、未公開、判定不能を安全と表現しない。",
+    "uncolored（浸水深表示なし）は公表レイヤーを正常取得したが、その地点に着色された浸水深区分がない状態。比較UIでは0m付近に置くが、0m、浸水しない、安全とは説明しない。着色地点より公表表示上は低い、と説明できる。",
+    "undeterminedは取得・判定失敗であり、uncoloredと混同しない。",
     "住所、座標、任意URL、入力にない数値や原因を生成しない。",
     "挨拶、機能範囲の確認、公開データと無関係な質問では、表示中の地点結果を繰り返さずAssistantTextで短く自然に答える。",
     "2〜3地点の違いを尋ねられた場合は、地点ごとのRiskFactを並べず、同じ指標ごとにRiskComparisonを使う。",
     "RiskComparisonには同じindicatorの地点だけを2〜3件含め、入力のlocation、value、state、boundaryWarningを一字も変更せず渡す。",
-    "最大浸水深と危険度ランクを同じRiskComparisonへ混ぜない。区域外、対象外、未公開、判定不能を数値0として扱わない。",
+    "最大浸水深と危険度ランクを同じRiskComparisonへ混ぜない。uncoloredは0m付近へ表示できるが数値0とは断定しない。区域外、対象外、未公開、判定不能を数値0として扱わない。",
     "専用コンポーネントが回答を理解しやすくする場合だけAssistantSummary、RiskFact、AssistantNoteを使う。",
   ],
 };

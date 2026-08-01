@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 
+import { INVESTIGATION_LOGIC_VERSION } from "../domain/investigation";
 import { investigateRisk, type InvestigationDependencies } from "./investigate-risk";
 import type { RiskDataCoverage, RiskDataManifest } from "./manifest";
 
@@ -53,7 +54,7 @@ describe("investigateRisk", () => {
     expect(result).toMatchObject({
       kind: "completed",
       dataVersion: "v3",
-      logicVersion: "risk-evaluator-v5-official-flood-legend",
+      logicVersion: INVESTIGATION_LOGIC_VERSION,
       maximumFlood: { result: { state: "value" } },
       issues: [],
     });

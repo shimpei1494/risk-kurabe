@@ -39,7 +39,7 @@ const comparisonLocations: ComparisonLocation[] = [
     name: "地点2",
     result: {
       ...locations[0]!.result!,
-      maxFloodDepth: { state: "outOfArea" },
+      maxFloodDepth: { state: "uncolored" },
       tokyoEarthquakeRisk: { state: "value", rank: 5 },
       buildingCollapseRisk: { state: "value", rank: 3 },
       fireRisk: { state: "value", rank: 2 },
@@ -75,8 +75,8 @@ describe("buildDemoAssistantResponse", () => {
     expect(result.meta.errors).toEqual([]);
     expect(result.meta.unresolved).toEqual([]);
     expect(response).toContain('RiskComparison("最大浸水深"');
-    expect(response).toContain('"state":"outOfArea"');
-    expect(response).toContain('"value":"区域外"');
+    expect(response).toContain('"state":"uncolored"');
+    expect(response).toContain('"value":"浸水深表示なし"');
     expect(response).not.toContain('"value":"0m"');
     expect(response).not.toContain("RiskFact(");
   });

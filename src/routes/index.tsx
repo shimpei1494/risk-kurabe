@@ -103,6 +103,7 @@ export function ResultsOverlays({
               label: address,
               point,
               floodLabel: result?.maxFloodDepth.sourceLabel,
+              floodState: result?.maxFloodDepth.state,
             }))}
             height={320}
             showLocationNavigator
@@ -336,6 +337,7 @@ export function ResultsView({
                         label: primary.name,
                         point: primary.point,
                         floodLabel: primary.result?.maxFloodDepth.sourceLabel,
+                        floodState: primary.result?.maxFloodDepth.state,
                       },
                     ]}
                     height={150}
@@ -402,6 +404,7 @@ export function ResultsView({
                         label: primary.name,
                         point: primary.point,
                         floodLabel: primary.result?.maxFloodDepth.sourceLabel,
+                        floodState: primary.result?.maxFloodDepth.state,
                       },
                     ]}
                     active={isDesktop}

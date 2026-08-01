@@ -12,7 +12,14 @@ const factSchema = z.object({
   location: z.string().min(1).max(40),
   indicator: z.string().min(1).max(80),
   value: z.string().min(1).max(80),
-  state: z.enum(["value", "outOfArea", "unpublished", "notApplicable", "undetermined"]),
+  state: z.enum([
+    "value",
+    "uncolored",
+    "outOfArea",
+    "unpublished",
+    "notApplicable",
+    "undetermined",
+  ]),
   boundaryWarning: z.boolean(),
 });
 

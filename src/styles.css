@@ -257,22 +257,19 @@ body {
   transform: translateX(-50%);
 }
 
-.risk-comparison-flood-no-zone {
+.risk-comparison-flood-no-display {
   position: absolute;
-  bottom: 4px;
+  bottom: 0;
   left: 50%;
-  display: grid;
-  width: max-content;
-  justify-items: center;
-  row-gap: 2px;
-  transform: translateX(-50%);
+  z-index: 1;
+  transform: translate(-50%, 50%);
 }
 
-.risk-comparison-flood-no-zone > span {
+.risk-comparison-flood-no-display > span {
   display: block;
   width: 15px;
   height: 7px;
-  border: 2px solid var(--mantine-color-stone-6);
+  border: 2px solid var(--mantine-color-teal-7);
   border-radius: 999px;
   background: #fff;
 }

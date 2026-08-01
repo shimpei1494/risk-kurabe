@@ -17,11 +17,11 @@ describe("evaluateOfficialFloodPixels", () => {
     expect(evaluated.boundaryWarning).toBe(false);
   });
 
-  it("透明画素は値なしにし、周辺の区分差を境界警告にする", () => {
+  it("透明画素は着色区分なしにし、周辺の区分差を境界警告にする", () => {
     const evaluated = evaluateOfficialFloodPixels(pixel([0, 0, 0, 0]), [
       pixel([255, 216, 192, 255]),
     ]);
-    expect(evaluated.result).toEqual({ state: "outOfArea", evidences: [] });
+    expect(evaluated.result).toEqual({ state: "uncolored", evidences: [] });
     expect(evaluated.boundaryWarning).toBe(true);
   });
 
