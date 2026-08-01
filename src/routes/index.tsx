@@ -15,6 +15,7 @@ import {
 import { useMediaQuery } from "@mantine/hooks";
 import { createFileRoute } from "@tanstack/react-router";
 
+import { RiskAssistantLauncher, RiskAssistantPanel } from "../components/assistant/RiskAssistant";
 import { LocationInputCard } from "../components/location-input/LocationInputCard";
 import { AddLocationCard } from "../components/results/AddLocationCard";
 import { DesktopComparisonTable } from "../components/results/DesktopComparisonTable";
@@ -283,6 +284,7 @@ export function ResultsView({
 
   return (
     <PageShell>
+      <RiskAssistantPanel locations={locations} />
       <AppHeader />
 
       <Box px={{ base: "lg", sm: "5xl" }} py={{ base: "md", sm: count === 1 ? 28 : "2xl" }}>
@@ -302,11 +304,14 @@ export function ResultsView({
             >
               {pageTitle}
             </Title>
-            {isComparing ? (
-              <Button onClick={onOpenMap} radius="xl" size="sm" flex="none">
-                地図で見る
-              </Button>
-            ) : null}
+            <Group gap="xs" wrap="nowrap" flex="none">
+              {isComparing ? (
+                <Button onClick={onOpenMap} radius="xl" size="sm">
+                  地図で見る
+                </Button>
+              ) : null}
+              <RiskAssistantLauncher />
+            </Group>
           </Group>
         </Box>
         {count === 1 && primary ? (

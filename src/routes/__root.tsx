@@ -1,5 +1,6 @@
 /// <reference types="vite-plus/client" />
 import { ColorSchemeScript, MantineProvider } from "@mantine/core";
+import { OpenUIDevtools } from "@openuidev/devtools";
 import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
@@ -76,6 +77,7 @@ function RootComponent() {
           </ComparisonSessionProvider>
         </MantineProvider>
         {import.meta.env.DEV ? <TanStackRouterDevtools position="bottom-right" /> : null}
+        {import.meta.env.DEV ? <OpenUIDevtools position="bottom-left" /> : null}
         <Scripts />
       </body>
     </html>
