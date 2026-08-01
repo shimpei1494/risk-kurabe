@@ -1,0 +1,167 @@
+.thesis {
+  border: 1px solid rgb(37 119 111 / 20%);
+  background: linear-gradient(105deg, rgb(224 242 238 / 80%), rgb(250 249 245 / 70%));
+}
+
+.thesis :global(.mantine-Alert-title) {
+  color: var(--mantine-color-teal-9);
+  font-size: 13px;
+}
+
+.thesis :global(.mantine-Alert-message) {
+  color: var(--mantine-color-stone-8);
+  font-size: 12.5px;
+  line-height: 1.8;
+}
+
+.sourceCard {
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+}
+
+.sourceCard::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  content: "";
+}
+
+.sourceCardFlood::before {
+  background: #4a9b95;
+}
+
+.sourceCardEarthquake::before {
+  background: #d98b55;
+}
+
+.facts {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 0;
+}
+
+.fact {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--mantine-color-stone-2);
+}
+
+.fact :global(dt),
+.fact :global(dd) {
+  margin: 0;
+}
+
+.note {
+  border: 1px solid rgb(37 119 111 / 16%);
+  background: var(--mantine-color-teal-0);
+}
+
+.noteWarm {
+  border-color: rgb(217 139 85 / 22%);
+  background: #fff8ef;
+}
+
+.process {
+  background: #fbfaf7;
+}
+
+.processList {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.processList li {
+  position: relative;
+  min-width: 0;
+  padding: 4px 28px 4px 0;
+}
+
+.processList li:not(:last-child)::after {
+  position: absolute;
+  top: 30px;
+  right: 14px;
+  width: 22px;
+  height: 1px;
+  background: var(--mantine-color-teal-3);
+  content: "";
+}
+
+.processList li:not(:last-child)::before {
+  position: absolute;
+  top: 26px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  border-top: 1px solid var(--mantine-color-teal-6);
+  border-right: 1px solid var(--mantine-color-teal-6);
+  content: "";
+  transform: rotate(45deg);
+}
+
+.processLabel {
+  margin-bottom: 7px;
+  color: var(--mantine-color-teal-7);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.stateCard,
+.sourceRow {
+  background: #fff;
+}
+
+.details {
+  padding: 14px 16px;
+  border: 1px solid var(--mantine-color-stone-3);
+  border-radius: var(--mantine-radius-md);
+  background: #fbfaf7;
+}
+
+.details summary {
+  color: var(--mantine-color-teal-8);
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+@media (max-width: 47.99em) {
+  .fact {
+    grid-template-columns: 4.1rem 1fr;
+    gap: 7px;
+  }
+
+  .processList {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .processList li {
+    padding: 0 0 0 34px;
+  }
+
+  .processList li:not(:last-child)::after {
+    top: 38px;
+    right: auto;
+    left: 11px;
+    width: 1px;
+    height: 22px;
+  }
+
+  .processList li:not(:last-child)::before {
+    top: 56px;
+    right: auto;
+    left: 7px;
+    border-top: 0;
+    border-right: 1px solid var(--mantine-color-teal-6);
+    border-bottom: 1px solid var(--mantine-color-teal-6);
+    transform: rotate(45deg);
+  }
+}
