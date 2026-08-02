@@ -88,11 +88,14 @@ export function ResultCard({
   const showOutOfAreaFootnote = maxFloodDepth.state === "outOfArea";
 
   return (
-    <Card withBorder radius="xl" shadow="xs" p={0}>
+    // 余白は style prop の p ではなく Card の padding prop で 0 にする。
+    // p={0} では --card-padding が既定値(14px)のまま残り、Card.Section の負のマージンが
+    // 打ち消されないため、各セクションの px 指定が実質13px削られて窮屈になる。
+    <Card withBorder radius="xl" shadow="xs" padding={0}>
       <Card.Section withBorder inheritPadding py="lg" px="xl">
         <Tooltip label={`地点${order}の設定`} openDelay={400} withArrow>
           <UnstyledButton
-            className="location-settings-trigger"
+            className="location-settings-trigger is-flush"
             aria-label={`${address}の設定を開く`}
             onClick={onConfigure}
           >
@@ -275,19 +278,19 @@ export function ResultCard({
       </Card.Section>
 
       {showOutOfAreaFootnote ? (
-        <Text mx="md" mb="xs" fz={11.5} lh={1.7} c="var(--mantine-color-stone-7)">
+        <Text mx="xl" mb="xs" fz={11.5} lh={1.7} c="var(--mantine-color-stone-7)">
           ※ 国交省データで指定された浸水想定区域の外、という意味です。安全を示すものではありません。
         </Text>
       ) : null}
 
       {aiSummary.trim().length > 0 ? (
-        <Card.Section inheritPadding pt={showOutOfAreaFootnote ? 0 : "3xs"} pb="md" px="md">
+        <Card.Section inheritPadding pt={showOutOfAreaFootnote ? 0 : "3xs"} pb="md" px="xl">
           <AiSummaryBox text={aiSummary} />
         </Card.Section>
       ) : null}
 
       {result.sources.length > 0 ? (
-        <Card.Section inheritPadding pb="md" px="md">
+        <Card.Section inheritPadding pb="md" px="xl">
           <DataSourcesDisclosure sources={result.sources} />
         </Card.Section>
       ) : null}

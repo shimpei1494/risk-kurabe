@@ -1,7 +1,7 @@
 /// <reference types="vite-plus/client" />
 import { ColorSchemeScript, MantineProvider } from "@mantine/core";
 import { OpenUIDevtools } from "@openuidev/devtools";
-import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
+import { HeadContent, Link, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
 import {
@@ -10,6 +10,7 @@ import {
   APP_OG_DESCRIPTION,
   APP_OG_IMAGE_URL,
   APP_TITLE,
+  BRAND_MARK_URL,
 } from "../brand";
 import { ComparisonSessionProvider } from "../features/comparison/comparison-session";
 import { theme } from "../theme";
@@ -84,12 +85,67 @@ function RootComponent() {
   );
 }
 
+/**
+ * 404・読み込み中はテーマの読み込みに失敗しても崩れないよう、
+ * ErrorComponentと同じくMantineに依存しないインラインスタイルで組む。
+ */
+const statusPageStyle = {
+  maxWidth: 520,
+  margin: "12vh auto",
+  padding: "0 1.5rem",
+  fontFamily: "'Noto Sans JP', system-ui, sans-serif",
+  textAlign: "center",
+} as const;
+
+const statusMarkStyle = {
+  width: 88,
+  height: 88,
+  borderRadius: 20,
+  border: "1px solid #dcd9d2",
+  background: "#f2f0eb",
+} as const;
+
+const statusHeadingStyle = {
+  margin: "0.25rem 0 0",
+  color: "#44423c",
+  fontFamily: "'Zen Maru Gothic', 'Noto Sans JP', sans-serif",
+  fontSize: "1.4rem",
+} as const;
+
+const statusBodyStyle = {
+  margin: "0.75rem 0 0",
+  color: "#75726a",
+  fontSize: 13.5,
+  lineHeight: 1.9,
+} as const;
+
+const statusLinkStyle = {
+  display: "inline-block",
+  marginTop: "1.5rem",
+  padding: "0.7rem 1.4rem",
+  borderRadius: 999,
+  background: "#2f8f87",
+  color: "#fff",
+  fontSize: 14,
+  fontWeight: 700,
+  textDecoration: "none",
+} as const;
+
 function NotFoundComponent() {
   return (
-    <div style={{ padding: "1rem" }}>
-      <h1>404</h1>
-      <p>ページが見つかりませんでした。</p>
-    </div>
+    <main style={statusPageStyle}>
+      <img src={BRAND_MARK_URL} alt="" style={statusMarkStyle} decoding="async" />
+      <p style={{ margin: "1.25rem 0 0", color: "#25776f", fontSize: 13, fontWeight: 700 }}>404</p>
+      <h1 style={statusHeadingStyle}>ページが見つかりませんでした</h1>
+      <p style={statusBodyStyle}>
+        URLが変わったか、削除された可能性があります。
+        <br />
+        トップから地点を調べ直してください。
+      </p>
+      <Link to="/" style={statusLinkStyle}>
+        トップへ戻る
+      </Link>
+    </main>
   );
 }
 
@@ -129,8 +185,9 @@ function ErrorComponent() {
 
 function PendingComponent() {
   return (
-    <div style={{ padding: "1rem" }}>
-      <p>読み込み中...</p>
-    </div>
+    <main style={statusPageStyle}>
+      <img src={BRAND_MARK_URL} alt="" style={statusMarkStyle} decoding="async" />
+      <p style={{ margin: "1.25rem 0 0", color: "#75726a", fontSize: 13.5 }}>読み込んでいます…</p>
+    </main>
   );
 }

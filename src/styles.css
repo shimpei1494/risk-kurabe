@@ -54,6 +54,16 @@ body {
   text-decoration: none;
 }
 
+/** ブランドマーク（地図をのぞくリス）。アイコン自体が生成りの地色を持つため縁を薄く締める */
+.app-brand-mark {
+  display: block;
+  flex: none;
+  border: 1px solid var(--mantine-color-stone-3);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-stone-1);
+  object-fit: cover;
+}
+
 .app-header-link,
 .app-mobile-nav-link {
   color: var(--mantine-color-stone-8);
@@ -68,14 +78,88 @@ body {
   color: var(--mantine-color-teal-8);
 }
 
+.app-header-link {
+  position: relative;
+  padding-block: 6px;
+}
+
+.app-header-link[data-active] {
+  color: var(--mantine-color-teal-8);
+}
+
+.app-header-link[data-active]::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--mantine-color-teal-6);
+  content: "";
+}
+
 .app-mobile-nav-link {
   display: block;
   padding: 12px 14px;
   border-radius: var(--mantine-radius-md);
 }
 
-.app-mobile-nav-link:hover {
+.app-mobile-nav-link:hover,
+.app-mobile-nav-link[data-active] {
   background: var(--mantine-color-teal-0);
+}
+
+.app-mobile-nav-link[data-active] {
+  color: var(--mantine-color-teal-8);
+}
+
+/**
+ * トップのヒーロー。イラストは左半分が余白の構図なので、
+ * 広い画面ではイラストを右に置いてコピーと2カラムで並べ、
+ * 狭い画面では横長に切り出したバナーとしてコピーの上に置く。
+ */
+.home-hero {
+  display: grid;
+  gap: var(--mantine-spacing-2xl);
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.home-hero-art {
+  display: block;
+  width: 100%;
+  max-height: 300px;
+  aspect-ratio: 2 / 1;
+  border: 1px solid var(--mantine-color-stone-3);
+  border-radius: var(--mantine-radius-xl);
+  background: #eadece;
+  box-shadow: 0 14px 34px rgb(68 66 60 / 8%);
+  object-fit: cover;
+  object-position: right 30%;
+}
+
+/** 入力カード以下は読みやすさ優先で本文幅に収め、ヒーローの広い幅と対比させる */
+.home-column {
+  max-width: 720px;
+  margin-inline: auto;
+}
+
+@media (min-width: 62em) {
+  .home-hero {
+    gap: var(--mantine-spacing-4xl);
+    grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr);
+  }
+
+  .home-hero-art {
+    max-height: none;
+    aspect-ratio: 4 / 3;
+    object-position: right center;
+    order: 2;
+  }
+
+  .home-hero-copy {
+    order: 1;
+  }
 }
 
 .app-menu-icon {
@@ -397,7 +481,7 @@ body {
 }
 
 :where(button, a, input, summary, [tabindex]):focus-visible {
-  outline: 3px solid #25776f;
+  outline: 3px solid var(--mantine-color-teal-7);
   outline-offset: 3px;
 }
 
@@ -409,6 +493,16 @@ body {
   transition:
     background-color 140ms ease,
     transform 140ms ease;
+}
+
+/*
+ * 結果カードのヘッダー専用。ホバー範囲の6pxを保ったまま、負のマージンで
+ * 地点番号の左端を下の指標行アイコンと揃える。比較表側はグリッド/表セルに
+ * 収める必要があるため、この修飾クラスを付けない。
+ */
+.location-settings-trigger.is-flush {
+  width: calc(100% + 12px);
+  margin-inline: -6px;
 }
 
 .location-settings-trigger:hover {
