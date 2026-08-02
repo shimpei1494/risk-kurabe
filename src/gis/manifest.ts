@@ -72,7 +72,12 @@ export type RiskDataManifest = z.infer<typeof riskDataManifestSchema>;
 export type RiskDataCoverage = z.infer<typeof riskDataCoverageSchema>;
 
 function urlFromBase(baseUrl: string, path: string): string {
-  return new URL(path, baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`).toString();
+  const normalizedBase = new URL(baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`);
+  const resolvedUrl = new URL(path, normalizedBase);
+  if (!resolvedUrl.href.startsWith(normalizedBase.href)) {
+    throw new Error("リスクデータの成果物パスが配信元の範囲外です");
+  }
+  return resolvedUrl.toString();
 }
 
 async function fetchJson(url: string, signal?: AbortSignal): Promise<unknown> {

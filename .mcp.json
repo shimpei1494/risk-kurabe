@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "mantine": {
-      "command": "npx",
-      "args": ["-y", "@mantine/mcp-server"]
+      "command": "vp",
+      "args": ["dlx", "@mantine/mcp-server@9.4.2"]
     }
   }
 }

@@ -85,6 +85,36 @@ describe("risk data catalog", () => {
     );
   });
 
+  it("成果物URLが配信元の範囲外へ移動するパスを拒否する", () => {
+    const baseUrl = "https://data.example.com/risk-data/v3/";
+    const dataset = manifest.datasets[0]!;
+    const absoluteManifest = {
+      ...manifest,
+      datasets: [
+        {
+          ...dataset,
+          artifact: artifact("https://attacker.example/risk.fgb"),
+        },
+      ],
+    };
+    const traversalManifest = {
+      ...manifest,
+      datasets: [
+        {
+          ...dataset,
+          artifact: artifact("../risk.fgb"),
+        },
+      ],
+    };
+
+    expect(() => tokyoRegionalRiskArtifactUrl({ baseUrl, manifest: absoluteManifest })).toThrow(
+      "配信元の範囲外",
+    );
+    expect(() => tokyoRegionalRiskArtifactUrl({ baseUrl, manifest: traversalManifest })).toThrow(
+      "配信元の範囲外",
+    );
+  });
+
   it("東京都地域危険度のみのV3カバレッジを受け入れる", () => {
     const coverage = riskDataCoverageSchema.parse({
       schemaVersion: 1,

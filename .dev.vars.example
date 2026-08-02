@@ -1,1 +1,2 @@
 YAHOO_CLIENT_ID="Yahoo Developer Networkで発行されたClient ID"
+CF_AIG_TOKEN="Cloudflare AI Gateway用のAPIトークン"

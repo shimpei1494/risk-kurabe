@@ -18,6 +18,7 @@
 - Node.js 24.17.0以上（`.node-version`を参照）
 - [Vite+](https://viteplus.dev/guide/) の`vp`コマンド
 - Yahoo! JAPAN Developer Networkで発行したClient ID
+- AI説明機能を使う場合はCloudflare AI Gateway用のAPIトークン
 - 本番配置を行う場合はCloudflareアカウント
 
 パッケージ管理、開発、テスト、ビルドにはVite+を使用します。`pnpm`、`npm`、`yarn`を直接実行しないでください。
@@ -35,7 +36,7 @@ vp config
 
 `vp config`はGitフックを設定します。以後、コミット前にステージ済みファイルのチェックが自動実行されます。
 
-### 2. Yahoo Client IDを設定する
+### 2. Worker Secretsを設定する
 
 ローカル用Secretファイルを作成します。
 
@@ -43,13 +44,16 @@ vp config
 cp .dev.vars.example .dev.vars
 ```
 
-`.dev.vars`を開き、取得済みのClient IDへ置き換えます。
+`.dev.vars`を開き、取得済みのClient IDとCloudflare AI Gateway用トークンへ置き換えます。
 
 ```dotenv
 YAHOO_CLIENT_ID="取得したClient ID"
+CF_AIG_TOKEN="取得したCloudflare APIトークン"
 ```
 
 `.dev.vars`はGit管理対象外です。Client IDをソースコード、`wrangler.jsonc`、`VITE_`で始まる環境変数へ書かないでください。`VITE_`変数はブラウザ用バンドルへ公開されます。
+AI説明はCloudflare AI Gateway経由に限定しているため、`OPENAI_API_KEY`は使用しません。
+Yahooジオコーディングは1拠点あたり各操作60回/分、AI説明は8回/分に制限します。CloudflareのRate Limiting bindingは拠点ごとの概算制御であり、厳密な課金カウンターではありません。
 
 ### 3. 開発サーバーを起動する
 
@@ -124,14 +128,15 @@ vp run data:tokyo-risk:verify-remote
 
 R2のPublic Development URLは開発用途の`r2.dev`エンドポイントです。ハッカソン版では固定GISデータの公開に使用しますが、長期運用時はレート制限を考慮してカスタムドメインへの移行を検討します。
 
-### 3. Yahoo Client IDをWorker Secretへ登録する
+### 3. Worker Secretsを登録する
 
 ```bash
 vp exec wrangler secret put YAHOO_CLIENT_ID
+vp exec wrangler secret put CF_AIG_TOKEN
 vp exec wrangler secret list
 ```
 
-対話プロンプトへClient IDを入力します。`secret list`では`YAHOO_CLIENT_ID`という名前だけを確認し、値は表示されません。Secretは`wrangler.jsonc`やGitには書き込みません。
+各対話プロンプトへSecretを入力します。`secret list`では名前だけを確認し、値は表示されません。Secretは`wrangler.jsonc`やGitには書き込みません。
 
 ### 4. R2 CORSを確認する
 
@@ -156,7 +161,7 @@ vp run deploy
 https://risk-kurabe.tokyo-odh-044.workers.dev
 ```
 
-`wrangler.jsonc`では`YAHOO_CLIENT_ID`を必須Secretとして宣言しています。未設定の場合、開発時には警告が出て、本番デプロイは失敗します。
+`wrangler.jsonc`では`YAHOO_CLIENT_ID`と`CF_AIG_TOKEN`を必須Secretとして宣言しています。未設定の場合、開発時には警告が出て、本番デプロイは失敗します。
 
 通常のコード更新ではR2の初期構築を繰り返す必要はありません。`vp check`、`vp test`、`vp build`を通してから`vp run deploy`を実行します。
 
