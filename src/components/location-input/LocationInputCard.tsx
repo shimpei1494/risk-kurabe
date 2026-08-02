@@ -61,6 +61,9 @@ const initialInputState: InputState = {
   mapPoint: null,
 };
 
+// 1地点目は基準地点がまだないため、現在地ボタンや手動選択の起点として使う。
+const DEFAULT_MAP_CENTER: GeoPoint = { longitude: 139.7671, latitude: 35.6812 };
+
 function RecentLocationsPanel({
   locations,
   onSelect,
@@ -329,7 +332,7 @@ function MapInput({
           地図をクリックしてピンを置く
         </Text>
         <Text mt="4xs" fz={11.5} c="var(--mantine-color-stone-7)">
-          現在の地点の周辺から選べます。ピンはドラッグして微調整できます。
+          地図上で選ぶか、現在地を表示してからピンを微調整できます。
         </Text>
       </div>
       <LocationPickerMap
@@ -484,24 +487,22 @@ export function LocationInputCard({
       ) : null}
 
       <Stack gap="sm">
-        {mapStartPoint ? (
-          <SegmentedControl
-            fullWidth
-            value={inputMode}
-            onChange={(value) =>
-              updateState({
-                inputMode: value as InputMode,
-                message: null,
-                requestState: "idle",
-              })
-            }
-            data={[
-              { label: "住所から探す", value: "address" },
-              { label: "地図から選ぶ", value: "map" },
-            ]}
-            aria-label="地点の選び方"
-          />
-        ) : null}
+        <SegmentedControl
+          fullWidth
+          value={inputMode}
+          onChange={(value) =>
+            updateState({
+              inputMode: value as InputMode,
+              message: null,
+              requestState: "idle",
+            })
+          }
+          data={[
+            { label: "住所から探す", value: "address" },
+            { label: "地図から選ぶ", value: "map" },
+          ]}
+          aria-label="地点の選び方"
+        />
 
         {inputMode === "address" ? (
           <AddressInput
@@ -515,9 +516,9 @@ export function LocationInputCard({
           />
         ) : null}
 
-        {inputMode === "map" && mapStartPoint ? (
+        {inputMode === "map" ? (
           <MapInput
-            mapStartPoint={mapStartPoint}
+            mapStartPoint={mapStartPoint ?? DEFAULT_MAP_CENTER}
             mapPoint={mapPoint}
             requestState={requestState}
             submitLabel={submitLabel}

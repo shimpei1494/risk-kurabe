@@ -1,5 +1,5 @@
-import { Box, Center, Loader, Paper, Text } from "@mantine/core";
-import { useEffect, useReducer, useRef } from "react";
+import { Box, Button, Center, Loader, Paper, Text } from "@mantine/core";
+import { useEffect, useReducer, useRef, useState } from "react";
 
 import type { GeoPoint } from "../../gis/geometry";
 import { collapseMapAttribution } from "../../gis/map-attribution";
@@ -16,11 +16,14 @@ export function LocationPickerMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const initialPointRef = useRef(point);
   const onPointChangeRef = useRef(onPointChange);
+  const mapRef = useRef<import("maplibre-gl").Map | undefined>(undefined);
+  const setMarkerRef = useRef<(nextPoint: GeoPoint) => void>(() => undefined);
   onPointChangeRef.current = onPointChange;
   const [status, setStatus] = useReducer(
     (_previous: "loading" | "ready" | "error", next: "loading" | "ready" | "error") => next,
     "loading",
   );
+  const [locationState, setLocationState] = useState<"idle" | "locating" | "error">("idle");
 
   // ready/errorはMapLibreの排他的な非同期イベントであり、連鎖更新ではない。
   // oxlint-disable-next-line react-doctor/no-cascading-set-state
@@ -57,6 +60,7 @@ export function LocationPickerMap({
             layers: [{ id: "background-map", type: "raster", source: "backgroundMap" }],
           },
         });
+        mapRef.current = map;
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
 
         const setMarker = (nextPoint: GeoPoint) => {
@@ -78,6 +82,7 @@ export function LocationPickerMap({
             marker.setLngLat([nextPoint.longitude, nextPoint.latitude]);
           }
         };
+        setMarkerRef.current = setMarker;
 
         if (initialPointRef.current) setMarker(initialPointRef.current);
         handleMapClick = (event) => {
@@ -87,6 +92,7 @@ export function LocationPickerMap({
           };
           setMarker(nextPoint);
           onPointChangeRef.current(nextPoint);
+          setLocationState("idle");
         };
         map.on("click", handleMapClick);
         map.once("idle", () => {
@@ -106,12 +112,41 @@ export function LocationPickerMap({
 
     return () => {
       disposed = true;
+      mapRef.current = undefined;
+      setMarkerRef.current = () => undefined;
       if (marker && handleDragEnd) marker.off("dragend", handleDragEnd);
       if (map && handleMapClick) map.off("click", handleMapClick);
       if (map && handleError) map.off("error", handleError);
       map?.remove();
     };
   }, [initialCenter.latitude, initialCenter.longitude]);
+
+  function handleLocate() {
+    if (!navigator.geolocation) {
+      setLocationState("error");
+      return;
+    }
+
+    setLocationState("locating");
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        const nextPoint = {
+          longitude: coords.longitude,
+          latitude: coords.latitude,
+        };
+        setMarkerRef.current(nextPoint);
+        mapRef.current?.flyTo({
+          center: [nextPoint.longitude, nextPoint.latitude],
+          zoom: 16,
+          essential: true,
+        });
+        onPointChangeRef.current(nextPoint);
+        setLocationState("idle");
+      },
+      () => setLocationState("error"),
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
+    );
+  }
 
   return (
     <Paper
@@ -124,6 +159,19 @@ export function LocationPickerMap({
       }}
     >
       <Box ref={containerRef} pos="absolute" inset={0} />
+      <Button
+        type="button"
+        size="compact-sm"
+        variant="white"
+        loading={locationState === "locating"}
+        onClick={handleLocate}
+        pos="absolute"
+        bottom={12}
+        left={12}
+        style={{ zIndex: 1, boxShadow: "var(--mantine-shadow-sm)" }}
+      >
+        現在地を表示
+      </Button>
       {status === "loading" ? (
         <Center pos="absolute" inset={0} bg="rgba(242,240,235,.84)">
           <Loader size="sm" />
@@ -135,6 +183,22 @@ export function LocationPickerMap({
             地図を読み込めません。住所から地点を追加してください。
           </Text>
         </Center>
+      ) : null}
+      {locationState === "error" ? (
+        <Text
+          pos="absolute"
+          bottom={52}
+          left={12}
+          right={12}
+          px="xs"
+          py={6}
+          fz={11}
+          c="var(--mantine-color-orange-9)"
+          bg="rgba(255, 248, 235, .94)"
+          style={{ zIndex: 2, borderRadius: "var(--mantine-radius-sm)" }}
+        >
+          現在地を取得できません。ブラウザの位置情報の許可を確認するか、地図上で選んでください。
+        </Text>
       ) : null}
     </Paper>
   );
