@@ -22,6 +22,7 @@ import { createParser, Renderer } from "@openuidev/react-lang";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 
+import { HazardMapLocationsProvider } from "../../components/shared/OfficialHazardMapLinks";
 import { askRiskAssistant } from "../../features/assistant/ask-risk-assistant";
 import { riskAssistantLibrary } from "../../features/assistant/risk-assistant-library";
 import type { RiskAssistantPurpose } from "../../features/assistant/risk-assistant-model";
@@ -48,6 +49,11 @@ interface LabState {
 }
 
 const parser = createParser(riskAssistantLibrary.toJSONSchema(), "AssistantCard");
+const PREVIEW_LOCATIONS = [
+  { name: "地点1", order: 1 as const, point: { latitude: 35.6812, longitude: 139.7671 } },
+  { name: "地点2", order: 2 as const, point: { latitude: 35.79821, longitude: 139.716268 } },
+  { name: "地点3", order: 3 as const, point: { latitude: 35.4437, longitude: 139.638 } },
+];
 const initialFixture = ASSISTANT_PREVIEW_FIXTURES[0]!;
 const initialState: LabState = {
   factSetId: ASSISTANT_FACT_SETS[0]!.id,
@@ -318,14 +324,16 @@ function PreviewPane({
         </Text>
         <Paper withBorder radius="lg" p="md" className="risk-assistant-response ai-lab-preview">
           {renderedResponse ? (
-            <Renderer
-              response={renderedResponse}
-              library={riskAssistantLibrary}
-              isStreaming={isStreaming}
-              onError={(errors) => {
-                if (!isStreaming) onRendererError(errors.map((error) => String(error)));
-              }}
-            />
+            <HazardMapLocationsProvider locations={PREVIEW_LOCATIONS}>
+              <Renderer
+                response={renderedResponse}
+                library={riskAssistantLibrary}
+                isStreaming={isStreaming}
+                onError={(errors) => {
+                  if (!isStreaming) onRendererError(errors.map((error) => String(error)));
+                }}
+              />
+            </HazardMapLocationsProvider>
           ) : (
             <Stack align="center" py="5xl" gap="xs">
               <ThemeIcon variant="light" radius="xl" size={42}>

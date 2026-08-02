@@ -80,4 +80,17 @@ describe("buildDemoAssistantResponse", () => {
     expect(response).not.toContain('"value":"0m"');
     expect(response).not.toContain("RiskFact(");
   });
+
+  test("公式ハザードマップの質問では地点番号だけをリンク部品へ渡す", () => {
+    const response = buildDemoAssistantResponse(
+      comparisonLocations,
+      "浸水の公式ハザードマップを見たい",
+    );
+    const parser = createParser(riskAssistantLibrary.toJSONSchema(), "AssistantCard");
+
+    expect(response).toContain("HazardMapLinks([1,2])");
+    expect(response).not.toContain("latitude");
+    expect(response).not.toContain("longitude");
+    expect(parser.parse(response).meta.errors).toHaveLength(0);
+  });
 });

@@ -13,6 +13,7 @@ import {
 import type { ComparisonLocation } from "../../domain/location";
 import { DataBadge } from "../shared/DataBadge";
 import { AiSummaryBox, BoundaryWarningNote } from "../shared/InfoBlocks";
+import { OfficialHazardMapLinks } from "../shared/OfficialHazardMapLinks";
 import {
   RegionalRiskMeta,
   TOKYO_EARTHQUAKE_EXPLANATION,
@@ -352,6 +353,7 @@ export function MobileComparisonView({
             <BoundaryWarningNote />
           </Box>
         ))}
+        <OfficialHazardMapLinks locations={withResult} compact />
       </Box>
 
       <MobileTokyoEarthquakeSection locations={withResult} />

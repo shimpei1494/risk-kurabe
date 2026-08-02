@@ -354,6 +354,42 @@ body {
   border-top: 1px dashed var(--mantine-color-stone-3);
 }
 
+.official-hazard-map-links {
+  margin-top: var(--mantine-spacing-xs);
+  padding-top: var(--mantine-spacing-xs);
+  border-top: 1px dashed var(--mantine-color-stone-3);
+}
+
+.official-hazard-map-links[data-compact="true"] {
+  margin-top: 6px;
+  padding-top: 6px;
+}
+
+.official-hazard-map-location-link {
+  display: inline-flex;
+  min-width: 26px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: 1px solid var(--mantine-color-teal-2);
+  border-radius: 999px;
+  background: var(--mantine-color-teal-0);
+  color: var(--mantine-color-teal-9);
+  font-size: 10.5px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.official-hazard-map-location-link:hover {
+  border-color: var(--mantine-color-teal-5);
+  background: var(--mantine-color-teal-1);
+}
+
+.official-hazard-map-location-link span {
+  font-size: 8px;
+}
+
 @media (max-width: 47.99em) {
   .risk-assistant-header {
     padding-top: var(--mantine-spacing-lg);

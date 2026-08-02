@@ -354,6 +354,7 @@ export function ResultsView({
                   <ResultCard
                     order={primary.order}
                     address={primary.address}
+                    point={primary.point}
                     result={primary.result!}
                     retrying={retryingLocationIds.includes(primary.id)}
                     onRetry={() => void onRetry(primary.id)}
@@ -385,6 +386,7 @@ export function ResultsView({
                   <ResultCard
                     order={primary.order}
                     address={primary.address}
+                    point={primary.point}
                     result={primary.result!}
                     retrying={retryingLocationIds.includes(primary.id)}
                     onRetry={() => void onRetry(primary.id)}

@@ -27,6 +27,7 @@ import {
   buildDemoAssistantResponse,
 } from "../../features/assistant/risk-assistant-response";
 import { useRiskAssistantStore } from "../../features/assistant/risk-assistant-store";
+import { HazardMapLocationsProvider } from "../shared/OfficialHazardMapLinks";
 
 const EMPTY_MESSAGES: never[] = [];
 
@@ -151,140 +152,142 @@ function RiskAssistantSurface({ locations }: { locations: readonly ComparisonLoc
   }
 
   return (
-    <Box className="risk-assistant-shell">
-      <Group
-        justify="space-between"
-        align="flex-start"
-        wrap="nowrap"
-        px="lg"
-        py="md"
-        className="risk-assistant-header"
-      >
-        <Group gap="sm" wrap="nowrap">
-          <AssistantMark />
-          <div>
-            <Group gap="2xs">
-              <Text fz={15} fw={900} c="var(--mantine-color-stone-9)">
-                公開データ説明アシスタント
-              </Text>
-              <Badge size="xs" variant="light" tt="none">
-                AI
-              </Badge>
-            </Group>
-            <Text mt={2} fz={11.5} c="var(--mantine-color-stone-7)">
-              画面の結果を、同じものさしで読み解きます
-            </Text>
-          </div>
-        </Group>
-        <ActionIcon variant="subtle" color="stone" aria-label="AI説明を閉じる" onClick={close}>
-          ×
-        </ActionIcon>
-      </Group>
-
-      <ScrollArea className="risk-assistant-scroll" type="auto" offsetScrollbars>
-        <Stack gap="md" px="lg" py="lg">
-          <Paper radius="lg" p="md" className="risk-assistant-welcome">
-            <Text fz={13} fw={800} c="var(--mantine-color-stone-9)">
-              何を確認しますか？
-            </Text>
-            <Text mt="2xs" fz={12} lh={1.75} c="var(--mantine-color-stone-7)">
-              AIは地点判定をやり直さず、表示中の公開データだけを説明します。
-            </Text>
-            <Stack mt="sm" gap="2xs">
-              {ASSISTANT_STARTERS.map((starter) => (
-                <Button
-                  key={starter}
-                  variant="white"
-                  color="stone"
-                  radius="md"
-                  justify="space-between"
-                  rightSection={<span aria-hidden>→</span>}
-                  onClick={() => ask(starter)}
-                  className="risk-assistant-starter"
-                  disabled={isAsking}
-                >
-                  {starter}
-                </Button>
-              ))}
-            </Stack>
-          </Paper>
-
-          {messages.map((message) => (
-            <Box key={message.id} className="risk-assistant-exchange">
-              <Paper ml="xl" radius="lg" px="md" py="sm" bg="teal.7">
-                <Text fz={12.5} lh={1.65} c="white">
-                  {message.question}
+    <HazardMapLocationsProvider locations={locations}>
+      <Box className="risk-assistant-shell">
+        <Group
+          justify="space-between"
+          align="flex-start"
+          wrap="nowrap"
+          px="lg"
+          py="md"
+          className="risk-assistant-header"
+        >
+          <Group gap="sm" wrap="nowrap">
+            <AssistantMark />
+            <div>
+              <Group gap="2xs">
+                <Text fz={15} fw={900} c="var(--mantine-color-stone-9)">
+                  公開データ説明アシスタント
                 </Text>
-              </Paper>
-              <Box mt="sm" className="risk-assistant-answer-rail">
-                <Group gap="2xs" mb="2xs">
-                  <AssistantMark />
-                  <Text fz={10.5} fw={800} c="teal.8">
-                    公開データからの説明
-                  </Text>
-                </Group>
-                <AssistantResponse
-                  response={message.response}
-                  isStreaming={message.status === "streaming"}
-                />
-              </Box>
-            </Box>
-          ))}
-
-          {messages.length > 0 ? (
-            <Button
-              variant="subtle"
-              color="stone"
-              size="compact-sm"
-              onClick={() => clearMessages(contextKey)}
-              disabled={isAsking}
-              style={{ alignSelf: "center" }}
-            >
-              この説明をクリア
-            </Button>
-          ) : null}
-        </Stack>
-      </ScrollArea>
-
-      <Box
-        component="form"
-        onSubmit={(event) => {
-          event.preventDefault();
-          ask(question);
-        }}
-        px="lg"
-        pt="sm"
-        pb="md"
-        className="risk-assistant-composer"
-      >
-        <Group gap="2xs" align="flex-end" wrap="nowrap">
-          <Textarea
-            value={question}
-            onChange={(event) => setQuestion(event.currentTarget.value)}
-            placeholder="結果について質問する"
-            aria-label="結果について質問する"
-            autosize
-            minRows={1}
-            maxRows={3}
-            maxLength={200}
-            flex={1}
-            radius="md"
-          />
-          <ActionIcon
-            type="submit"
-            size={42}
-            radius="md"
-            aria-label="質問を送る"
-            disabled={question.trim().length === 0 || isAsking}
-          >
-            ↑
+                <Badge size="xs" variant="light" tt="none">
+                  AI
+                </Badge>
+              </Group>
+              <Text mt={2} fz={11.5} c="var(--mantine-color-stone-7)">
+                画面の結果を、同じものさしで読み解きます
+              </Text>
+            </div>
+          </Group>
+          <ActionIcon variant="subtle" color="stone" aria-label="AI説明を閉じる" onClick={close}>
+            ×
           </ActionIcon>
         </Group>
-        <Text mt="2xs" fz={10.5} c="var(--mantine-color-stone-7)" ta="center">
-          AIには表示中の公開データと質問だけを送信します。住所・座標は送信しません。
-        </Text>
+
+        <ScrollArea className="risk-assistant-scroll" type="auto" offsetScrollbars>
+          <Stack gap="md" px="lg" py="lg">
+            <Paper radius="lg" p="md" className="risk-assistant-welcome">
+              <Text fz={13} fw={800} c="var(--mantine-color-stone-9)">
+                何を確認しますか？
+              </Text>
+              <Text mt="2xs" fz={12} lh={1.75} c="var(--mantine-color-stone-7)">
+                AIは地点判定をやり直さず、表示中の公開データだけを説明します。
+              </Text>
+              <Stack mt="sm" gap="2xs">
+                {ASSISTANT_STARTERS.map((starter) => (
+                  <Button
+                    key={starter}
+                    variant="white"
+                    color="stone"
+                    radius="md"
+                    justify="space-between"
+                    rightSection={<span aria-hidden>→</span>}
+                    onClick={() => ask(starter)}
+                    className="risk-assistant-starter"
+                    disabled={isAsking}
+                  >
+                    {starter}
+                  </Button>
+                ))}
+              </Stack>
+            </Paper>
+
+            {messages.map((message) => (
+              <Box key={message.id} className="risk-assistant-exchange">
+                <Paper ml="xl" radius="lg" px="md" py="sm" bg="teal.7">
+                  <Text fz={12.5} lh={1.65} c="white">
+                    {message.question}
+                  </Text>
+                </Paper>
+                <Box mt="sm" className="risk-assistant-answer-rail">
+                  <Group gap="2xs" mb="2xs">
+                    <AssistantMark />
+                    <Text fz={10.5} fw={800} c="teal.8">
+                      公開データからの説明
+                    </Text>
+                  </Group>
+                  <AssistantResponse
+                    response={message.response}
+                    isStreaming={message.status === "streaming"}
+                  />
+                </Box>
+              </Box>
+            ))}
+
+            {messages.length > 0 ? (
+              <Button
+                variant="subtle"
+                color="stone"
+                size="compact-sm"
+                onClick={() => clearMessages(contextKey)}
+                disabled={isAsking}
+                style={{ alignSelf: "center" }}
+              >
+                この説明をクリア
+              </Button>
+            ) : null}
+          </Stack>
+        </ScrollArea>
+
+        <Box
+          component="form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            ask(question);
+          }}
+          px="lg"
+          pt="sm"
+          pb="md"
+          className="risk-assistant-composer"
+        >
+          <Group gap="2xs" align="flex-end" wrap="nowrap">
+            <Textarea
+              value={question}
+              onChange={(event) => setQuestion(event.currentTarget.value)}
+              placeholder="結果について質問する"
+              aria-label="結果について質問する"
+              autosize
+              minRows={1}
+              maxRows={3}
+              maxLength={200}
+              flex={1}
+              radius="md"
+            />
+            <ActionIcon
+              type="submit"
+              size={42}
+              radius="md"
+              aria-label="質問を送る"
+              disabled={question.trim().length === 0 || isAsking}
+            >
+              ↑
+            </ActionIcon>
+          </Group>
+          <Text mt="2xs" fz={10.5} c="var(--mantine-color-stone-7)" ta="center">
+            AIには表示中の公開データと質問だけを送信します。住所・座標は送信しません。
+          </Text>
+        </Box>
       </Box>
-    </Box>
+    </HazardMapLocationsProvider>
   );
 }
 

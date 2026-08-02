@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 
 import { DataBadge } from "../../components/shared/DataBadge";
 import { BoundaryWarningNote, InfoBanner } from "../../components/shared/InfoBlocks";
+import { OfficialHazardMapLinksByOrder } from "../../components/shared/OfficialHazardMapLinks";
 import type { DataStateKind, FloodDepthCategory, RegionalRiskRank } from "../../domain/risk";
 
 const dataStateSchema = z.enum([
@@ -396,6 +397,19 @@ const AssistantText = defineComponent({
   ),
 });
 
+const HazardMapLinks = defineComponent({
+  name: "HazardMapLinks",
+  description:
+    "表示中の地点を国土地理院の重ねるハザードマップで開く。浸水・内水・土砂災害・高潮・津波などの詳細確認用で、東京都の地震地域危険度の確認には使わない。",
+  props: z.object({
+    locations: z
+      .array(z.union([z.literal(1), z.literal(2), z.literal(3)]))
+      .min(1)
+      .max(3),
+  }),
+  component: ({ props }) => <OfficialHazardMapLinksByOrder orders={props.locations} />,
+});
+
 const EvidenceFooter = defineComponent({
   name: "EvidenceFooter",
   description: "AI説明の根拠範囲と、利用者が次に確認すべき場所を示す末尾注記。",
@@ -420,6 +434,7 @@ const assistantChild = z.union([
   RiskFact.ref,
   AssistantNote.ref,
   AssistantText.ref,
+  HazardMapLinks.ref,
   EvidenceFooter.ref,
 ]);
 
@@ -445,6 +460,7 @@ export const riskAssistantLibrary = createLibrary({
     RiskFact,
     AssistantNote,
     AssistantText,
+    HazardMapLinks,
     EvidenceFooter,
   ],
 });
@@ -459,6 +475,8 @@ export const riskAssistantPromptOptions = {
     "uncolored（浸水深表示なし）は公表レイヤーを正常取得したが、その地点に着色された浸水深区分がない状態。比較UIでは0m付近に置くが、0m、浸水しない、安全とは説明しない。着色地点より公表表示上は低い、と説明できる。",
     "undeterminedは取得・判定失敗であり、uncoloredと混同しない。",
     "住所、座標、任意URL、入力にない数値や原因を生成しない。",
+    "利用者がハザードマップ、浸水・内水・土砂災害・高潮・津波の詳しい情報や公式地図を求めた場合はHazardMapLinksを使える。locationsには入力に存在する地点番号だけを含める。URLや座標は生成しない。",
+    "HazardMapLinksは東京都の地震地域危険度、建物倒壊危険度、火災危険度の詳細確認としては使わない。重ねるハザードマップが別系統の災害情報であることを説明する。",
     "挨拶、機能範囲の確認、公開データと無関係な質問では、表示中の地点結果を繰り返さずAssistantTextで短く自然に答える。",
     "2〜3地点の違いを尋ねられた場合は、地点ごとのRiskFactを並べず、同じ指標ごとにRiskComparisonを使う。",
     "RiskComparisonには同じindicatorの地点だけを2〜3件含め、入力のlocation、value、state、boundaryWarningを一字も変更せず渡す。",

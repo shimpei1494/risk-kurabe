@@ -3,6 +3,7 @@ import type { DataStateKind, InvestigationResult } from "../../domain/risk";
 
 export const ASSISTANT_STARTERS = [
   "地点ごとの違いを説明して",
+  "浸水の公式ハザードマップを見たい",
   "区域外や対象外の意味を教えて",
   "境界警告について説明して",
 ] as const;
@@ -149,6 +150,10 @@ function wantsVisualComparison(question: string, locationCount: number): boolean
   return locationCount >= 2 && /違い|比較|差|どちら|高い|低い/.test(question);
 }
 
+function wantsHazardMap(question: string): boolean {
+  return /ハザードマップ|公式地図|浸水.*詳|洪水.*詳|内水|土砂|高潮|津波/.test(question);
+}
+
 export function buildDemoAssistantResponse(
   locations: readonly ComparisonLocation[],
   question: string,
@@ -156,16 +161,21 @@ export function buildDemoAssistantResponse(
   const facts = locations.flatMap(factsFor);
   const hasBoundary = facts.some((fact) => fact.boundaryWarning);
   const note = noteFor(question, hasBoundary);
+  const includeHazardMapLinks = wantsHazardMap(question) && locations.length > 0;
+  const responseFacts = includeHazardMapLinks
+    ? facts.filter(({ indicator }) => indicator === "最大浸水深")
+    : facts;
   const comparisons = wantsVisualComparison(question, locations.length)
-    ? comparisonGroups(facts)
+    ? comparisonGroups(responseFacts)
     : [];
   const useComparisons = comparisons.length > 0;
   const references = [
     "summary",
     ...(useComparisons
       ? comparisons.map((_, index) => `comparison${index + 1}`)
-      : facts.map((_, index) => `fact${index + 1}`)),
+      : responseFacts.map((_, index) => `fact${index + 1}`)),
     "note",
+    ...(includeHazardMapLinks ? ["hazardMapLinks"] : []),
     "evidence",
   ];
   const lines = [
@@ -183,11 +193,14 @@ export function buildDemoAssistantResponse(
               })),
             )})`,
         )
-      : facts.map(
+      : responseFacts.map(
           (fact, index) =>
             `fact${index + 1} = RiskFact(${literal(fact.location)}, ${literal(fact.indicator)}, ${literal(fact.value)}, ${literal(fact.state)})`,
         )),
     `note = AssistantNote(${literal(note.kind)}, ${literal(note.text)})`,
+    ...(includeHazardMapLinks
+      ? [`hazardMapLinks = HazardMapLinks(${JSON.stringify(locations.map(({ order }) => order))})`]
+      : []),
     `evidence = EvidenceFooter("画面に表示中の地点判定と出典情報だけを使った仮の説明です。住所と座標は含めていません。")`,
   ];
   return lines.join("\n");

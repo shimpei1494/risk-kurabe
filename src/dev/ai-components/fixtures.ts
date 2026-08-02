@@ -22,6 +22,17 @@ note = AssistantNote("boundary", "ピン付近に判定境界があります。"
 evidence = EvidenceFooter("根拠は、現在表示中の3地点の公開データです。各指標の公表値と境界警告を確認してください。")`,
   },
   {
+    id: "hazard-map-links",
+    label: "公式ハザードマップ導線",
+    description: "地点ごとの外部リンクと、地震データとは異なる情報であることを確認します。",
+    components: ["AssistantSummary", "AssistantNote", "HazardMapLinks", "EvidenceFooter"],
+    response: `root = AssistantCard([summary, note, links, evidence])
+summary = AssistantSummary("公式情報の確認", "浸水などを地図で詳しく確認", "表示中の地点を、国土地理院の重ねるハザードマップで開けます。")
+note = AssistantNote("information", "重ねるハザードマップは浸水・内水・土砂災害・高潮・津波などの確認用です。東京都の地震地域危険度とは別のデータです。")
+links = HazardMapLinks([1,2,3])
+evidence = EvidenceFooter("外部サイトでは、表示内容と凡例をあわせて確認してください。")`,
+  },
+  {
     id: "states",
     label: "データ状態一覧",
     description: "値あり、着色なし、区域外、未公開、対象外、判定不能の表示を確認します。",

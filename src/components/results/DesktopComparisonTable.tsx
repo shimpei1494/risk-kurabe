@@ -15,6 +15,7 @@ import type { ComparisonLocation } from "../../domain/location";
 import type { MapIndicator } from "../../domain/map-selection";
 import type { RegionalRiskResult } from "../../domain/risk";
 import { DataBadge } from "../shared/DataBadge";
+import { OfficialHazardMapLinks } from "../shared/OfficialHazardMapLinks";
 import {
   RegionalRiskMeta,
   TOKYO_EARTHQUAKE_EXPLANATION,
@@ -153,6 +154,11 @@ export function DesktopComparisonTable({
                 />
               </Table.Td>
             ))}
+          </Table.Tr>
+          <Table.Tr bg={selectedIndicator === "maximum-flood" ? "teal.0" : undefined}>
+            <Table.Td colSpan={withResult.length + 1} pt={0} pb="sm">
+              <OfficialHazardMapLinks locations={withResult} compact />
+            </Table.Td>
           </Table.Tr>
           <Table.Tr bg={selectedIndicator === "tokyo-overall" ? "teal.0" : other.risk.evidenceBg}>
             <Table.Th>
