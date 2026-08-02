@@ -3,10 +3,10 @@ import { useDisclosure } from "@mantine/hooks";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-import { APP_DESCRIPTION, APP_NAME, BRAND_MARK_URL } from "../../brand";
+import { APP_DESCRIPTION, APP_NAME, BRAND_COMPACT_MARK_URL } from "../../brand";
 
 /**
- * ブランドマーク（地図をのぞくリス）。
+ * 小サイズでもリスの顔が見えやすいコンパクトなブランドマーク。
  * ヘッダー全体の高さは styles.css の .risk-assistant-inline の高さ計算に影響するため、
  * 既定サイズ38pxを変えないこと。
  */
@@ -14,7 +14,7 @@ function Logo({ size = 38 }: { size?: number }) {
   return (
     <Box
       component="img"
-      src={BRAND_MARK_URL}
+      src={BRAND_COMPACT_MARK_URL}
       alt=""
       w={size}
       h={size}

@@ -8,6 +8,8 @@ export const APP_OG_IMAGE_URL = `${APP_ORIGIN}/brand/ogp.jpg`;
 
 /** ヘッダー・フッターのブランドマークに使うアプリアイコン（地図をのぞくリス） */
 export const BRAND_MARK_URL = "/brand/app-icon-512.png";
+/** 小さな表示でもリスの顔が見えやすい、ヘッダー・フッター用の簡略マーク */
+export const BRAND_COMPACT_MARK_URL = "/brand/icon-192.png";
 /** トップのヒーローイラスト。左半分が余白の構図なので、広い画面ではコピーを左に並べる */
 export const BRAND_HERO_URL = "/brand/hero-map-scout.jpg";
 export const BRAND_HERO_ALT =

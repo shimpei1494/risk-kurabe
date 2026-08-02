@@ -24,9 +24,9 @@ const factSchema = z.object({
 });
 
 const inputSchema = z.object({
-  question: z.string().trim().min(1).max(200),
+  question: z.string().trim().min(1).max(400),
   facts: z.array(factSchema).max(24),
-  fallbackResponse: z.string().min(1),
+  fallbackResponse: z.string().min(1).max(8_000),
   purpose: z
     .enum(["publicDataExplanation", "definitionExplanation", "locationChangeGuide"])
     .default("publicDataExplanation"),
@@ -69,23 +69,17 @@ export const askRiskAssistant = createServerFn({ method: "POST" })
     const modelConfig =
       RISK_ASSISTANT_MODEL_CONFIG[data.purpose as RiskAssistantPurpose] ??
       RISK_ASSISTANT_MODEL_CONFIG.publicDataExplanation;
-    const gatewayConfigured = Boolean(env.AI_GATEWAY_BASE_URL && env.CF_AIG_TOKEN);
-    if (!gatewayConfigured && !env.OPENAI_API_KEY) return fallbackStream(data.fallbackResponse);
+    const gatewayBaseUrl = env.AI_GATEWAY_BASE_URL;
+    const gatewayToken = env.CF_AIG_TOKEN;
+    if (!gatewayBaseUrl || !gatewayToken) return fallbackStream(data.fallbackResponse);
 
     const client = new OpenAI({
-      // BYOK利用時はOpenAIキーではなくCloudflare APIトークンでGatewayを認証する。
-      apiKey: gatewayConfigured ? env.CF_AIG_TOKEN : env.OPENAI_API_KEY,
-      baseURL: gatewayConfigured ? env.AI_GATEWAY_BASE_URL : "https://api.openai.com/v1",
-      ...(gatewayConfigured
-        ? {
-            defaultHeaders: {
-              "cf-aig-authorization": `Bearer ${env.CF_AIG_TOKEN}`,
-              ...(env.AI_GATEWAY_BYOK_ALIAS
-                ? { "cf-aig-byok-alias": env.AI_GATEWAY_BYOK_ALIAS }
-                : {}),
-            },
-          }
-        : {}),
+      // OpenAIキーをWorkerへ持たせず、Cloudflare AI Gateway経由に限定する。
+      apiKey: gatewayToken,
+      baseURL: gatewayBaseUrl,
+      defaultHeaders: {
+        "cf-aig-authorization": `Bearer ${gatewayToken}`,
+      },
     });
 
     return new ReadableStream<RiskAssistantStreamEvent>({
@@ -105,7 +99,7 @@ export const askRiskAssistant = createServerFn({ method: "POST" })
               { role: "user", content: makePrompt(data.question, data.facts) },
             ],
             reasoning_effort: modelConfig.reasoningEffort,
-            max_completion_tokens: 1800,
+            max_completion_tokens: 3000,
             stream: true,
           });
 

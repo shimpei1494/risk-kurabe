@@ -16,11 +16,4 @@
   "secrets": {
     "required": ["YAHOO_CLIENT_ID", "CF_AIG_TOKEN"],
   },
-  "r2_buckets": [
-    {
-      "bucket_name": "risk-kurabe-data",
-      "binding": "risk_kurabe_data",
-      "remote": true,
-    },
-  ],
 }
