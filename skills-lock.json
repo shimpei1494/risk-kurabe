@@ -25,6 +25,12 @@
       "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
       "computedHash": "66e8a50c83c3c724fcfe0769701b665c56cec220cc4f49cc1aee8bdfc07de94a"
     },
+    "openui": {
+      "source": "thesysdev/skills",
+      "sourceType": "github",
+      "skillPath": "skills/openui/SKILL.md",
+      "computedHash": "e3dac67bc2ee93e75190143a719406917346266926c4491251217e2e089d1288"
+    },
     "tdd": {
       "source": "mattpocock/skills",
       "sourceType": "github",

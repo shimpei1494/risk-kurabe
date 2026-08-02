@@ -11,6 +11,7 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 
+import type { LocationOrder } from "../../domain/location";
 import type { InvestigationResult } from "../../domain/risk";
 import { DataBadge } from "../shared/DataBadge";
 import {
@@ -19,6 +20,7 @@ import {
   DataSourcesDisclosure,
   InvestigationProblemNotice,
 } from "../shared/InfoBlocks";
+import { OfficialHazardMapLinks } from "../shared/OfficialHazardMapLinks";
 import {
   RegionalRiskMeta,
   TOKYO_EARTHQUAKE_EXPLANATION,
@@ -65,14 +67,16 @@ function IndicatorRow({ icon, iconColor, label, children, withBorder = true }: I
 export function ResultCard({
   order,
   address,
+  point,
   result,
   accentColor,
   retrying = false,
   onRetry,
   onConfigure,
 }: {
-  order: number;
+  order: LocationOrder;
   address: string;
+  point: { latitude: number; longitude: number };
   result: InvestigationResult;
   accentColor?: string;
   retrying?: boolean;
@@ -155,6 +159,7 @@ export function ResultCard({
                 <BoundaryWarningNote />
               </Box>
             ) : null}
+            <OfficialHazardMapLinks compact locations={[{ name: `地点${order}`, order, point }]} />
           </Box>
 
           <Paper mt="md" mb="sm" p="md" radius="lg" withBorder bg={other.risk.evidenceBg}>

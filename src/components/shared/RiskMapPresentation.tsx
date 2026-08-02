@@ -1,4 +1,15 @@
-import { Box, Button, Center, Group, Loader, Paper, Stack, Text } from "@mantine/core";
+import {
+  Box,
+  Button,
+  Center,
+  Group,
+  Loader,
+  Paper,
+  Stack,
+  Text,
+  ThemeIcon,
+  Tooltip,
+} from "@mantine/core";
 
 import type { LocationOrder } from "../../domain/location";
 import type { MapSelection } from "../../domain/map-selection";
@@ -100,9 +111,23 @@ function MapLegend({
       shadow="xs"
       className="risk-map-legend"
     >
-      <Text fz={10.5} fw={700} c="var(--mantine-color-stone-9)">
-        {selectionLabel}
-      </Text>
+      <Group gap="4xs" wrap="nowrap">
+        <Text fz={10.5} fw={700} c="var(--mantine-color-stone-9)">
+          {selectionLabel}
+        </Text>
+        {selection.indicator === "maximum-flood" ? (
+          <Tooltip
+            label="色がない地点は、正常取得時には「浸水深表示なし」と表示します。0mや安全を意味しません。"
+            multiline
+            w={230}
+            withArrow
+          >
+            <ThemeIcon variant="light" radius="xl" size={15} fz={9} aria-label="最大浸水深の補足">
+              i
+            </ThemeIcon>
+          </Tooltip>
+        ) : null}
+      </Group>
       <Box className="risk-map-legend-scale" data-muted={!riskLayerVisible || undefined}>
         {Object.values(palette).map((color) => (
           <Box key={color} h={6} bg={color} />

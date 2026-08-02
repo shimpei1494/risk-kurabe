@@ -11,6 +11,7 @@ interface DataBadgeProps {
   /** 区域外バッジに添える注記マーク（例: "※"） */
   outOfAreaSuffix?: string;
   outOfAreaLabel?: string;
+  uncoloredLabel?: string;
   unpublishedLabel?: string;
   notApplicableLabel?: string;
   undeterminedLabel?: string;
@@ -29,6 +30,7 @@ export function DataBadge({
   valueColor,
   outOfAreaSuffix,
   outOfAreaLabel = "想定区域外",
+  uncoloredLabel = "浸水深表示なし",
   unpublishedLabel = "未公開",
   notApplicableLabel = "対象外（東京都のみの指標）",
   undeterminedLabel = "判定データなし",
@@ -96,6 +98,26 @@ export function DataBadge({
         >
           {outOfAreaLabel}
           {outOfAreaSuffix ? <span style={{ fontWeight: 500 }}> {outOfAreaSuffix}</span> : null}
+        </Badge>
+      );
+    case "uncolored":
+      return (
+        <Badge
+          variant="outline"
+          tt="none"
+          fz={12.5}
+          fw={700}
+          styles={{
+            root: {
+              ...wrappingRootStyle,
+              background: "white",
+              color: neutral.text,
+              borderColor: neutral.border,
+            },
+            label: wrappingLabelStyle,
+          }}
+        >
+          {uncoloredLabel}
         </Badge>
       );
     case "unpublished":

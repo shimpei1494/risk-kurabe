@@ -8,6 +8,7 @@ import {
   mapSelectionLabel,
   type MapSelection,
 } from "../../domain/map-selection";
+import type { DataStateKind } from "../../domain/risk";
 import { distanceBetweenPointsMeters, type GeoPoint } from "../../gis/geometry";
 import { fetchOfficialFloodAtPoint } from "../../gis/hazardmap-raster";
 import { collapseMapAttribution } from "../../gis/map-attribution";
@@ -24,6 +25,7 @@ export interface RiskMapLocation {
   label: string;
   point: GeoPoint;
   floodLabel?: string;
+  floodState?: DataStateKind;
 }
 
 interface RiskMapProps {
@@ -40,11 +42,27 @@ export const MAX_PIN_MOVE_METERS = 2_000;
 const INSPECT_LOADING_DELAY_MS = 250;
 const LOCATION_FOCUS_ZOOM = 14.5;
 
-async function officialFloodLabelAtPoint(location: GeoPoint): Promise<string | undefined> {
+async function officialFloodLabelAtPoint(location: GeoPoint): Promise<string> {
   const { result } = await fetchOfficialFloodAtPoint({ location, radiusMeters: 0 });
-  return result.state === "value" && result.primary
-    ? mapFeatureValueLabel(DEFAULT_MAP_SELECTION, result.primary.depth.sourceCode)
-    : undefined;
+  if (result.state === "value" && result.primary) {
+    return (
+      mapFeatureValueLabel(DEFAULT_MAP_SELECTION, result.primary.depth.sourceCode) ??
+      result.primary.depth.sourceLabel
+    );
+  }
+  if (result.state === "uncolored") return "浸水深表示なし";
+  if (result.state === "unpublished") return "未公開";
+  return "浸水深を判定できません";
+}
+
+function storedFloodLabel(location: RiskMapLocation | undefined): string {
+  if (location?.floodState === "value" && location.floodLabel) return location.floodLabel;
+  if (location?.floodState === "uncolored") return "浸水深表示なし";
+  if (location?.floodState === "undetermined") return "データ取得失敗";
+  if (location?.floodState === "unpublished") return "未公開";
+  if (location?.floodState === "notApplicable") return "対象外";
+  if (location?.floodState === "outOfArea") return "区域外";
+  return location?.floodLabel ?? "判定を確認できません";
 }
 
 function vectorFeatureLabelAtPoint({
@@ -98,10 +116,7 @@ function createOfficialFloodInspector({
       .then((label) => {
         if (disposed || currentRequestId !== requestId) return;
         clearTimeout(loadingTimer);
-        popup
-          .setLngLat(event.lngLat)
-          .setText(label ? `ここは ${label}` : "この地点は表示データなし")
-          .addTo(map);
+        popup.setLngLat(event.lngLat).setText(`ここは ${label}`).addTo(map);
       })
       .catch(() => {
         if (disposed || currentRequestId !== requestId) return;
@@ -512,9 +527,9 @@ export function RiskMap(props: RiskMapProps) {
             const location = locationsByOrder.get(order);
             const label =
               theme.kind === "raster"
-                ? location?.floodLabel
+                ? storedFloodLabel(location)
                 : featureLabelAtPoint(map.project(markerInstance.getLngLat()));
-            valuePopup.setText(label ?? "表示データなし");
+            valuePopup.setText(label ?? "判定を確認できません");
           }
         };
 

@@ -4,6 +4,7 @@
 
 export type DataStateKind =
   | "value" // 値あり
+  | "uncolored" // 取得成功・公表レイヤー上に着色区分なし
   | "outOfArea" // 区域外
   | "unpublished" // 未公開
   | "notApplicable" // 対象外

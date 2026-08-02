@@ -1,4 +1,4 @@
-import { Box, Group, Stack, Text, Tooltip, useMantineTheme } from "@mantine/core";
+import { Box, Group, Stack, Text, ThemeIcon, Tooltip, useMantineTheme } from "@mantine/core";
 
 import type { MapSelection } from "../../domain/map-selection";
 
@@ -68,9 +68,23 @@ export function IndicatorScaleLegend({ selection }: { selection: MapSelection })
       style={{ borderTop: "1px solid var(--mantine-color-stone-2)" }}
       aria-label={`${scaleLabel}の色の見方`}
     >
-      <Text fz={10.5} fw={800} c="var(--mantine-color-stone-8)">
-        {scaleLabel}
-      </Text>
+      <Group gap="4xs" wrap="nowrap">
+        <Text fz={10.5} fw={800} c="var(--mantine-color-stone-8)">
+          {scaleLabel}
+        </Text>
+        {isFlood ? (
+          <Tooltip
+            label="正常取得時に色がない地点は「浸水深表示なし」とし、比較では0m付近に置きます。0mや安全を意味しません。"
+            multiline
+            w={250}
+            withArrow
+          >
+            <ThemeIcon variant="light" radius="xl" size={16} fz={10} aria-label="最大浸水深の補足">
+              i
+            </ThemeIcon>
+          </Tooltip>
+        ) : null}
+      </Group>
       <Group
         component="ul"
         gap={0}

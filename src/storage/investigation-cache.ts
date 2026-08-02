@@ -5,6 +5,7 @@ import type { GeoPoint } from "../gis/geometry";
 
 const dataStateSchema = z.enum([
   "value",
+  "uncolored",
   "outOfArea",
   "unpublished",
   "notApplicable",
