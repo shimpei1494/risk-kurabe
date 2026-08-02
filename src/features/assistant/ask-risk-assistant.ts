@@ -4,6 +4,7 @@ import { env } from "cloudflare:workers";
 import OpenAI from "openai";
 import { z } from "zod";
 
+import { enforceRateLimit, aiRateLimiter } from "../rate-limit";
 import { riskAssistantLibrary, riskAssistantPromptOptions } from "./risk-assistant-library";
 import { RISK_ASSISTANT_MODEL_CONFIG, type RiskAssistantPurpose } from "./risk-assistant-model";
 import type { AssistantFact } from "./risk-assistant-response";
@@ -72,6 +73,7 @@ export const askRiskAssistant = createServerFn({ method: "POST" })
     const gatewayBaseUrl = env.AI_GATEWAY_BASE_URL;
     const gatewayToken = env.CF_AIG_TOKEN;
     if (!gatewayBaseUrl || !gatewayToken) return fallbackStream(data.fallbackResponse);
+    await enforceRateLimit(aiRateLimiter, "ai-assistant");
 
     const client = new OpenAI({
       // OpenAIキーをWorkerへ持たせず、Cloudflare AI Gateway経由に限定する。
