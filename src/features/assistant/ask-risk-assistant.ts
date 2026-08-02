@@ -24,7 +24,7 @@ const factSchema = z.object({
 });
 
 const inputSchema = z.object({
-  question: z.string().trim().min(1).max(200),
+  question: z.string().trim().min(1).max(400),
   facts: z.array(factSchema).max(24),
   fallbackResponse: z.string().min(1).max(8_000),
   purpose: z
@@ -99,7 +99,7 @@ export const askRiskAssistant = createServerFn({ method: "POST" })
               { role: "user", content: makePrompt(data.question, data.facts) },
             ],
             reasoning_effort: modelConfig.reasoningEffort,
-            max_completion_tokens: 1800,
+            max_completion_tokens: 3000,
             stream: true,
           });
 
