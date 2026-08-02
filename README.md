@@ -24,6 +24,14 @@
 
 パッケージ管理、開発、テスト、ビルドにはVite+を使用します。`pnpm`、`npm`、`yarn`を直接実行しないでください。
 
+## Yahoo! APIの無料枠（2026年8月2日時点）
+
+このアプリが利用するYahoo!ジオコーダAPI／逆ジオコーダAPI（YOLP）は、一般公開された無償サービスとして利用する場合、**1つのアプリケーション（Client ID）につき1日5万アクセスまで**です。月間の無料枠ではなく、1日単位の上限です。住所検索と逆ジオコーダは同じYOLPアプリケーションの利用量として扱われるため、本番環境では合算して管理します。
+
+短時間に大量のリクエストを送ると、5万回以内でも利用を制限される場合があります。また、非公開サイト・イントラネットや、利用者から利益を得るサービスなど、利用形態によっては有償版YOLP Premierの申し込みが必要です。Client IDを複数発行して上限を回避する運用はせず、利用規約と最新の公式案内を確認してください。
+
+このアプリではYahoo!のClient IDをWorker側だけで使い、ブラウザから直接Yahoo!へアクセスしません。公式情報は[YOLP FAQ（料金・利用回数）](https://developer.yahoo.co.jp/webapi/map/faq.html)、[YOLPの利用方法・利用規約](https://developer.yahoo.co.jp/webapi/map/)、[利用制限について](https://developer.yahoo.co.jp/appendix/rate.html)を参照してください。
+
 ## ローカルセットアップ
 
 ### 1. リポジトリと依存関係を準備する
@@ -167,6 +175,25 @@ https://risk-kurabe.tokyo-odh-044.workers.dev
 ```
 
 `wrangler.jsonc`では`YAHOO_CLIENT_ID`と`CF_AIG_TOKEN`を必須Secretとして宣言しています。未設定の場合、開発時には警告が出て、本番デプロイは失敗します。
+
+### レート制限の移行方針（Free／Paid共通）
+
+ハッカソン終了後のアカウント移行を考慮し、レート制限はPaidプラン専用のWAF設定に依存せず、WorkersのRate Limiting Bindingで実装している。Rate Limiting BindingはWorkerのコードから経路別・キー別に判定でき、Free／Paid間で`wrangler.jsonc`の設定を持ち運べる。CloudflareのRate Limiting Binding自体に別料金を前提とした設定は置かない。
+
+現在の初期値は次のとおり。いずれも同一キー（匿名利用では`経路種別 + 接続元IP`）あたりの10秒窓とし、超過時はHTTP 429を返す。
+
+| 用途                         |      初期値 | 目的                                               |
+| ---------------------------- | ----------: | -------------------------------------------------- |
+| Yahoo!住所検索・逆ジオコーダ | 20回 / 10秒 | 通常の入力・地点追加を妨げにくくしつつ連打を抑える |
+| AI説明                       |  5回 / 10秒 | 外部API費用の急増を抑える                          |
+
+この制限は厳密な全世界合算カウンターや請求上限ではない。Rate Limiting BindingはCloudflareのロケーション単位で、結果整合性も緩いため、AI Gateway側の予算・利用量設定とYahoo!側の利用量確認を併用する。IP共有環境では複数ユーザーが同じキーになるため、上限は緩めに設定する。
+
+アカウントを移行する際は、`wrangler.jsonc`の`account_id`、Worker Secret、AI Gatewayの接続先を新アカウントへ更新し、Rate Limiting Bindingを新アカウントへ再デプロイする。レート制限のカウンターはアカウント間で引き継がれず、移行後に新しい状態から始まる。新アカウントでWorkers Freeを使う場合、Rate Limiting Bindingとは別にWorker全体へ1日10万リクエストの上限が適用される。
+
+Paidプランは、現在のハッカソン環境で動作確認したり、Worker全体の1日10万リクエスト制限を外したりする目的では有用だが、レート制限機能をPaid専用設定にする必要はない。WAF Rate Limiting Rulesを使う場合は、Freeでは1ルール・IP単位・10秒窓などの制約があり、アカウントやゾーンの移行時にルールを再作成する必要があるため、今回の移行方針の主軸にはしない。
+
+参考：[Workers Rate Limiting](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/)、[Workersの制限](https://developers.cloudflare.com/workers/platform/limits/)、[Workers料金](https://developers.cloudflare.com/workers/platform/pricing/)、[WAF Rate Limiting Rulesのプラン別制約](https://developers.cloudflare.com/waf/rate-limiting-rules/)
 
 通常のコード更新ではR2の初期構築を繰り返す必要はありません。`vp check`、`vp test`、`vp build`を通してから`vp run deploy`を実行します。
 
