@@ -25,14 +25,21 @@ export function HazardMapLocationsProvider({
 export function OfficialHazardMapLinks({
   locations,
   compact = false,
+  boxed = false,
 }: {
   locations: readonly HazardMapLocation[];
   compact?: boolean;
+  /** 根拠を示す枠の中に置く場合は、自前の区切り線と上余白を出さない */
+  boxed?: boolean;
 }) {
   if (locations.length === 0) return null;
 
   return (
-    <Box className="official-hazard-map-links" data-compact={compact ? "true" : "false"}>
+    <Box
+      className="official-hazard-map-links"
+      data-compact={compact ? "true" : "false"}
+      data-boxed={boxed ? "true" : undefined}
+    >
       <Group gap="2xs" align="center" wrap="wrap">
         <Tooltip
           label="国土地理院の外部サイトを洪水・内水表示で開きます。現地で土砂災害・高潮・津波などにも切り替えられます。東京都の地震地域危険度とは別のデータです。"

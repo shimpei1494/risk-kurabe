@@ -449,6 +449,13 @@ body {
   padding-top: 6px;
 }
 
+/* 根拠の枠の中に置くときは、枠自体が区切りになるため自前の罫線と余白を出さない */
+.official-hazard-map-links[data-boxed="true"] {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
 .official-hazard-map-location-link {
   display: inline-flex;
   min-width: 26px;
