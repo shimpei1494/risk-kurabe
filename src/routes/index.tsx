@@ -15,6 +15,7 @@ import {
 import { useMediaQuery } from "@mantine/hooks";
 import { createFileRoute } from "@tanstack/react-router";
 
+import { BRAND_HERO_ALT, BRAND_HERO_URL } from "../brand";
 import { RiskAssistantLauncher, RiskAssistantPanel } from "../components/assistant/RiskAssistant";
 import { LocationInputCard } from "../components/location-input/LocationInputCard";
 import { AddLocationCard } from "../components/results/AddLocationCard";
@@ -180,41 +181,62 @@ function HomeInitialView({
   return (
     <PageShell>
       <AppHeader />
-      <Container size={720} pt={{ base: 32, sm: 52 }} pb={40} px={{ base: 20, sm: 40 }}>
-        <Stack gap={0} align="center" ta="center">
-          <Badge
-            variant="light"
-            color="teal"
-            size="lg"
-            radius="xl"
-            tt="none"
-            fz={12.5}
-            fw={700}
-            mb="lg"
-            leftSection={
-              <span
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: "var(--mantine-color-teal-6)",
-                }}
-              />
-            }
-          >
-            国土交通省・東京都の公開データを利用しています
-          </Badge>
-          <Title order={1} fz={{ base: 24, sm: 36 }} lh={1.4} c="var(--mantine-color-stone-9)">
-            気になる場所を1地点から調べて、
-            <br />
-            必要なら「くらべる」。
-          </Title>
-          <Text mt="md" maw={640} fz={15} lh={1.9} c="var(--mantine-color-stone-8)">
-            住所を入力すると、その地点の洪水浸水リスクと東京都の地震危険度を確認できます。調べたあとに地点を追加すれば、最大3地点まで同じものさしで比較できます。安全・危険の判定はしません。
-          </Text>
-        </Stack>
+      <Container
+        size={1120}
+        pt={{ base: "2xl", sm: "5xl" }}
+        pb={{ base: "2xl", sm: "3xl" }}
+        px={{ base: "lg", sm: "4xl" }}
+      >
+        {/* リスが2地点のどんぐりを見くらべる構図を、そのままサービスの説明として使う */}
+        <Box className="home-hero">
+          <Box
+            component="img"
+            className="home-hero-art"
+            src={BRAND_HERO_URL}
+            alt={BRAND_HERO_ALT}
+            decoding="async"
+          />
+          <Box className="home-hero-copy">
+            <Badge
+              variant="light"
+              color="teal"
+              size="lg"
+              radius="xl"
+              tt="none"
+              fz={12.5}
+              fw={700}
+              leftSection={
+                <span
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: "var(--mantine-color-teal-6)",
+                  }}
+                />
+              }
+            >
+              国土交通省・東京都の公開データを利用しています
+            </Badge>
+            {/* md以降はヒーローが2カラムになり見出し幅が縮むため、そこだけ一段小さくする */}
+            <Title
+              order={1}
+              mt="lg"
+              fz={{ base: 22, sm: 34, md: 28, lg: 33 }}
+              lh={1.45}
+              c="var(--mantine-color-stone-9)"
+            >
+              気になる場所を1地点から調べて、
+              <br />
+              必要なら「くらべる」。
+            </Title>
+            <Text mt="sm" fz={{ base: 14, sm: 15 }} lh={1.9} c="var(--mantine-color-stone-8)">
+              住所を入力すると、その地点の洪水浸水リスクと東京都の地震危険度を確認できます。調べたあとに地点を追加すれば、最大3地点まで同じものさしで比較できます。安全・危険の判定はしません。
+            </Text>
+          </Box>
+        </Box>
 
-        <Box mt="2xl">
+        <Box className="home-column" mt={{ base: "3xl", sm: "5xl" }}>
           <LocationInputCard
             order={1}
             defaultName="地点1"
@@ -228,12 +250,12 @@ function HomeInitialView({
             </Text>{" "}
             から最大3地点まで比較できます。
           </Text>
-        </Box>
 
-        <Box mt="4xl">
-          <InfoBanner variant="warning">
-            本サービスは安全・危険の判定を行いません。「区域外」「データなし」「対象外」は安全を意味するものではありません。最終的なご判断は、各自治体のハザードマップ等もあわせてご確認ください。
-          </InfoBanner>
+          <Box mt="3xl">
+            <InfoBanner variant="warning">
+              本サービスは安全・危険の判定を行いません。「区域外」「データなし」「対象外」は安全を意味するものではありません。最終的なご判断は、各自治体のハザードマップ等もあわせてご確認ください。
+            </InfoBanner>
+          </Box>
         </Box>
       </Container>
     </PageShell>

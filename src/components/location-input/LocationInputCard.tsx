@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Card,
+  Flex,
   Group,
   Loader,
   Paper,
@@ -71,12 +72,12 @@ function RecentLocationsPanel({
 }) {
   return (
     <Paper withBorder radius="md" p="2xs" aria-label="最近使った地点">
-      <Group justify="space-between" px="xs" py="2xs">
-        <Box>
+      <Group justify="space-between" align="flex-start" wrap="nowrap" gap="2xs" px="xs" py="2xs">
+        <Box miw={0}>
           <Text fz={11.5} fw={800} c="var(--mantine-color-stone-8)">
             この端末で最近使った地点
           </Text>
-          <Text fz={10.5} c="var(--mantine-color-stone-7)">
+          <Text fz={10.5} lh={1.5} c="var(--mantine-color-stone-7)">
             住所とピン位置だけを端末内に保存しています
           </Text>
         </Box>
@@ -84,6 +85,7 @@ function RecentLocationsPanel({
           variant="subtle"
           color="gray"
           size="compact-xs"
+          flex="none"
           onClick={() => {
             clearRecentLocations(window.localStorage);
             onChange([]);
@@ -170,7 +172,8 @@ function AddressInput({
         />
       ) : null}
 
-      <Group gap="xs" wrap="nowrap" align="stretch">
+      {/* 狭い画面では長い住所を入力しやすいよう、検索ボタンを下に回して入力欄に幅を渡す */}
+      <Flex gap="xs" align="stretch" direction={{ base: "column", xs: "row" }}>
         <TextInput
           id={inputId}
           aria-label={`${defaultName}の住所`}
@@ -209,7 +212,7 @@ function AddressInput({
         >
           {requestState === "searching" ? <Loader size="xs" color="white" /> : "住所を検索"}
         </Button>
-      </Group>
+      </Flex>
 
       {candidates.length > 0 && !selected ? (
         <Paper withBorder radius="md" p="2xs" aria-label="住所候補" aria-live="polite">
@@ -547,7 +550,14 @@ export function LocationInputCard({
   }
 
   return (
-    <Card withBorder radius="xl" py="3xl" px="3xl" shadow="xs">
+    // 狭い画面では住所入力と検索ボタンが並ぶ幅を確保するため、内側の余白を一段詰める
+    <Card
+      withBorder
+      radius="xl"
+      shadow="xs"
+      py={{ base: "xl", sm: "3xl" }}
+      px={{ base: "lg", sm: "3xl" }}
+    >
       {content}
     </Card>
   );

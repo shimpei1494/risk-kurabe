@@ -1,25 +1,26 @@
-import { ActionIcon, Drawer, Group, Stack, Text, ThemeIcon, UnstyledButton } from "@mantine/core";
+import { ActionIcon, Box, Drawer, Group, Stack, Text, UnstyledButton } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-import { APP_DESCRIPTION, APP_NAME } from "../../brand";
+import { APP_DESCRIPTION, APP_NAME, BRAND_MARK_URL } from "../../brand";
 
+/**
+ * ブランドマーク（地図をのぞくリス）。
+ * ヘッダー全体の高さは styles.css の .risk-assistant-inline の高さ計算に影響するため、
+ * 既定サイズ38pxを変えないこと。
+ */
 function Logo({ size = 38 }: { size?: number }) {
   return (
-    <ThemeIcon
-      size={size}
-      radius={size >= 36 ? "md" : "sm"}
-      styles={{
-        root: {
-          fontFamily: "'Zen Maru Gothic', sans-serif",
-          fontWeight: 900,
-          fontSize: size >= 36 ? 17 : 14,
-        },
-      }}
-    >
-      く
-    </ThemeIcon>
+    <Box
+      component="img"
+      src={BRAND_MARK_URL}
+      alt=""
+      w={size}
+      h={size}
+      className="app-brand-mark"
+      decoding="async"
+    />
   );
 }
 
@@ -67,9 +68,14 @@ export function AppHeader({ action }: { action?: ReactNode }) {
           </Group>
         </Link>
 
-        <Group gap="xl" visibleFrom="sm" wrap="nowrap">
+        <Group gap="lg" visibleFrom="sm" wrap="nowrap">
           {NAV_ITEMS.map((item) => (
-            <Link key={item.to} to={item.to} className="app-header-link">
+            <Link
+              key={item.to}
+              to={item.to}
+              className="app-header-link"
+              activeProps={{ "data-active": "true" }}
+            >
               {item.label}
             </Link>
           ))}
@@ -109,6 +115,7 @@ export function AppHeader({ action }: { action?: ReactNode }) {
               component={Link}
               to={item.to}
               className="app-mobile-nav-link"
+              activeProps={{ "data-active": "true" }}
               onClick={closeMenu}
             >
               {item.label}
