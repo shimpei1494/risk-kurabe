@@ -1,6 +1,6 @@
 import { Box, Container, Group, SimpleGrid, Text } from "@mantine/core";
 
-import { APP_DESCRIPTION, APP_NAME, BRAND_MARK_URL } from "../../brand";
+import { APP_DESCRIPTION, APP_NAME, BRAND_COMPACT_MARK_URL } from "../../brand";
 
 function FooterColumn({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -26,7 +26,7 @@ export function AppFooter() {
           <Group gap="2xs" wrap="nowrap" align="center">
             <Box
               component="img"
-              src={BRAND_MARK_URL}
+              src={BRAND_COMPACT_MARK_URL}
               alt=""
               w={30}
               h={30}

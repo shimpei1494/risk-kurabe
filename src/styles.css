@@ -54,7 +54,7 @@ body {
   text-decoration: none;
 }
 
-/** ブランドマーク（地図をのぞくリス）。アイコン自体が生成りの地色を持つため縁を薄く締める */
+/** コンパクトなブランドマークの縁を薄く締める */
 .app-brand-mark {
   display: block;
   flex: none;
