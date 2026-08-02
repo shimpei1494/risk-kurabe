@@ -4,7 +4,6 @@ import { env } from "cloudflare:workers";
 import OpenAI from "openai";
 import { z } from "zod";
 
-import { enforceRateLimit } from "../rate-limit";
 import { riskAssistantLibrary, riskAssistantPromptOptions } from "./risk-assistant-library";
 import { RISK_ASSISTANT_MODEL_CONFIG, type RiskAssistantPurpose } from "./risk-assistant-model";
 import type { AssistantFact } from "./risk-assistant-response";
@@ -67,7 +66,6 @@ function fallbackStream(response: string): ReadableStream<RiskAssistantStreamEve
 export const askRiskAssistant = createServerFn({ method: "POST" })
   .inputValidator((value) => inputSchema.parse(value))
   .handler(async ({ data }) => {
-    await enforceRateLimit(env.AI_RATE_LIMITER, "risk-assistant");
     const modelConfig =
       RISK_ASSISTANT_MODEL_CONFIG[data.purpose as RiskAssistantPurpose] ??
       RISK_ASSISTANT_MODEL_CONFIG.publicDataExplanation;

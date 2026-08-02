@@ -53,7 +53,7 @@ CF_AIG_TOKEN="取得したCloudflare APIトークン"
 
 `.dev.vars`はGit管理対象外です。Client IDをソースコード、`wrangler.jsonc`、`VITE_`で始まる環境変数へ書かないでください。`VITE_`変数はブラウザ用バンドルへ公開されます。
 AI説明はCloudflare AI Gateway経由に限定しているため、`OPENAI_API_KEY`は使用しません。
-Yahooジオコーディングは1拠点あたり各操作60回/分、AI説明は8回/分に制限します。CloudflareのRate Limiting bindingは拠点ごとの概算制御であり、厳密な課金カウンターではありません。
+アプリ側では固定のレート制限を設けず、AI Gateway側の制限・予算設定とYahoo側の利用量を管理します。入力サイズ、タイムアウト、AI出力トークン数などの1リクエスト単位の保護は維持します。
 
 ### 3. 開発サーバーを起動する
 
