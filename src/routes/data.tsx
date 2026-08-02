@@ -68,6 +68,117 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
+function TokyoRiskRankGuide() {
+  return (
+    <section aria-labelledby="rank-heading">
+      <Group justify="space-between" align="baseline" mb="md" gap="sm">
+        <Title id="rank-heading" order={2} fz={18} c="var(--mantine-color-stone-9)">
+          ランク3は、どのくらい？
+        </Title>
+        <Text fz={11.5} c="var(--mantine-color-stone-6)">
+          東京都の公表基準
+        </Text>
+      </Group>
+      <Paper className={styles.rankGuide} withBorder radius="lg" p={{ base: "lg", sm: "xl" }}>
+        <Text fz={13} lh={1.85} c="var(--mantine-color-stone-8)">
+          ランクは被災確率や「何割危険」という意味ではありません。危険量の大きい町丁目から順位を付け、
+          あらかじめ定めた構成比で5段階に分けた、東京都内での相対評価です。
+        </Text>
+        <Alert
+          className={styles.rankAnswer}
+          variant="light"
+          color="orange"
+          radius="md"
+          mt="lg"
+          title="ランク3の読み方"
+        >
+          危険量の順位が都内5,192町丁目の374〜1,195位、つまり危険量の上位約7〜23%にあたるグループです。
+          ただし、ランク3の境目となる危険量（棟/ha）は、建物倒壊・火災・総合の指標ごとに異なります。
+        </Alert>
+
+        <Box className={styles.rankScale} mt="xl" aria-label="危険量の順位とランク">
+          {[5, 4, 3, 2, 1].map((rank) => (
+            <Box key={rank} className={`${styles.rankStep} ${styles[`rankStep${rank}`]}`}>
+              <Text fz={11} fw={800} c="var(--mantine-color-stone-9)">
+                ランク
+              </Text>
+              <Text className={styles.rankNumber}>{rank}</Text>
+              <Text fz={10.5} fw={700} c="var(--mantine-color-stone-9)">
+                {rank === 5
+                  ? "1〜85位"
+                  : rank === 4
+                    ? "86〜373位"
+                    : rank === 3
+                      ? "374〜1,195位"
+                      : rank === 2
+                        ? "1,196〜2,848位"
+                        : "2,849〜5,192位"}
+              </Text>
+              <Text fz={10.5} c="var(--mantine-color-stone-9)">
+                {rank === 5
+                  ? "上位1.6%"
+                  : rank === 4
+                    ? "次の5.6%"
+                    : rank === 3
+                      ? "次の15.8%"
+                      : rank === 2
+                        ? "次の31.8%"
+                        : "残り45.2%"}
+              </Text>
+            </Box>
+          ))}
+        </Box>
+        <Text mt="sm" fz={11} lh={1.7} c="var(--mantine-color-stone-6)">
+          危険量の順位は数字が小さいほど危険度が高く、ランクの数字は大きいほど危険度が高い並びです。
+          この区切りは第9回調査（2022年9月公表）のものです。
+        </Text>
+
+        <Box component="dl" className={styles.indicatorDefinitions} mt="xl">
+          <Box className={styles.indicatorDefinition}>
+            <Text component="dt" fz={12} fw={800} c="var(--mantine-color-stone-9)">
+              建物倒壊危険度
+            </Text>
+            <Text component="dd" mt={3} fz={12} lh={1.7} c="var(--mantine-color-stone-7)">
+              地盤特性・建物量・建物特性から、地震による面積当たりの建物全壊棟数（危険量）を評価します。
+            </Text>
+          </Box>
+          <Box className={styles.indicatorDefinition}>
+            <Text component="dt" fz={12} fw={800} c="var(--mantine-color-stone-9)">
+              火災危険度
+            </Text>
+            <Text component="dd" mt={3} fz={12} lh={1.7} c="var(--mantine-color-stone-7)">
+              出火と延焼の危険性から、地震による面積当たりの建物全焼棟数（危険量）を評価します。
+            </Text>
+          </Box>
+          <Box className={styles.indicatorDefinition}>
+            <Text component="dt" fz={12} fw={800} c="var(--mantine-color-stone-9)">
+              東京都・地震時の総合危険度
+            </Text>
+            <Text component="dd" mt={3} fz={12} lh={1.7} c="var(--mantine-color-stone-7)">
+              建物倒壊危険量と火災危険量を合算し、道路等による災害時活動困難係数を掛けて評価します。
+            </Text>
+          </Box>
+        </Box>
+
+        <Group gap="xs" mt="lg">
+          <Anchor
+            href="https://www.funenka.metro.tokyo.lg.jp/assets/pdf/area-hazard-level/mikata.pdf"
+            target="_blank"
+            rel="noreferrer"
+            fz={12}
+            fw={700}
+          >
+            東京都「地域危険度一覧表の見方」
+          </Anchor>
+          <Text fz={11} c="var(--mantine-color-stone-6)">
+            危険量・順位・ランクの定義
+          </Text>
+        </Group>
+      </Paper>
+    </section>
+  );
+}
+
 function DataPage() {
   return (
     <InfoPage
@@ -147,6 +258,8 @@ function DataPage() {
             </DataSourceCard>
           </SimpleGrid>
         </section>
+
+        <TokyoRiskRankGuide />
 
         <section aria-labelledby="how-heading">
           <Title id="how-heading" order={2} fz={18} c="var(--mantine-color-stone-9)" mb="md">

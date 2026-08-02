@@ -64,6 +64,95 @@
   background: #fff8ef;
 }
 
+.rankGuide {
+  background: linear-gradient(145deg, #fffdfa, #fff8ef);
+}
+
+.rankAnswer {
+  border: 1px solid rgb(217 139 85 / 24%);
+  background: rgb(255 244 228 / 72%);
+}
+
+.rankAnswer :global(.mantine-Alert-title) {
+  color: #9a5729;
+  font-size: 13px;
+}
+
+.rankAnswer :global(.mantine-Alert-message) {
+  color: var(--mantine-color-stone-8);
+  font-size: 12.5px;
+  line-height: 1.8;
+}
+
+.rankScale {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--mantine-color-stone-3);
+  border-radius: var(--mantine-radius-md);
+}
+
+.rankStep {
+  min-width: 0;
+  padding: 12px 10px 13px;
+  border-right: 1px solid rgb(255 255 255 / 70%);
+}
+
+.rankStep:last-child {
+  border-right: 0;
+}
+
+.rankStep5 {
+  background: #d98b55;
+}
+
+.rankStep4 {
+  background: #e7aa72;
+}
+
+.rankStep3 {
+  background: #f0c78d;
+}
+
+.rankStep2 {
+  background: #f5dfb7;
+}
+
+.rankStep1 {
+  background: #f8eed9;
+}
+
+.rankNumber {
+  margin: 1px 0 5px;
+  color: var(--mantine-color-stone-9);
+  font-size: 28px;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.indicatorDefinitions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin-bottom: 0;
+  border-top: 1px solid var(--mantine-color-stone-3);
+}
+
+.indicatorDefinition {
+  margin: 0;
+  padding: 14px 16px 0 0;
+}
+
+.indicatorDefinition:not(:last-child) {
+  margin-right: 16px;
+  border-right: 1px solid var(--mantine-color-stone-3);
+}
+
+.indicatorDefinition :global(dt),
+.indicatorDefinition :global(dd) {
+  margin: 0;
+}
+
 .process {
   background: #fbfaf7;
 }
@@ -141,6 +230,45 @@
   .processList {
     grid-template-columns: 1fr;
     gap: 18px;
+  }
+
+  .rankScale {
+    grid-template-columns: 1fr;
+  }
+
+  .rankStep {
+    display: grid;
+    grid-template-columns: 3.2rem 2.2rem 1fr auto;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 10px;
+    border-right: 0;
+    border-bottom: 1px solid rgb(255 255 255 / 70%);
+  }
+
+  .rankStep:last-child {
+    border-bottom: 0;
+  }
+
+  .rankNumber {
+    margin: 0;
+    font-size: 23px;
+  }
+
+  .indicatorDefinitions {
+    grid-template-columns: 1fr;
+  }
+
+  .indicatorDefinition,
+  .indicatorDefinition:not(:last-child) {
+    margin-right: 0;
+    padding: 12px 0 0;
+    border-right: 0;
+  }
+
+  .indicatorDefinition:not(:last-child) {
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--mantine-color-stone-3);
   }
 
   .processList li {
