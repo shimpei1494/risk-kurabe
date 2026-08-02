@@ -111,6 +111,7 @@ function DataPage() {
                 実際に観測された水深や、将来必ず起きる水深ではありません。
               </Text>
               <Box component="dl" className={styles.facts} mt="lg">
+                <Fact label="対象地域">関東1都6県</Fact>
                 <Fact label="表示区分">0.5m未満、0.5〜3m、3〜5m、5〜10m、10〜20m、20m以上</Fact>
                 <Fact label="出典">国土交通省・国土地理院のハザードマップポータルサイト</Fact>
                 <Fact label="更新">
@@ -188,13 +189,13 @@ function DataPage() {
           <Title id="states-heading" order={2} fz={18} c="var(--mantine-color-stone-9)" mb="md">
             「値がない」表示の読み方
           </Title>
-          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="sm">
+          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="sm">
             <Paper className={styles.stateCard} withBorder radius="md" p="md">
               <Text fw={800} fz={13} c="teal.8">
-                区域外
+                浸水深表示なし
               </Text>
               <Text mt="xs" fz={12} lh={1.7} c="var(--mantine-color-stone-7)">
-                使用したデータで指定された区域の外です。安全を示しません。
+                洪水データは正常に取得できましたが、その地点に着色された浸水深区分がない状態です。0mや安全を示しません。
               </Text>
             </Paper>
             <Paper className={styles.stateCard} withBorder radius="md" p="md">
@@ -207,10 +208,18 @@ function DataPage() {
             </Paper>
             <Paper className={styles.stateCard} withBorder radius="md" p="md">
               <Text fw={800} fz={13} c="teal.8">
-                判定不能
+                区域外・未公開
               </Text>
               <Text mt="xs" fz={12} lh={1.7} c="var(--mantine-color-stone-7)">
-                データを取得できないなどの理由で、値を確定できませんでした。
+                使用したデータの指定区域外、または公表データが未整備の状態です。いずれも安全を示しません。
+              </Text>
+            </Paper>
+            <Paper className={styles.stateCard} withBorder radius="md" p="md">
+              <Text fw={800} fz={13} c="teal.8">
+                判定データなし
+              </Text>
+              <Text mt="xs" fz={12} lh={1.7} c="var(--mantine-color-stone-7)">
+                通信やデータ取得の失敗などにより、値を確定できなかった状態です。取得済みの「浸水深表示なし」とは区別します。
               </Text>
             </Paper>
           </SimpleGrid>
@@ -276,7 +285,7 @@ function DataPage() {
             </Text>
             <List fz={12} lh={1.8} c="var(--mantine-color-stone-7)" spacing="xs">
               <List.Item>
-                洪水の透明な部分は「安全」ではなく、判定できない場合があります。
+                洪水データを正常取得した透明部分は「浸水深表示なし」としますが、0mや安全を意味しません。
               </List.Item>
               <List.Item>地図を拡大しても、元データの精度が上がるわけではありません。</List.Item>
               <List.Item>
