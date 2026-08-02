@@ -107,7 +107,7 @@ const FIXTURES: readonly InvestigationResult[] = [
 
 /**
  * 何件目の調査かに応じて固定結果を返す（デモ用のダミー判定）。
- * 実際の空間判定は docs/計画/MVP実装計画.md の GIS 判定機能で別途実装する。
+ * 実際の空間判定は src/gis/investigate-risk.ts と関連するGIS実装で行う。
  */
 export function investigate(order: number): InvestigationResult {
   const fixture = FIXTURES[(order - 1) % FIXTURES.length];

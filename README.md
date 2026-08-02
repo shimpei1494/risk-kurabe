@@ -9,8 +9,9 @@
 - TanStack Start / TanStack Router
 - React 19 / TypeScript
 - Mantine
+- OpenUI Lang（読み取り専用のAI説明コンポーネント）
 - MapLibre GL / 公式洪水ラスタタイル / PMTiles / FlatGeobuf / Turf
-- Cloudflare Workers / R2
+- Cloudflare Workers / R2 / AI Gateway
 - Vite+
 
 ## 必要な環境
@@ -54,6 +55,10 @@ CF_AIG_TOKEN="取得したCloudflare APIトークン"
 `.dev.vars`はGit管理対象外です。Client IDをソースコード、`wrangler.jsonc`、`VITE_`で始まる環境変数へ書かないでください。`VITE_`変数はブラウザ用バンドルへ公開されます。
 AI説明はCloudflare AI Gateway経由に限定しているため、`OPENAI_API_KEY`は使用しません。
 アプリ側では固定のレート制限を設けず、AI Gateway側の制限・予算設定とYahoo側の利用量を管理します。入力サイズ、タイムアウト、AI出力トークン数などの1リクエスト単位の保護は維持します。
+
+AI説明はユーザー操作時だけ生成します。質問は最大400文字、AI出力は最大3,000トークン、
+AIが利用できない場合のフォールバック表示は最大8,000文字です。
+匿名の利用状況計測は現時点では実装していません。
 
 ### 3. 開発サーバーを起動する
 
