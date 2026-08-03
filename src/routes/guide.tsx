@@ -12,9 +12,19 @@ import {
 } from "@mantine/core";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
+import { createSeoHead } from "../brand";
 import { InfoPage } from "../components/shared/InfoPage";
 
-export const Route = createFileRoute("/guide")({ component: GuidePage });
+export const Route = createFileRoute("/guide")({
+  head: () =>
+    createSeoHead({
+      path: "/guide",
+      title: "使い方｜TOKYOりすくらべ",
+      description:
+        "関東1都6県の洪水浸水想定と東京都の地震地域危険度を調べて比較する方法を説明します。",
+    }),
+  component: GuidePage,
+});
 
 const steps = [
   {
@@ -48,7 +58,7 @@ function GuidePage() {
                 {step.number}
               </ThemeIcon>
               <Box style={{ flex: 1 }}>
-                <Text fw={800} c="teal.8">
+                <Text component="h2" fw={800} c="teal.8">
                   {step.title}
                 </Text>
                 <Text mt={4} fz={13} lh={1.8} c="var(--mantine-color-stone-8)">

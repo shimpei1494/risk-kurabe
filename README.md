@@ -112,6 +112,28 @@ URL末尾には`/`を付けてください。
 
 `wrangler.jsonc`の`account_id`で配置先を固定しています。認証情報は各開発者のローカル環境で管理し、Gitへ保存しません。
 
+### SEO公開ドメインを変更する場合
+
+現在のSEO設定は、ハッカソン期間中の公開先である
+`https://risk-kurabe.tokyo-odh-044.workers.dev`を正規URLとして使用しています。
+独自ドメインを取得して公開先を変更する場合は、次のファイルと設定を同じ新ドメインへ更新してください。
+
+- `src/brand.ts`の`APP_ORIGIN`
+  - canonical URL、`og:url`、OGP画像URL、WebApplication構造化データに使用します
+- `public/robots.txt`の`Sitemap:` URL
+- `public/sitemap.xml`内の全`<loc>` URL
+- READMEのCloudflare本番環境表、配置先URL、必要に応じた手動確認手順
+- `config/r2-cors.json`の許可OriginとR2 CORS設定
+
+更新後は、独自ドメインをCloudflare Workerへ紐付け、`vp check`・`vp test`・`vp build`を実行してからデプロイします。公開後は次のURLが新ドメインで取得できることを確認してください。
+
+- `/robots.txt`
+- `/sitemap.xml`
+- `/`
+- `/guide`、`/data`、`/faq`
+
+ページのcanonical、`og:url`、OGP画像URLが新ドメインになっていることも確認します。旧ドメインから新ドメインへ恒久移行する場合は、旧URLから新URLへのリダイレクトも設定してください。
+
 ### 1. 接続先を確認する
 
 ```bash
