@@ -1,9 +1,51 @@
 import { Accordion, Anchor, List, Stack, Text } from "@mantine/core";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
+import { createSeoHead } from "../brand";
 import { InfoPage } from "../components/shared/InfoPage";
+import { JsonLd } from "../components/shared/JsonLd";
 
-export const Route = createFileRoute("/faq")({ component: FaqPage });
+export const Route = createFileRoute("/faq")({
+  head: () =>
+    createSeoHead({
+      path: "/faq",
+      title: "よくある質問｜TOKYOりすくらべ",
+      description:
+        "関東の災害リスク検索、洪水浸水深、東京都の地震地域危険度についてよくある質問に回答します。",
+    }),
+  component: FaqPage,
+});
+
+const faqStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "どの地域・災害を調べられますか？",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "住所検索と最大浸水深は関東1都6県が対象です。東京都内では、これに加えて地震時の総合危険度・建物倒壊危険度・火災危険度を確認できます。東京都の地震地域危険度は都内の町丁目を比較するデータなので、都外では「対象外」と表示します。",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "「浸水深表示なし」は浸水しない場所ですか？",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "いいえ。洪水データの取得には成功したものの、その地点に着色された浸水深区分がない状態です。比較グラフでは見比べやすさのため0m付近に置きますが、0mや安全を示すものではありません。",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "地震のランク1なら安全ですか？",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "安全という意味ではありません。ランク1〜5は東京都内の町丁目同士を比べた相対評価で、数字が大きいほど公表ランクが高いことを示します。個別の建物の耐震性を診断するものではありません。",
+      },
+    },
+  ],
+};
 
 function FaqPage() {
   return (
@@ -11,6 +53,7 @@ function FaqPage() {
       title="よくある質問"
       lead="検索・比較の範囲と、表示された値を正しく読むためのポイントをまとめています。"
     >
+      <JsonLd data={faqStructuredData} />
       <Accordion variant="separated" radius="md" chevronPosition="right">
         <Accordion.Item value="coverage">
           <Accordion.Control>どの地域・災害を調べられますか？</Accordion.Control>

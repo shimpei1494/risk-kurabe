@@ -15,7 +15,7 @@ import {
 import { useMediaQuery } from "@mantine/hooks";
 import { createFileRoute } from "@tanstack/react-router";
 
-import { BRAND_HERO_ALT, BRAND_HERO_URL } from "../brand";
+import { BRAND_HERO_ALT, BRAND_HERO_URL, createSeoHead } from "../brand";
 import { RiskAssistantLauncher, RiskAssistantPanel } from "../components/assistant/RiskAssistant";
 import { LocationInputCard } from "../components/location-input/LocationInputCard";
 import { AddLocationCard } from "../components/results/AddLocationCard";
@@ -44,7 +44,19 @@ import { useRiskAssistantStore } from "../features/assistant/risk-assistant-stor
 import { useComparisonSession, type RemovalUndo } from "../features/comparison/comparison-session";
 import type { GeoPoint } from "../gis/geometry";
 
-export const Route = createFileRoute("/")({ component: Home });
+export const Route = createFileRoute("/")({
+  head: () => {
+    const seo = createSeoHead({
+      path: "/",
+      title: "TOKYOりすくらべ｜関東の災害リスク比較サービス",
+      description:
+        "公開データをもとに、関東の洪水浸水想定と東京都の地震地域危険度を1〜3地点で比較できます。",
+    });
+
+    return seo;
+  },
+  component: Home,
+});
 
 function Home() {
   const navigate = Route.useNavigate();

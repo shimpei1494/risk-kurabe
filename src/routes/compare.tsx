@@ -3,6 +3,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { createSeoHead } from "../brand";
 import { AppFooter } from "../components/shared/AppFooter";
 import { AppHeader } from "../components/shared/AppHeader";
 import {
@@ -21,6 +22,13 @@ export const Route = createFileRoute("/compare")({
   validateSearch: (search: Record<string, unknown>): CompareSearch => ({
     ...(isMapIndicator(search.indicator) ? { indicator: search.indicator } : {}),
   }),
+  head: () =>
+    createSeoHead({
+      path: "/compare",
+      title: "災害リスク比較｜TOKYOりすくらべ",
+      description: "調査した地点の洪水浸水想定と東京都の地震地域危険度を比較します。",
+      noIndex: true,
+    }),
   component: ComparePage,
 });
 

@@ -7,11 +7,13 @@ import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 import {
   APP_DESCRIPTION,
   APP_NAME,
+  APP_ORIGIN,
   APP_OG_DESCRIPTION,
   APP_OG_IMAGE_URL,
   APP_TITLE,
   BRAND_MARK_URL,
 } from "../brand";
+import { JsonLd } from "../components/shared/JsonLd";
 import { ComparisonSessionProvider } from "../features/comparison/comparison-session";
 import { theme } from "../theme";
 
@@ -38,13 +40,14 @@ export const Route = createRootRoute({
       },
     ],
     meta: [
-      { charSet: "utf8" },
+      { charSet: "utf-8" },
       { content: "width=device-width, initial-scale=1", name: "viewport" },
       { content: "#2F8F87", name: "theme-color" },
       { content: APP_OG_DESCRIPTION, name: "description" },
       { content: APP_TITLE, property: "og:title" },
       { content: APP_OG_DESCRIPTION, property: "og:description" },
       { content: "website", property: "og:type" },
+      { content: APP_NAME, property: "og:site_name" },
       { content: "ja_JP", property: "og:locale" },
       { content: APP_OG_IMAGE_URL, property: "og:image" },
       { content: "1200", property: "og:image:width" },
@@ -57,6 +60,7 @@ export const Route = createRootRoute({
       { content: APP_TITLE, name: "twitter:title" },
       { content: APP_OG_DESCRIPTION, name: "twitter:description" },
       { content: APP_OG_IMAGE_URL, name: "twitter:image" },
+      { content: `${APP_NAME}のOGP画像`, name: "twitter:image:alt" },
       { title: APP_TITLE },
     ],
   }),
@@ -70,6 +74,20 @@ function RootComponent() {
       <head>
         <HeadContent />
         <ColorSchemeScript />
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "WebApplication",
+            name: APP_NAME,
+            url: `${APP_ORIGIN}/`,
+            description: APP_OG_DESCRIPTION,
+            image: APP_OG_IMAGE_URL,
+            applicationCategory: "UtilitiesApplication",
+            operatingSystem: "Web",
+            inLanguage: "ja",
+            isAccessibleForFree: true,
+          }}
+        />
       </head>
       <body>
         <MantineProvider theme={theme}>

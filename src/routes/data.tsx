@@ -15,11 +15,21 @@ import {
 } from "@mantine/core";
 import { createFileRoute } from "@tanstack/react-router";
 
+import { createSeoHead } from "../brand";
 import { InfoPage } from "../components/shared/InfoPage";
 
 import styles from "./data.module.css";
 
-export const Route = createFileRoute("/data")({ component: DataPage });
+export const Route = createFileRoute("/data")({
+  head: () =>
+    createSeoHead({
+      path: "/data",
+      title: "災害リスクデータと出典｜TOKYOりすくらべ",
+      description:
+        "国土交通省・国土地理院・東京都の公開データによる洪水浸水想定と地域危険度の出典、区分、読み方を説明します。",
+    }),
+  component: DataPage,
+});
 
 function DataSourceCard({
   eyebrow,
