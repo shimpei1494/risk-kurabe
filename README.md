@@ -87,7 +87,7 @@ R2の開発用CORSはこのOriginを許可しています。`http://127.0.0.1:51
 通常は次のR2公開URLにある固定スナップショットを使用するため、GDALやローカルの`.data`ディレクトリがなくてもアプリを起動できます。
 
 ```text
-https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v3/
+https://pub-4999ce00bacf4f45be2179858e102473.r2.dev/risk-data/v3/
 ```
 
 別のスナップショットを使う場合は、開発サーバー起動時にベースURLを指定できます。
@@ -104,18 +104,20 @@ URL末尾には`/`を付けてください。
 
 | リソース             | 設定                                                                |
 | -------------------- | ------------------------------------------------------------------- |
-| Cloudflareアカウント | `tokyo_odh_044`                                                     |
-| Account ID           | `53af804e239e6294ad9a766add0c6e00`                                  |
-| Worker               | `https://risk-kurabe.tokyo-odh-044.workers.dev`                     |
+| Cloudflareアカウント | `One1218all38@icloud.com's Account`                                 |
+| Account ID           | `8b769981b6030745b33f2661f7904da2`                                  |
+| Worker               | `https://risk-kurabe.peishim.workers.dev`                           |
 | R2バケット           | `risk-kurabe-data`                                                  |
-| R2公開データ         | `https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v3/` |
+| R2公開データ         | `https://pub-4999ce00bacf4f45be2179858e102473.r2.dev/risk-data/v3/` |
 
-`wrangler.jsonc`の`account_id`で配置先を固定しています。認証情報は各開発者のローカル環境で管理し、Gitへ保存しません。
+個人アカウントのWorkers、R2およびAI Gatewayを使用します。AI Gatewayは `risk-kurabe-ai-gateway` で、OpenAIのProvider Keyを登録して利用します。Gatewayへのアクセスには認証トークンをWorker Secret `CF_AIG_TOKEN`へ設定します。
+
+認証情報は各開発者のローカル環境で管理し、Gitへ保存しません。
 
 ### SEO公開ドメインを変更する場合
 
-現在のSEO設定は、ハッカソン期間中の公開先である
-`https://risk-kurabe.tokyo-odh-044.workers.dev`を正規URLとして使用しています。
+現在のSEO設定は、個人アカウントの公開先である
+`https://risk-kurabe.peishim.workers.dev`を正規URLとして使用しています。
 独自ドメインを取得して公開先を変更する場合は、次のファイルと設定を同じ新ドメインへ更新してください。
 
 - `src/brand.ts`の`APP_ORIGIN`
@@ -140,7 +142,16 @@ URL末尾には`/`を付けてください。
 vp exec wrangler whoami
 ```
 
-Cloudflare側を変更する前に、アカウント名とAccount IDが上表と一致することを確認してください。未認証の場合は`vp exec wrangler login`を実行します。複数アカウントを使い分ける場合は、Wranglerの認証プロファイルをこのリポジトリへ紐付けます。
+Cloudflare側を変更する前に、移行先のAccount ID `8b769981b6030745b33f2661f7904da2` と一致することを確認してください。個人用プロファイルをこのリポジトリへ紐付けてから確認します。
+
+```bash
+# 未作成の場合だけ実行する
+vp exec wrangler auth create risk-kurabe-personal
+vp exec wrangler auth activate risk-kurabe-personal .
+vp exec wrangler whoami
+```
+
+`whoami`では`--profile`を指定できません。`CLOUDFLARE_API_TOKEN`が設定されている場合はプロファイルより優先されるため、認証先を確認してください。
 
 ### 2. R2を初期構築する
 
@@ -161,7 +172,7 @@ vp exec wrangler r2 bucket cors list risk-kurabe-data
 vp run data:tokyo-risk:verify-remote
 ```
 
-R2のPublic Development URLは開発用途の`r2.dev`エンドポイントです。ハッカソン版では固定GISデータの公開に使用しますが、長期運用時はレート制限を考慮してカスタムドメインへの移行を検討します。
+R2のPublic Development URLは開発用途の`r2.dev`エンドポイントです。現在は固定GISデータの公開に使用していますが、長期運用時はレート制限を考慮してカスタムドメインへの移行を検討します。
 
 ### 3. Worker Secretsを登録する
 
@@ -171,14 +182,14 @@ vp exec wrangler secret put CF_AIG_TOKEN
 vp exec wrangler secret list
 ```
 
-各対話プロンプトへSecretを入力します。`secret list`では名前だけを確認し、値は表示されません。Secretは`wrangler.jsonc`やGitには書き込みません。
+初回デプロイでは、必要な2つのSecretだけを含むGit管理対象外の`.dev.vars`を使用して `vp build`、`vp exec wrangler deploy --secrets-file .dev.vars` の順に実行できます。既存WorkerのSecretを更新する場合は、上記の各対話プロンプトへSecretを入力します。`secret list`では名前だけを確認し、値は表示されません。Secretは`wrangler.jsonc`やGitには書き込みません。
 
 ### 4. R2 CORSを確認する
 
 R2バケット`risk-kurabe-data`で、少なくとも次のOriginからのGET・Range取得を許可します。
 
 - `http://localhost:5173`
-- `https://risk-kurabe.tokyo-odh-044.workers.dev`
+- `https://risk-kurabe.peishim.workers.dev`
 
 FlatGeobufとPMTilesはHTTP Rangeリクエストを使用します。CORS設定では`Range`リクエストヘッダーと、`Content-Range`、`Accept-Ranges`、`Content-Length`など、ブラウザで必要なレスポンスヘッダーも確認してください。
 
@@ -193,7 +204,7 @@ vp run deploy
 配置先:
 
 ```text
-https://risk-kurabe.tokyo-odh-044.workers.dev
+https://risk-kurabe.peishim.workers.dev
 ```
 
 `wrangler.jsonc`では`YAHOO_CLIENT_ID`と`CF_AIG_TOKEN`を必須Secretとして宣言しています。未設定の場合、開発時には警告が出て、本番デプロイは失敗します。
