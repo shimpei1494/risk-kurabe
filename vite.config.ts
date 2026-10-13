@@ -104,7 +104,9 @@ export default defineConfig(({ mode }) => ({
   },
   plugins: [
     aiComponentsDevPage(),
-    mode === "test" ? undefined : cloudflare({ viteEnvironment: { name: "ssr" } }),
+    mode === "test"
+      ? undefined
+      : cloudflare({ viteEnvironment: { name: "ssr" }, types: { generate: false } }),
     tanstackStart(),
     // react's vite plugin must come after start's vite plugin
     react(),

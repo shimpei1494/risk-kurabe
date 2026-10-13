@@ -43,6 +43,8 @@ vp install
 vp config
 ```
 
+`vp install`の完了時にCloudflareの型定義を自動生成します。再生成する場合は `vp run cf-typegen` を実行します。
+
 `vp config`はGitフックを設定します。以後、コミット前にステージ済みファイルのチェックが自動実行されます。
 
 ### 2. Worker Secretsを設定する
@@ -60,7 +62,7 @@ YAHOO_CLIENT_ID="取得したClient ID"
 CF_AIG_TOKEN="取得したCloudflare APIトークン"
 ```
 
-`.dev.vars`はGit管理対象外です。Client IDをソースコード、`wrangler.jsonc`、`VITE_`で始まる環境変数へ書かないでください。`VITE_`変数はブラウザ用バンドルへ公開されます。
+`.dev.vars`はGit管理対象外です。Client IDをソースコード、`cloudflare.config.ts`、`VITE_`で始まる環境変数へ書かないでください。`VITE_`変数はブラウザ用バンドルへ公開されます。
 AI説明はCloudflare AI Gateway経由に限定しているため、`OPENAI_API_KEY`は使用しません。
 アプリ側では固定のレート制限を設けず、AI Gateway側の制限・予算設定とYahoo側の利用量を管理します。入力サイズ、タイムアウト、AI出力トークン数などの1リクエスト単位の保護は維持します。
 
@@ -136,34 +138,45 @@ URL末尾には`/`を付けてください。
 
 ページのcanonical、`og:url`、OGP画像URLが新ドメインになっていることも確認します。旧ドメインから新ドメインへ恒久移行する場合は、旧URLから新URLへのリダイレクトも設定してください。
 
+### Cloudflare CLI と Vite+
+
+Worker設定の正本は`cloudflare.config.ts`、デプロイとリソース管理には`cf`を使用します。CLIとCloudflare Viteプラグインはベータ版のため、動作確認したバージョンを固定しています。
+
+Vite+は`vite`バイナリを提供しないため、開発・ビルドには`vp dev`と`vp build`を使用します。ビルド成果物は`.cloudflare/output/v0/`へ出力され、`vp run deploy`は`vp build && vp exec cf deploy --prebuilt`を実行します。直接の`cf build`、`cf dev`、ビルド付きの`cf deploy`はこの構成では使用しません。
+
+`.cloudflare/types/index.d.ts`は設定から生成し、`src/cloudflare-workers.d.ts`が`Cloudflare.Env`を参照します。ブラウザのDOM型と衝突しないよう、型生成には`--include-runtime=false`を指定しています。成果物と生成型を含む`.cloudflare/`はGit管理対象外です。
+
 ### 1. 接続先を確認する
 
-```bash
-vp exec wrangler whoami
-```
-
-Cloudflare側を変更する前に、移行先のAccount ID `8b769981b6030745b33f2661f7904da2` と一致することを確認してください。個人用プロファイルをこのリポジトリへ紐付けてから確認します。
+`cf`とWranglerのログインは別管理です。個人用プロファイルを作成し、このリポジトリへ紐付けます。
 
 ```bash
 # 未作成の場合だけ実行する
-vp exec wrangler auth create risk-kurabe-personal
-vp exec wrangler auth activate risk-kurabe-personal .
-vp exec wrangler whoami
+vp exec cf auth create risk-kurabe-personal
+vp exec cf auth activate risk-kurabe-personal .
+vp exec cf auth whoami
 ```
 
-`whoami`では`--profile`を指定できません。`CLOUDFLARE_API_TOKEN`が設定されている場合はプロファイルより優先されるため、認証先を確認してください。
+Cloudflare側を変更する前に、Account IDが`8b769981b6030745b33f2661f7904da2`と一致することを確認してください。`cloudflare.config.ts`の`accountId`で配置先を指定していますが、`CLOUDFLARE_ACCOUNT_ID`の環境変数はそれより優先されます。`CLOUDFLARE_API_TOKEN`は認証プロファイルより優先されます。
 
 ### 2. R2を初期構築する
 
 次は新しいCloudflareアカウントへ初めて配置するときだけ実行します。バケットがすでに存在する場合、再作成は不要です。
 
 ```bash
-vp exec wrangler r2 bucket create risk-kurabe-data
+vp exec cf r2 buckets create --name risk-kurabe-data
 vp run data:upload
-vp exec wrangler r2 bucket dev-url enable risk-kurabe-data
-vp exec wrangler r2 bucket dev-url get risk-kurabe-data
-vp exec wrangler r2 bucket cors set risk-kurabe-data --file config/r2-cors.json
-vp exec wrangler r2 bucket cors list risk-kurabe-data
+vp exec cf r2 buckets domains managed update risk-kurabe-data --enabled
+vp exec cf r2 buckets domains managed list --bucket-name risk-kurabe-data
+vp exec cf r2 buckets cors update risk-kurabe-data --body @config/r2-cors.json
+vp exec cf r2 buckets cors get risk-kurabe-data
+```
+
+R2のオブジェクトアップロードだけは、キャッシュ設定を保持するためWranglerを使用します。現行`cf r2 objects put`に`--cache-control`がないためです。`wrangler.jsonc`はこの補助処理用のAccount IDだけを保持し、Workerの設定は置きません。アップロード前にはWrangler側も個人アカウントへ認証してください。
+
+```bash
+vp exec wrangler auth activate risk-kurabe-personal .
+vp exec wrangler whoami
 ```
 
 公開URLが変わった場合は、`src/gis/config.ts`、リモート検証スクリプトおよびこのREADMEを更新します。アップロード後は全データセットを確認します。
@@ -172,17 +185,19 @@ vp exec wrangler r2 bucket cors list risk-kurabe-data
 vp run data:tokyo-risk:verify-remote
 ```
 
-R2のPublic Development URLは開発用途の`r2.dev`エンドポイントです。現在は固定GISデータの公開に使用していますが、長期運用時はレート制限を考慮してカスタムドメインへの移行を検討します。
+R2のPublic Development URLは開発用途の`r2.dev`エンドポイントです。長期運用時はレート制限を考慮してカスタムドメインへの移行を検討します。
 
 ### 3. Worker Secretsを登録する
 
+必要な2つのSecretだけを含むGit管理対象外の`.dev.vars`を使用し、ビルド後に登録・デプロイします。初回とSecret更新時の両方で使用できます。
+
 ```bash
-vp exec wrangler secret put YAHOO_CLIENT_ID
-vp exec wrangler secret put CF_AIG_TOKEN
-vp exec wrangler secret list
+vp build
+vp exec cf deploy --prebuilt --secrets-file .dev.vars
+vp exec cf workers secrets list --worker risk-kurabe
 ```
 
-初回デプロイでは、必要な2つのSecretだけを含むGit管理対象外の`.dev.vars`を使用して `vp build`、`vp exec wrangler deploy --secrets-file .dev.vars` の順に実行できます。既存WorkerのSecretを更新する場合は、上記の各対話プロンプトへSecretを入力します。`secret list`では名前だけを確認し、値は表示されません。Secretは`wrangler.jsonc`やGitには書き込みません。
+通常の`vp run deploy`は既存のSecretを引き継ぎます。Secretの値は`cloudflare.config.ts`やGitには書き込みません。`cf workers secrets list`では名前だけを確認し、値は表示されません。
 
 ### 4. R2 CORSを確認する
 
@@ -207,11 +222,11 @@ vp run deploy
 https://risk-kurabe.peishim.workers.dev
 ```
 
-`wrangler.jsonc`では`YAHOO_CLIENT_ID`と`CF_AIG_TOKEN`を必須Secretとして宣言しています。未設定の場合、開発時には警告が出て、本番デプロイは失敗します。
+`cloudflare.config.ts`では`YAHOO_CLIENT_ID`と`CF_AIG_TOKEN`を`bindings.secret()`で宣言しています。未設定の場合、開発時には警告が出て、本番デプロイは失敗します。
 
 ### レート制限の移行方針（Free／Paid共通）
 
-ハッカソン終了後のアカウント移行を考慮し、レート制限はPaidプラン専用のWAF設定に依存せず、WorkersのRate Limiting Bindingで実装している。Rate Limiting BindingはWorkerのコードから経路別・キー別に判定でき、Free／Paid間で`wrangler.jsonc`の設定を持ち運べる。CloudflareのRate Limiting Binding自体に別料金を前提とした設定は置かない。
+ハッカソン終了後のアカウント移行を考慮し、レート制限はPaidプラン専用のWAF設定に依存せず、WorkersのRate Limiting Bindingで実装している。Rate Limiting BindingはWorkerのコードから経路別・キー別に判定でき、Free／Paid間で`cloudflare.config.ts`の設定を持ち運べる。CloudflareのRate Limiting Binding自体に別料金を前提とした設定は置かない。
 
 現在の初期値は次のとおり。いずれも同一キー（匿名利用では`経路種別 + 接続元IP`）あたりの10秒窓とし、超過時はHTTP 429を返す。
 
@@ -222,7 +237,7 @@ https://risk-kurabe.peishim.workers.dev
 
 この制限は厳密な全世界合算カウンターや請求上限ではない。Rate Limiting BindingはCloudflareのロケーション単位で、結果整合性も緩いため、AI Gateway側の予算・利用量設定とYahoo!側の利用量確認を併用する。IP共有環境では複数ユーザーが同じキーになるため、上限は緩めに設定する。
 
-アカウントを移行する際は、`wrangler.jsonc`の`account_id`、Worker Secret、AI Gatewayの接続先を新アカウントへ更新し、Rate Limiting Bindingを新アカウントへ再デプロイする。レート制限のカウンターはアカウント間で引き継がれず、移行後に新しい状態から始まる。新アカウントでWorkers Freeを使う場合、Rate Limiting Bindingとは別にWorker全体へ1日10万リクエストの上限が適用される。
+アカウントを移行する際は、`cloudflare.config.ts`の`accountId`、R2アップロード用`wrangler.jsonc`の`account_id`、Worker Secret、AI Gatewayの接続先を新アカウントへ更新し、Rate Limiting Bindingを新アカウントへ再デプロイする。レート制限のカウンターはアカウント間で引き継がれず、移行後に新しい状態から始まる。新アカウントでWorkers Freeを使う場合、Rate Limiting Bindingとは別にWorker全体へ1日10万リクエストの上限が適用される。
 
 Paidプランは、現在のハッカソン環境で動作確認したり、Worker全体の1日10万リクエスト制限を外したりする目的では有用だが、レート制限機能をPaid専用設定にする必要はない。WAF Rate Limiting Rulesを使う場合は、Freeでは1ルール・IP単位・10秒窓などの制約があり、アカウントやゾーンの移行時にルールを再作成する必要があるため、今回の移行方針の主軸にはしない。
 
@@ -266,7 +281,7 @@ vp build
 | `vp build`                             | 本番用ビルド                                 |
 | `vp preview`                           | 本番ビルドをローカルで確認                   |
 | `vp run deploy`                        | Cloudflare Workersへビルド・デプロイ         |
-| `vp run cf-typegen`                    | Wrangler設定からCloudflareの型を生成         |
+| `vp run cf-typegen`                    | Cloudflare設定からWorkerの型を生成           |
 | `vp run fallow`                        | 未使用ファイル・依存関係・エクスポートを検出 |
 | `vp run doctor`                        | React固有のヘルスチェック                    |
 | `vp run data:upload`                   | 全GIS成果物を検証してR2へ重複なく配置        |

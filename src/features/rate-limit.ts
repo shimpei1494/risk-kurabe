@@ -17,7 +17,7 @@ export async function enforceRateLimit(
   namespace: string,
 ): Promise<void> {
   // Local development does not have the Cloudflare binding. Production has it
-  // because it is declared in wrangler.jsonc.
+  // because it is declared in cloudflare.config.ts.
   if (!binding) return;
 
   const { success } = await binding.limit({ key: `${namespace}:${getClientIp()}` });

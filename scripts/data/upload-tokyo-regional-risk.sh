@@ -9,6 +9,8 @@ BUCKET_NAME="${RISK_DATA_BUCKET:-risk-kurabe-data}"
 
 bash "$ROOT_DIR/scripts/data/validate-tokyo-regional-risk.sh"
 
+# cf r2 objects put does not support Cache-Control yet. Keep Wrangler for
+# uploads so the immutable data and short-lived metadata retain their policy.
 while IFS= read -r artifact_path; do
   case "$artifact_path" in
     *.fgb)
