@@ -19,6 +19,7 @@ dist
 .fallow
 .pnpm-store
 .wrangler
+.cloudflare
 *.tsbuildinfo
 
 # generated and downloaded GIS data

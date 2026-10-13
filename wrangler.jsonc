@@ -1,37 +1,6 @@
+// R2 uploads need Wrangler's Cache-Control option until cf supports it.
+// Worker configuration and deployment are managed by cloudflare.config.ts and cf.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "risk-kurabe",
-  "account_id": "53af804e239e6294ad9a766add0c6e00",
-  "compatibility_date": "2026-07-17",
-  "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry",
-  "workers_dev": true,
-  "preview_urls": false,
-  "observability": {
-    "enabled": true,
-  },
-  "vars": {
-    "AI_GATEWAY_BASE_URL": "https://gateway.ai.cloudflare.com/v1/53af804e239e6294ad9a766add0c6e00/risk-kurabe-ai-gateway/compat",
-  },
-  "secrets": {
-    "required": ["YAHOO_CLIENT_ID", "CF_AIG_TOKEN"],
-  },
-  "ratelimits": [
-    {
-      "name": "YAHOO_RATE_LIMITER",
-      "namespace_id": "1001",
-      "simple": {
-        "limit": 20,
-        "period": 10,
-      },
-    },
-    {
-      "name": "AI_RATE_LIMITER",
-      "namespace_id": "1002",
-      "simple": {
-        "limit": 5,
-        "period": 10,
-      },
-    },
-  ],
+  "account_id": "8b769981b6030745b33f2661f7904da2",
 }

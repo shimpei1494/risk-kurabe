@@ -16,7 +16,7 @@
 東京都地域危険度の固定成果物は次のURLに配置する。
 
 ```text
-https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v3/
+https://pub-4999ce00bacf4f45be2179858e102473.r2.dev/risk-data/v3/
 ```
 
 `manifest.json`は出典と成果物情報、`coverage.json`は収録範囲、

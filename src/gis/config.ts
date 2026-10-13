@@ -1,5 +1,5 @@
 const DEFAULT_RISK_DATA_BASE_URL =
-  "https://pub-bc1c84661928416fbcde6535c9039c50.r2.dev/risk-data/v3/";
+  "https://pub-4999ce00bacf4f45be2179858e102473.r2.dev/risk-data/v3/";
 
 export function riskDataBaseUrl(): string {
   const configuredUrl = import.meta.env.VITE_RISK_DATA_BASE_URL;
