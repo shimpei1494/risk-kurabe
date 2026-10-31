@@ -28,7 +28,7 @@
     "@mantine/hooks": "^9.4.1",
     "@openuidev/react-lang": "^0.2.9",
     "@tanstack/react-router": "^1.169.2",
-    "@tanstack/react-start": "^1.167.65",
+    "@tanstack/react-start": "^1.168.60",
     "@turf/boolean-point-in-polygon": "^7.3.5",
     "@turf/helpers": "^7.3.5",
     "@turf/nearest-point-on-line": "^7.3.5",
