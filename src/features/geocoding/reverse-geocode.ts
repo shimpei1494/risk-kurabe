@@ -11,7 +11,7 @@ const inputSchema = z.object({
 });
 
 export const reverseGeocode = createServerFn({ method: "POST" })
-  .inputValidator((value) => inputSchema.parse(value))
+  .validator((value) => inputSchema.parse(value))
   .handler(async ({ data }) => {
     await enforceRateLimit(yahooRateLimiter, "yahoo-reverse-geocode");
     return reverseYahooAddress({
