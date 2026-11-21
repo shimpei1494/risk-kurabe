@@ -19,7 +19,9 @@ export function LocationPickerMap({
   const onPointChangeRef = useRef(onPointChange);
   const mapRef = useRef<import("maplibre-gl").Map | undefined>(undefined);
   const setMarkerRef = useRef<(nextPoint: GeoPoint) => void>(() => undefined);
-  onPointChangeRef.current = onPointChange;
+  useEffect(() => {
+    onPointChangeRef.current = onPointChange;
+  }, [onPointChange]);
   const [status, setStatus] = useReducer(
     (_previous: "loading" | "ready" | "error", next: "loading" | "ready" | "error") => next,
     "loading",
