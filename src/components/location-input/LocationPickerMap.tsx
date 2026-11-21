@@ -2,6 +2,7 @@ import { Box, Button, Center, Loader, Paper, Text } from "@mantine/core";
 import { useEffect, useReducer, useRef, useState } from "react";
 
 import type { GeoPoint } from "../../gis/geometry";
+import { loadMaplibre } from "../../gis/load-maplibre";
 import { collapseMapAttribution } from "../../gis/map-attribution";
 
 export function LocationPickerMap({
@@ -38,8 +39,8 @@ export function LocationPickerMap({
     let handleMapClick: ((event: import("maplibre-gl").MapMouseEvent) => void) | undefined;
     let handleError: (() => void) | undefined;
 
-    void import("maplibre-gl")
-      .then(({ default: maplibregl }) => {
+    void loadMaplibre()
+      .then((maplibregl) => {
         if (disposed) return;
         map = new maplibregl.Map({
           container,

@@ -11,6 +11,7 @@ import {
 import type { DataStateKind } from "../../domain/risk";
 import { distanceBetweenPointsMeters, type GeoPoint } from "../../gis/geometry";
 import { fetchOfficialFloodAtPoint } from "../../gis/hazardmap-raster";
+import { loadMaplibre } from "../../gis/load-maplibre";
 import { collapseMapAttribution } from "../../gis/map-attribution";
 import {
   applyRiskLayerVisibility,
@@ -391,11 +392,10 @@ export function RiskMap(props: RiskMapProps) {
       | undefined;
     let handleRasterThemeClick: ((event: import("maplibre-gl").MapMouseEvent) => void) | undefined;
     let disposeFloodInspector: (() => void) | undefined;
-    void Promise.all([import("maplibre-gl"), import("pmtiles")])
-      .then(([maplibreModule, pmtilesModule]) => {
+    void Promise.all([loadMaplibre(), import("pmtiles")])
+      .then(([maplibregl, pmtilesModule]) => {
         if (disposed) return;
 
-        const maplibregl = maplibreModule.default;
         if (!protocolRegistered) {
           const protocol = new pmtilesModule.Protocol();
           maplibregl.addProtocol("pmtiles", protocol.tile);
