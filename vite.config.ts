@@ -58,6 +58,9 @@ function aiComponentsDevPage(): Plugin {
 const reactDoctorRules = {
   ...reactDoctor.configs.recommended.rules,
   ...reactDoctor.configs["tanstack-start"].rules,
+  // react-doctor 0.1 系は TanStack Start の新 API `validator()` を認識せず誤検知するため無効化。
+  // react-doctor 更新時に再有効化を検討する。
+  "react-doctor/tanstack-start-server-fn-validate-input": "off" as const,
 };
 
 export default defineConfig(({ mode }) => ({

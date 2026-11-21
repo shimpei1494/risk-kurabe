@@ -10,7 +10,7 @@ const inputSchema = z.object({
 });
 
 export const searchAddress = createServerFn({ method: "POST" })
-  .inputValidator((value) => inputSchema.parse(value))
+  .validator((value) => inputSchema.parse(value))
   .handler(async ({ data }) => {
     await enforceRateLimit(yahooRateLimiter, "yahoo-geocode");
     return searchYahooAddresses({

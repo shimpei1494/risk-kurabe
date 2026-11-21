@@ -65,7 +65,7 @@ function fallbackStream(response: string): ReadableStream<RiskAssistantStreamEve
 }
 
 export const askRiskAssistant = createServerFn({ method: "POST" })
-  .inputValidator((value) => inputSchema.parse(value))
+  .validator((value) => inputSchema.parse(value))
   .handler(async ({ data }) => {
     const modelConfig =
       RISK_ASSISTANT_MODEL_CONFIG[data.purpose as RiskAssistantPurpose] ??

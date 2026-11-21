@@ -69,7 +69,7 @@ async function fetchPolygonCandidates<T>({
 }): Promise<readonly Feature<Polygon | MultiPolygon, T>[]> {
   const bbox = bboxAroundPoint(location, radiusMeters);
   const candidates: Feature<Polygon | MultiPolygon, T>[] = [];
-  for await (const feature of deserialize(url, bbox, undefined, false, headers)) {
+  for await (const feature of deserialize(url, { rect: bbox, headers })) {
     candidates.push(parsePolygonFeature(feature, datasetName, schema));
   }
   return candidates;
