@@ -14,7 +14,9 @@ export function LocationConfirmMap({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const onPointChangeRef = useRef(onPointChange);
-  onPointChangeRef.current = onPointChange;
+  useEffect(() => {
+    onPointChangeRef.current = onPointChange;
+  }, [onPointChange]);
   const [status, setStatus] = useReducer(
     (_previous: "loading" | "ready" | "error", next: "loading" | "ready" | "error") => next,
     "loading",
