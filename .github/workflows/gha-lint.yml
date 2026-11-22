@@ -1,0 +1,33 @@
+name: GitHub Actions Lint
+
+on:
+  pull_request:
+    paths:
+      - ".github/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/**"
+
+permissions: {}
+
+concurrency:
+  group: gha-lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ghasec:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # online: 固定した SHA が本当にそのアクションのリポジトリのコミットかも検査する
+      - uses: koki-develop/ghasec-action@2810775d2a300cb3fd9583c36c05b5ee3310c5b8 # v1.1.1
+        with:
+          version: 0.18.0
+          online: true
