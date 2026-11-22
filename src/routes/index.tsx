@@ -310,6 +310,7 @@ export function ResultsView({
   const isComparing = count >= 2;
   const primary = locations[0];
   const sources = locations.flatMap((location) => location.result?.sources ?? []);
+  const retryingLocationIdSet = new Set(retryingLocationIds);
 
   const pendingInput = pendingOrder !== null && (
     <LocationInputCard
@@ -391,7 +392,7 @@ export function ResultsView({
                     address={primary.address}
                     point={primary.point}
                     result={primary.result!}
-                    retrying={retryingLocationIds.includes(primary.id)}
+                    retrying={retryingLocationIdSet.has(primary.id)}
                     onRetry={() => void onRetry(primary.id)}
                     onConfigure={() => onConfigureLocation(primary.id)}
                   />
@@ -423,7 +424,7 @@ export function ResultsView({
                     address={primary.address}
                     point={primary.point}
                     result={primary.result!}
-                    retrying={retryingLocationIds.includes(primary.id)}
+                    retrying={retryingLocationIdSet.has(primary.id)}
                     onRetry={() => void onRetry(primary.id)}
                     onConfigure={() => onConfigureLocation(primary.id)}
                   />
@@ -474,7 +475,7 @@ export function ResultsView({
                         key={location.id}
                         locationName={location.name}
                         problems={location.result.problems}
-                        retrying={retryingLocationIds.includes(location.id)}
+                        retrying={retryingLocationIdSet.has(location.id)}
                         onRetry={() => void onRetry(location.id)}
                       />
                     ) : null,
@@ -507,7 +508,7 @@ export function ResultsView({
                       key={location.id}
                       locationName={location.name}
                       problems={location.result.problems}
-                      retrying={retryingLocationIds.includes(location.id)}
+                      retrying={retryingLocationIdSet.has(location.id)}
                       onRetry={() => void onRetry(location.id)}
                     />
                   ) : null,

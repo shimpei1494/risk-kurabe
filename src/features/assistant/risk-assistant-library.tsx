@@ -133,6 +133,8 @@ function FloodPlot({ items }: { items: ComparisonItem[] }) {
           const range = item.state === "value" ? floodRange(value) : null;
           const color = valueColor("最大浸水深", value, other.risk);
           return (
+            // 地点名が無い場合のみindexにフォールバックする。表示順は固定で並び替えは発生しない。
+            // oxlint-disable-next-line react-doctor/no-array-index-as-key
             <Box key={item.location || index} className="risk-comparison-column">
               <Box className="risk-comparison-plot-area">
                 {range ? (
@@ -207,6 +209,8 @@ function RankPlot({ items }: { items: ComparisonItem[] }) {
           const rank = item.state === "value" ? riskRank(value) : null;
           const color = rank ? other.risk.regionalRiskRank[rank] : undefined;
           return (
+            // 地点名が無い場合のみindexにフォールバックする。表示順は固定で並び替えは発生しない。
+            // oxlint-disable-next-line react-doctor/no-array-index-as-key
             <Box key={item.location || index} className="risk-comparison-column">
               <Box className="risk-comparison-plot-area">
                 {rank ? (

@@ -28,8 +28,8 @@ export function LocationPickerMap({
   );
   const [locationState, setLocationState] = useState<"idle" | "locating" | "error">("idle");
 
-  // ready/errorはMapLibreの排他的な非同期イベントであり、連鎖更新ではない。
-  // oxlint-disable-next-line react-doctor/no-cascading-set-state
+  // MapLibreのリスナーは非同期に生成されるため静的解析で追えないが、cleanupのmap.remove()ですべて解放している。
+  // oxlint-disable-next-line react-doctor/effect-needs-cleanup
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
