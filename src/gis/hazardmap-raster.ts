@@ -2,7 +2,7 @@ import { evaluateFloodMatches, type FloodPolygonMatch } from "../domain/flood-ev
 import type { FloodIndicatorInvestigation } from "../domain/investigation";
 import type { GeoPoint } from "./geometry";
 
-export const OFFICIAL_FLOOD_TILE_TEMPLATE =
+const OFFICIAL_FLOOD_TILE_TEMPLATE =
   "https://disaportaldata.gsi.go.jp/raster/01_flood_l2_shinsuishin_data/{z}/{x}/{y}.png";
 export const OFFICIAL_FLOOD_SOURCE_URL =
   "https://disaportal.gsi.go.jp/hazardmap/copyright/opendata.html";

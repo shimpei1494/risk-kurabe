@@ -21,7 +21,7 @@ import {
 } from "./risk-map-theme";
 import { type PendingMapMove, RiskMapFrame, type RiskMapStatus } from "./RiskMapPresentation";
 
-export interface RiskMapLocation {
+interface RiskMapLocation {
   order: LocationOrder;
   label: string;
   point: GeoPoint;
@@ -39,7 +39,7 @@ interface RiskMapProps {
   onRelocate?: (order: LocationOrder, point: GeoPoint) => Promise<void>;
 }
 
-export const MAX_PIN_MOVE_METERS = 2_000;
+const MAX_PIN_MOVE_METERS = 2_000;
 const INSPECT_LOADING_DELAY_MS = 250;
 const LOCATION_FOCUS_ZOOM = 14.5;
 

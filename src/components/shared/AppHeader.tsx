@@ -126,19 +126,3 @@ export function AppHeader({ action }: { action?: ReactNode }) {
     </>
   );
 }
-
-/** 既存の呼び出しとの互換用。実体は全ページ共通ヘッダー。 */
-export function AppHeaderFull() {
-  return <AppHeader />;
-}
-
-/** 既存の呼び出しとの互換用。結果画面も共通ヘッダーを使う。 */
-export function AppHeaderCompact({
-  action,
-}: {
-  crumb?: string;
-  action?: ReactNode;
-  onHome?: () => void;
-}) {
-  return <AppHeader action={action} />;
-}

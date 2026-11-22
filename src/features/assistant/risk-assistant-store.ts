@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type RiskAssistantMessage = {
+type RiskAssistantMessage = {
   id: string;
   question: string;
   response: string;
