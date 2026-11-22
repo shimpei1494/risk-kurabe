@@ -2,6 +2,7 @@ overrides:
   vite: "catalog:"
 
 allowBuilds:
+  "@openuidev/lang-core": false
   esbuild: true
   workerd: true
 catalog:

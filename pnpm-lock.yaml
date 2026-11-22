@@ -24,8 +24,8 @@ importers:
         specifier: ^9.8.2
         version: 9.8.2(react@19.3.1)
       '@openuidev/react-lang':
-        specifier: ^0.2.9
-        version: 0.2.9(react@19.3.1)(zod@4.6.7)
+        specifier: ^1.1.1
+        version: 1.1.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
       '@tanstack/react-router':
         specifier: ^1.170.46
         version: 1.170.46(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -73,11 +73,11 @@ importers:
         specifier: 2.0.0-rc.3
         version: 2.0.0-rc.3(@types/node@25.3.0)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@25.3.0)(esbuild@0.28.2)(jiti@2.7.0)(sugarss@5.0.1(postcss@8.5.33))(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.1))(workerd@1.20261119.1)
       '@openuidev/devtools':
-        specifier: ^0.0.2
-        version: 0.0.2(@openuidev/observability@0.0.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        specifier: ^0.3.1
+        version: 0.3.1(@openuidev/observability@0.0.4)(@openuidev/react-lang@1.1.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@openuidev/observability':
-        specifier: ^0.0.1
-        version: 0.0.1
+        specifier: ^0.0.4
+        version: 0.0.4
       '@rolldown/plugin-babel':
         specifier: ^0.3.1
         version: 0.3.1(@babel/core@7.29.13)(@babel/runtime@7.29.7)(@voidzero-dev/vite-plus-core@8.3.8000(@types/node@25.3.0)(esbuild@0.28.2)(jiti@2.7.0)(sugarss@5.0.1(postcss@8.5.33))(tsx@4.21.0)(typescript@6.0.3)(yaml@2.9.1))(rolldown@1.0.0-rc.13)
@@ -1170,15 +1170,19 @@ packages:
     resolution: {integrity: sha512-aOP45mbcOKbQVvFWfQmgoOPT8R2iwbbbgl83k4CujGV9BrJhFr3qG55MFpwFs4YLabpuW3HhzUY9eQxPlDqaZw==}
     engines: {node: '>=14'}
 
-  '@openuidev/devtools@0.0.2':
-    resolution: {integrity: sha512-oa6LtxgaviQK0bVgXm7cCqpV99bXQI//PQRc/JBJU6JSARI9kw9YjV/j2otw4RLsI0VomFzxp5tezhdmnx8UMw==}
+  '@openuidev/devtools@0.3.1':
+    resolution: {integrity: sha512-kOCCsRGwY0w6xL1rVL1zOa9CO97ZrG6YGasRZyCv7FXaDAzbFkEgFy+FhYx6EP7sPKhkgr/jBqunADzhevpBDw==}
     peerDependencies:
-      '@openuidev/observability': ^0.0.1
+      '@openuidev/observability': '>=0.0.4 <0.1.0'
+      '@openuidev/react-lang': '>=1.0.0 <2.0.0'
       react: ^18.3.1 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@openuidev/react-lang':
+        optional: true
 
-  '@openuidev/lang-core@0.2.10':
-    resolution: {integrity: sha512-GeLoP4S+1e7IHAz2a4Fl9+Q+boiyTXpXtdUPI+PN3ml+834q35TCQasm/+s6NW+79FRmyiR8F5xJtoLsH0kGjQ==}
+  '@openuidev/lang-core@1.1.1':
+    resolution: {integrity: sha512-bZFkf0/CBqS551gykL6kHVVOn35ZfoRg73nDELTPPxO3NQOc29SIVznhIeE323xSth23I0pGusSimblNv4bZvg==}
     peerDependencies:
       '@modelcontextprotocol/sdk': '>=1.0.0'
       zod: ^3.25.0 || ^4.0.0
@@ -1186,17 +1190,23 @@ packages:
       '@modelcontextprotocol/sdk':
         optional: true
 
-  '@openuidev/observability@0.0.1':
-    resolution: {integrity: sha512-OIlRQbVqTBpre3MMzaeNB3USDaigUaSZyPcAIVSLNpqcosGgJijUS2nXjDVRRnZFsOu0gIOTVqd2G8lwcLSBPg==}
+  '@openuidev/observability@0.0.4':
+    resolution: {integrity: sha512-4fjIrWu3TqTlfDE/m7cG10CH1vV7wQk5GPwMOmXeF9vJtkg92dg4Bdk3AjKgud7H7Xypwwjgt52VcLGZCE2CJQ==}
 
-  '@openuidev/react-lang@0.2.9':
-    resolution: {integrity: sha512-pQd4goMYHBfq2Df1kq3MOh0QbZiBIhBkD3K/0UfTY86a/N7EC/ydo1xW1IjjOSU0qHycF5z5Yw/UGs2BDllGjA==}
+  '@openuidev/react-lang@1.1.1':
+    resolution: {integrity: sha512-Mw6aj+pt7HLc6SrFmMglYOPzNUDoLmRcbL+50tw9RLttUaTU/lVASWV4arpcy0TcOy6jJchiZ/K4FKj1eXAQWg==}
     peerDependencies:
       '@modelcontextprotocol/sdk': '>=1.0.0'
-      react: ^18.3.1 || ^19.0.0
+      react: '*'
+      react-dom: '*'
+      react-native: '*'
       zod: ^3.25.0 || ^4.0.0
     peerDependenciesMeta:
       '@modelcontextprotocol/sdk':
+        optional: true
+      react-dom:
+        optional: true
+      react-native:
         optional: true
 
   '@oxc-parser/binding-android-arm-eabi@0.148.0':
@@ -2683,6 +2693,10 @@ packages:
   chokidar@5.0.0:
     resolution: {integrity: sha512-TQMmc3w+5AxjpL8iIiwebF73dRDF4fBIieAqGn9RGCWaEVwQ6Fb2cGe31Yns0RRIzii5goJ1Y7xbMwo1TxMplw==}
     engines: {node: '>= 20.19.0'}
+
+  ci-info@4.5.0:
+    resolution: {integrity: sha512-d1uM8k5UZEyPza1n/MG3ko8nKupKN0KJpFsipgPcgaCCvV+IqIfJ+NzTjetlLM+UcXZx3+cLrNr76+eAO7G1Mw==}
+    engines: {node: '>=8'}
 
   cjs-module-lexer@2.3.0:
     resolution: {integrity: sha512-lmNyBzi6iYiqyrExTctfmjd8tInx+dHu9PBomTfH5RXS53c27JMFJgzNv5TyAnm3PgGf+MLy0+Ws41/HlVxdKQ==}
@@ -4981,24 +4995,31 @@ snapshots:
 
   '@opentelemetry/semantic-conventions@1.45.0': {}
 
-  '@openuidev/devtools@0.0.2(@openuidev/observability@0.0.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@openuidev/devtools@0.3.1(@openuidev/observability@0.0.4)(@openuidev/react-lang@1.1.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@openuidev/observability': 0.0.1
+      '@openuidev/observability': 0.0.4
       lucide-react: 0.575.0(react@19.3.1)
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
+    optionalDependencies:
+      '@openuidev/react-lang': 1.1.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)
 
-  '@openuidev/lang-core@0.2.10(zod@4.6.7)':
+  '@openuidev/lang-core@1.1.1(zod@4.6.7)':
     dependencies:
+      ci-info: 4.5.0
       zod: 4.6.7
 
-  '@openuidev/observability@0.0.1': {}
+  '@openuidev/observability@0.0.4': {}
 
-  '@openuidev/react-lang@0.2.9(react@19.3.1)(zod@4.6.7)':
+  '@openuidev/react-lang@1.1.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7)':
     dependencies:
-      '@openuidev/lang-core': 0.2.10(zod@4.6.7)
+      '@openuidev/devtools': 0.3.1(@openuidev/observability@0.0.4)(@openuidev/react-lang@1.1.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(zod@4.6.7))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@openuidev/lang-core': 1.1.1(zod@4.6.7)
+      '@openuidev/observability': 0.0.4
       react: 19.3.1
       zod: 4.6.7
+    optionalDependencies:
+      react-dom: 19.3.1(react@19.3.1)
 
   '@oxc-parser/binding-android-arm-eabi@0.148.0':
     optional: true
@@ -6136,6 +6157,8 @@ snapshots:
   chokidar@5.0.0:
     dependencies:
       readdirp: 5.1.1
+
+  ci-info@4.5.0: {}
 
   cjs-module-lexer@2.3.0: {}
 
