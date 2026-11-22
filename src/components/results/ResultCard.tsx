@@ -12,7 +12,12 @@ import {
 } from "@mantine/core";
 
 import type { LocationOrder } from "../../domain/location";
-import type { InvestigationResult } from "../../domain/risk";
+import type {
+  InvestigationResult,
+  MaxFloodDepthResult,
+  RegionalRiskResult,
+  TokyoEarthquakeRiskResult,
+} from "../../domain/risk";
 import { DataBadge } from "../shared/DataBadge";
 import {
   AiSummaryBox,
@@ -105,7 +110,6 @@ export function ResultCard({
   onRetry?: () => void;
   onConfigure: () => void;
 }) {
-  const { other } = useMantineTheme();
   const { maxFloodDepth, tokyoEarthquakeRisk, buildingCollapseRisk, fireRisk, aiSummary } = result;
   const showOutOfAreaFootnote = maxFloodDepth.state === "outOfArea";
 
@@ -152,156 +156,12 @@ export function ResultCard({
           </Box>
         ) : null}
         <Box py="3xs">
-          <Box pt="sm" pb="md" style={{ borderBottom: "1px solid var(--mantine-color-stone-1)" }}>
-            <SectionLabel>洪水</SectionLabel>
-            <IndicatorRow
-              icon="水"
-              iconColor={other.risk.indicatorIcon.water}
-              label="最大浸水深"
-              withBorder={false}
-            >
-              <DataBadge
-                state={maxFloodDepth.state}
-                valueLabel={maxFloodDepth.sourceLabel ?? maxFloodDepth.category}
-                valueColor={
-                  maxFloodDepth.category ? other.risk.floodDepth[maxFloodDepth.category] : undefined
-                }
-                outOfAreaSuffix="※"
-                notApplicableLabel="対象外（関東1都6県）"
-              />
-            </IndicatorRow>
-            {maxFloodDepth.boundaryWarning ? (
-              <Box mt="2xs">
-                <BoundaryWarningNote />
-              </Box>
-            ) : null}
-            <EvidenceBox>
-              <OfficialHazardMapLinks
-                boxed
-                compact
-                locations={[{ name: `地点${order}`, order, point }]}
-              />
-            </EvidenceBox>
-          </Box>
-
-          {/*
-            主指標（総合危険度）は最大浸水深と同じ階層・同じ左端に置き、
-            地色の枠はその根拠・補足（危険量と順位・指標の説明・内訳）だけに使う。
-          */}
-          <Box pt="md" pb="sm">
-            <SectionLabel>東京都の地震地域危険度</SectionLabel>
-            <IndicatorRow
-              icon="総"
-              iconColor={other.risk.indicatorIcon.building}
-              label="東京都・地震時の総合危険度"
-              withBorder={false}
-            >
-              <DataBadge
-                state={tokyoEarthquakeRisk.state}
-                valueLabel={
-                  tokyoEarthquakeRisk.rank ? `ランク${tokyoEarthquakeRisk.rank}／5` : undefined
-                }
-                valueColor={
-                  tokyoEarthquakeRisk.rank
-                    ? other.risk.regionalRiskRank[tokyoEarthquakeRisk.rank]
-                    : undefined
-                }
-                notApplicableLabel="対象外（東京都のみ）"
-              />
-            </IndicatorRow>
-            {tokyoEarthquakeRisk.boundaryWarning ? (
-              <Box mt="2xs">
-                <BoundaryWarningNote />
-              </Box>
-            ) : null}
-
-            <EvidenceBox>
-              <Stack gap="2xs">
-                <RegionalRiskMeta
-                  score={tokyoEarthquakeRisk.score}
-                  order={tokyoEarthquakeRisk.order}
-                />
-                <Text fz={11.5} lh={1.75} c="var(--mantine-color-stone-8)">
-                  {TOKYO_EARTHQUAKE_EXPLANATION}
-                </Text>
-
-                {tokyoEarthquakeRisk.state === "value" ? (
-                  <Box
-                    component="details"
-                    pt="sm"
-                    style={{ borderTop: "1px solid var(--mantine-color-stone-2)" }}
-                  >
-                    <Text
-                      component="summary"
-                      fz={11.5}
-                      fw={800}
-                      c="teal.8"
-                      style={{ cursor: "pointer" }}
-                    >
-                      内訳と根拠を見る
-                    </Text>
-                    <Stack gap="xs" mt="xs">
-                      <Box>
-                        <IndicatorRow
-                          icon="倒"
-                          iconColor={other.risk.indicatorIcon.building}
-                          label="建物倒壊危険度"
-                          withBorder={false}
-                        >
-                          <DataBadge
-                            state={buildingCollapseRisk.state}
-                            valueLabel={
-                              buildingCollapseRisk.rank
-                                ? `ランク${buildingCollapseRisk.rank}／5`
-                                : undefined
-                            }
-                            valueColor={
-                              buildingCollapseRisk.rank
-                                ? other.risk.regionalRiskRank[buildingCollapseRisk.rank]
-                                : undefined
-                            }
-                          />
-                        </IndicatorRow>
-                        <RegionalRiskMeta
-                          score={buildingCollapseRisk.score}
-                          order={buildingCollapseRisk.order}
-                        />
-                        {buildingCollapseRisk.boundaryWarning ? (
-                          <Box mt="2xs">
-                            <BoundaryWarningNote />
-                          </Box>
-                        ) : null}
-                      </Box>
-                      <Box>
-                        <IndicatorRow
-                          icon="火"
-                          iconColor={other.risk.indicatorIcon.fire}
-                          label="火災危険度"
-                          withBorder={false}
-                        >
-                          <DataBadge
-                            state={fireRisk.state}
-                            valueLabel={fireRisk.rank ? `ランク${fireRisk.rank}／5` : undefined}
-                            valueColor={
-                              fireRisk.rank ? other.risk.regionalRiskRank[fireRisk.rank] : undefined
-                            }
-                          />
-                        </IndicatorRow>
-                        <RegionalRiskMeta score={fireRisk.score} order={fireRisk.order} />
-                        {fireRisk.boundaryWarning ? (
-                          <Box mt="2xs">
-                            <BoundaryWarningNote />
-                          </Box>
-                        ) : null}
-                      </Box>
-                      <TokyoEarthquakeSupportingFacts risk={tokyoEarthquakeRisk} columns={1} />
-                      <TokyoEarthquakeProvenance risk={tokyoEarthquakeRisk} />
-                    </Stack>
-                  </Box>
-                ) : null}
-              </Stack>
-            </EvidenceBox>
-          </Box>
+          <FloodSection order={order} point={point} maxFloodDepth={maxFloodDepth} />
+          <TokyoEarthquakeSection
+            tokyoEarthquakeRisk={tokyoEarthquakeRisk}
+            buildingCollapseRisk={buildingCollapseRisk}
+            fireRisk={fireRisk}
+          />
         </Box>
       </Card.Section>
 
@@ -323,5 +183,174 @@ export function ResultCard({
         </Card.Section>
       ) : null}
     </Card>
+  );
+}
+
+function FloodSection({
+  order,
+  point,
+  maxFloodDepth,
+}: {
+  order: LocationOrder;
+  point: { latitude: number; longitude: number };
+  maxFloodDepth: MaxFloodDepthResult;
+}) {
+  const { other } = useMantineTheme();
+
+  return (
+    <Box pt="sm" pb="md" style={{ borderBottom: "1px solid var(--mantine-color-stone-1)" }}>
+      <SectionLabel>洪水</SectionLabel>
+      <IndicatorRow
+        icon="水"
+        iconColor={other.risk.indicatorIcon.water}
+        label="最大浸水深"
+        withBorder={false}
+      >
+        <DataBadge
+          state={maxFloodDepth.state}
+          valueLabel={maxFloodDepth.sourceLabel ?? maxFloodDepth.category}
+          valueColor={
+            maxFloodDepth.category ? other.risk.floodDepth[maxFloodDepth.category] : undefined
+          }
+          outOfAreaSuffix="※"
+          notApplicableLabel="対象外（関東1都6県）"
+        />
+      </IndicatorRow>
+      {maxFloodDepth.boundaryWarning ? (
+        <Box mt="2xs">
+          <BoundaryWarningNote />
+        </Box>
+      ) : null}
+      <EvidenceBox>
+        <OfficialHazardMapLinks
+          boxed
+          compact
+          locations={[{ name: `地点${order}`, order, point }]}
+        />
+      </EvidenceBox>
+    </Box>
+  );
+}
+
+function TokyoEarthquakeSection({
+  tokyoEarthquakeRisk,
+  buildingCollapseRisk,
+  fireRisk,
+}: {
+  tokyoEarthquakeRisk: TokyoEarthquakeRiskResult;
+  buildingCollapseRisk: RegionalRiskResult;
+  fireRisk: RegionalRiskResult;
+}) {
+  const { other } = useMantineTheme();
+
+  return (
+    <>
+      {/*
+        主指標（総合危険度）は最大浸水深と同じ階層・同じ左端に置き、
+        地色の枠はその根拠・補足（危険量と順位・指標の説明・内訳）だけに使う。
+      */}
+      <Box pt="md" pb="sm">
+        <SectionLabel>東京都の地震地域危険度</SectionLabel>
+        <IndicatorRow
+          icon="総"
+          iconColor={other.risk.indicatorIcon.building}
+          label="東京都・地震時の総合危険度"
+          withBorder={false}
+        >
+          <DataBadge
+            state={tokyoEarthquakeRisk.state}
+            valueLabel={
+              tokyoEarthquakeRisk.rank ? `ランク${tokyoEarthquakeRisk.rank}／5` : undefined
+            }
+            valueColor={
+              tokyoEarthquakeRisk.rank
+                ? other.risk.regionalRiskRank[tokyoEarthquakeRisk.rank]
+                : undefined
+            }
+            notApplicableLabel="対象外（東京都のみ）"
+          />
+        </IndicatorRow>
+        {tokyoEarthquakeRisk.boundaryWarning ? (
+          <Box mt="2xs">
+            <BoundaryWarningNote />
+          </Box>
+        ) : null}
+
+        <EvidenceBox>
+          <Stack gap="2xs">
+            <RegionalRiskMeta score={tokyoEarthquakeRisk.score} order={tokyoEarthquakeRisk.order} />
+            <Text fz={11.5} lh={1.75} c="var(--mantine-color-stone-8)">
+              {TOKYO_EARTHQUAKE_EXPLANATION}
+            </Text>
+
+            {tokyoEarthquakeRisk.state === "value" ? (
+              <Box
+                component="details"
+                pt="sm"
+                style={{ borderTop: "1px solid var(--mantine-color-stone-2)" }}
+              >
+                <Text
+                  component="summary"
+                  fz={11.5}
+                  fw={800}
+                  c="teal.8"
+                  style={{ cursor: "pointer" }}
+                >
+                  内訳と根拠を見る
+                </Text>
+                <Stack gap="xs" mt="xs">
+                  <RegionalRankRow
+                    icon="倒"
+                    iconColor={other.risk.indicatorIcon.building}
+                    label="建物倒壊危険度"
+                    risk={buildingCollapseRisk}
+                  />
+                  <RegionalRankRow
+                    icon="火"
+                    iconColor={other.risk.indicatorIcon.fire}
+                    label="火災危険度"
+                    risk={fireRisk}
+                  />
+                  <TokyoEarthquakeSupportingFacts risk={tokyoEarthquakeRisk} columns={1} />
+                  <TokyoEarthquakeProvenance risk={tokyoEarthquakeRisk} />
+                </Stack>
+              </Box>
+            ) : null}
+          </Stack>
+        </EvidenceBox>
+      </Box>
+    </>
+  );
+}
+
+function RegionalRankRow({
+  icon,
+  iconColor,
+  label,
+  risk,
+}: {
+  icon: string;
+  iconColor: IndicatorRowProps["iconColor"];
+  label: string;
+  risk: RegionalRiskResult;
+}) {
+  const { other } = useMantineTheme();
+
+  return (
+    <Box>
+      <IndicatorRow icon={icon} iconColor={iconColor} label={label} withBorder={false}>
+        <DataBadge
+          state={risk.state}
+          valueLabel={risk.rank ? `ランク${risk.rank}／5` : undefined}
+          valueColor={risk.rank ? other.risk.regionalRiskRank[risk.rank] : undefined}
+        />
+      </IndicatorRow>
+      <RegionalRiskMeta score={risk.score} order={risk.order} />
+      {risk.boundaryWarning ? (
+        <Box mt="2xs">
+          <BoundaryWarningNote />
+        </Box>
+      ) : null}
+    </Box>
   );
 }
