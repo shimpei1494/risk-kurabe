@@ -147,14 +147,12 @@ function AddressInput({
   onInvestigate: () => Promise<void>;
 }) {
   const { query, candidates, selected, point, requestState, recentLocations } = state;
-  const isOutsideKanto = selected !== null && !KANTO_PREFECTURE_CODES.has(selected.prefectureCode);
+  const showsRecentLocations =
+    recentLocations.length > 0 && query.trim().length === 0 && !selected && candidates.length === 0;
 
   return (
     <>
-      {recentLocations.length > 0 &&
-      query.trim().length === 0 &&
-      !selected &&
-      candidates.length === 0 ? (
+      {showsRecentLocations ? (
         <RecentLocationsPanel
           locations={recentLocations}
           onChange={(nextLocations) => onUpdate({ recentLocations: nextLocations })}
@@ -175,6 +173,53 @@ function AddressInput({
         />
       ) : null}
 
+      <AddressSearchField
+        defaultName={defaultName}
+        inputId={inputId}
+        query={query}
+        requestState={requestState}
+        onQueryChange={(nextQuery) => onUpdate({ query: nextQuery })}
+        onSearch={onSearch}
+      />
+
+      {candidates.length > 0 && !selected ? (
+        <AddressCandidateList
+          candidates={candidates}
+          onSelect={(candidate) => onUpdate({ selected: candidate, point: candidate.point })}
+        />
+      ) : null}
+
+      {selected && point ? (
+        <SelectedAddressConfirm
+          selected={selected}
+          point={point}
+          requestState={requestState}
+          submitLabel={submitLabel}
+          onUpdate={onUpdate}
+          onInvestigate={onInvestigate}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function AddressSearchField({
+  defaultName,
+  inputId,
+  query,
+  requestState,
+  onQueryChange,
+  onSearch,
+}: {
+  defaultName: string;
+  inputId: string;
+  query: string;
+  requestState: InputState["requestState"];
+  onQueryChange: (query: string) => void;
+  onSearch: () => Promise<void>;
+}) {
+  return (
+    <>
       {/* 狭い画面では長い住所を入力しやすいよう、検索ボタンを下に回して入力欄に幅を渡す */}
       <Flex gap="xs" align="stretch" direction={{ base: "column", xs: "row" }}>
         <TextInput
@@ -182,7 +227,7 @@ function AddressInput({
           aria-label={`${defaultName}の住所`}
           placeholder="住所を入力（例：東京都杉並区阿佐谷南3-1-1）"
           value={query}
-          onChange={(event) => onUpdate({ query: event.currentTarget.value })}
+          onChange={(event) => onQueryChange(event.currentTarget.value)}
           onKeyDown={(event) => {
             if (
               isAddressSearchEnter({
@@ -216,97 +261,123 @@ function AddressInput({
           {requestState === "searching" ? <Loader size="xs" color="white" /> : "住所を検索"}
         </Button>
       </Flex>
-
-      {candidates.length > 0 && !selected ? (
-        <Paper withBorder radius="md" p="2xs" aria-label="住所候補" aria-live="polite">
-          <Text px="xs" py="2xs" fz={11.5} fw={700} c="var(--mantine-color-stone-7)">
-            調べる住所を選択
-          </Text>
-          <Stack gap={2}>
-            {candidates.map((candidate) => (
-              <UnstyledButton
-                key={candidate.id}
-                onClick={() => onUpdate({ selected: candidate, point: candidate.point })}
-                px="xs"
-                py="sm"
-                style={{
-                  borderRadius: "var(--mantine-radius-sm)",
-                  borderTop: "1px solid var(--mantine-color-stone-2)",
-                }}
-              >
-                <Group justify="space-between" wrap="nowrap">
-                  <Text fz={13} fw={700} c="var(--mantine-color-stone-9)">
-                    {candidate.address}
-                  </Text>
-                  <Text fz={16} c="teal.7" aria-hidden>
-                    →
-                  </Text>
-                </Group>
-              </UnstyledButton>
-            ))}
-          </Stack>
-        </Paper>
-      ) : null}
-
-      {selected && point ? (
-        <Stack gap="xs">
-          <Group justify="space-between" align="end">
-            <div>
-              <Text fz={11.5} fw={700} c="teal.8">
-                ピン位置を確認
-              </Text>
-              <Text fz={13.5} fw={700} c="var(--mantine-color-stone-9)">
-                {selected.address}
-              </Text>
-            </div>
-            <Button
-              variant="subtle"
-              size="compact-xs"
-              onClick={() => onUpdate({ selected: null, point: null })}
-            >
-              候補を選び直す
-            </Button>
-          </Group>
-          <LocationConfirmMap
-            point={point}
-            onPointChange={(nextPoint) => onUpdate({ point: nextPoint })}
-          />
-          <Text fz={11.5} c="var(--mantine-color-stone-7)">
-            ピンをドラッグして建物の位置へ調整できます
-          </Text>
-
-          {isOutsideKanto ? (
-            <Alert color="orange" variant="light" py="sm">
-              <Text fz={12.5} fw={800}>
-                この住所は現在の調査対象外です
-              </Text>
-              <Text mt="4xs" fz={11.5} lh={1.7}>
-                対応地域は関東1都6県です。「候補を選び直す」から関東の住所を選んでください。
-              </Text>
-            </Alert>
-          ) : null}
-
-          <Button
-            fullWidth
-            size="md"
-            radius="md"
-            onClick={() => void onInvestigate()}
-            disabled={requestState !== "idle" || isOutsideKanto}
-          >
-            {isOutsideKanto ? (
-              "対象地域外のため調査できません"
-            ) : requestState === "investigating" ? (
-              <Group gap="xs">
-                <Loader size="xs" color="white" />
-                公開データを調べています
-              </Group>
-            ) : (
-              submitLabel
-            )}
-          </Button>
-        </Stack>
-      ) : null}
     </>
+  );
+}
+
+function AddressCandidateList({
+  candidates,
+  onSelect,
+}: {
+  candidates: InputState["candidates"];
+  onSelect: (candidate: AddressCandidate) => void;
+}) {
+  return (
+    <Paper withBorder radius="md" p="2xs" aria-label="住所候補" aria-live="polite">
+      <Text px="xs" py="2xs" fz={11.5} fw={700} c="var(--mantine-color-stone-7)">
+        調べる住所を選択
+      </Text>
+      <Stack gap={2}>
+        {candidates.map((candidate) => (
+          <UnstyledButton
+            key={candidate.id}
+            onClick={() => onSelect(candidate)}
+            px="xs"
+            py="sm"
+            style={{
+              borderRadius: "var(--mantine-radius-sm)",
+              borderTop: "1px solid var(--mantine-color-stone-2)",
+            }}
+          >
+            <Group justify="space-between" wrap="nowrap">
+              <Text fz={13} fw={700} c="var(--mantine-color-stone-9)">
+                {candidate.address}
+              </Text>
+              <Text fz={16} c="teal.7" aria-hidden>
+                →
+              </Text>
+            </Group>
+          </UnstyledButton>
+        ))}
+      </Stack>
+    </Paper>
+  );
+}
+
+function SelectedAddressConfirm({
+  selected,
+  point,
+  requestState,
+  submitLabel,
+  onUpdate,
+  onInvestigate,
+}: {
+  selected: AddressCandidate;
+  point: GeoPoint;
+  requestState: InputState["requestState"];
+  submitLabel: string;
+  onUpdate: (update: Partial<InputState>) => void;
+  onInvestigate: () => Promise<void>;
+}) {
+  const isOutsideKanto = !KANTO_PREFECTURE_CODES.has(selected.prefectureCode);
+
+  return (
+    <Stack gap="xs">
+      <Group justify="space-between" align="end">
+        <div>
+          <Text fz={11.5} fw={700} c="teal.8">
+            ピン位置を確認
+          </Text>
+          <Text fz={13.5} fw={700} c="var(--mantine-color-stone-9)">
+            {selected.address}
+          </Text>
+        </div>
+        <Button
+          variant="subtle"
+          size="compact-xs"
+          onClick={() => onUpdate({ selected: null, point: null })}
+        >
+          候補を選び直す
+        </Button>
+      </Group>
+      <LocationConfirmMap
+        point={point}
+        onPointChange={(nextPoint) => onUpdate({ point: nextPoint })}
+      />
+      <Text fz={11.5} c="var(--mantine-color-stone-7)">
+        ピンをドラッグして建物の位置へ調整できます
+      </Text>
+
+      {isOutsideKanto ? (
+        <Alert color="orange" variant="light" py="sm">
+          <Text fz={12.5} fw={800}>
+            この住所は現在の調査対象外です
+          </Text>
+          <Text mt="4xs" fz={11.5} lh={1.7}>
+            対応地域は関東1都6県です。「候補を選び直す」から関東の住所を選んでください。
+          </Text>
+        </Alert>
+      ) : null}
+
+      <Button
+        fullWidth
+        size="md"
+        radius="md"
+        onClick={() => void onInvestigate()}
+        disabled={requestState !== "idle" || isOutsideKanto}
+      >
+        {isOutsideKanto ? (
+          "対象地域外のため調査できません"
+        ) : requestState === "investigating" ? (
+          <Group gap="xs">
+            <Loader size="xs" color="white" />
+            公開データを調べています
+          </Group>
+        ) : (
+          submitLabel
+        )}
+      </Button>
+    </Stack>
   );
 }
 

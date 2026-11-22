@@ -195,74 +195,110 @@ function MapInteractionOverlay({
   if (!enabled) return null;
   if (pendingMove) {
     return (
-      <Paper
-        component="output"
-        pos="absolute"
-        top={compact ? 8 : 14}
-        left={compact ? 8 : 14}
-        right={compact ? 52 : undefined}
-        radius="md"
-        px={compact ? "xs" : "sm"}
-        py={compact ? "4xs" : "xs"}
-        bg="rgba(255,255,255,.96)"
-        shadow="md"
-        className="risk-map-move-panel"
-        data-compact={compact || undefined}
-      >
-        <Group justify="space-between" gap="xs" wrap={compact ? "nowrap" : "wrap"}>
-          <Box>
-            <Text fz={compact ? 10.5 : 12} fw={800} c="var(--mantine-color-stone-9)">
-              {compact
-                ? `約${Math.max(1, Math.round(pendingMove.distanceMeters))}m · ${pendingMove.valueLabel ?? "表示データなし"}`
-                : `${pendingMove.label}を約${Math.max(1, Math.round(pendingMove.distanceMeters))}m移動 · ${pendingMove.valueLabel ?? "表示データなし"}`}
-            </Text>
-            {!compact ? (
-              <Text fz={10.5} c="var(--mantine-color-stone-7)">
-                住所名はそのまま、ピン位置の結果を更新します。
-              </Text>
-            ) : null}
-          </Box>
-          <Group gap="4xs" wrap="nowrap">
-            <Button
-              variant="subtle"
-              color="gray"
-              size="compact-xs"
-              onClick={onCancel}
-              disabled={relocating}
-            >
-              戻す
-            </Button>
-            <Button size="compact-xs" onClick={onConfirm} loading={relocating}>
-              この位置で再判定
-            </Button>
-          </Group>
-        </Group>
-      </Paper>
+      <PendingMovePanel
+        compact={compact}
+        pendingMove={pendingMove}
+        relocating={relocating}
+        onCancel={onCancel}
+        onConfirm={onConfirm}
+      />
     );
   }
-  if (moveNotice) {
-    return (
-      <Paper
-        component="output"
-        pos="absolute"
-        top={compact ? 8 : 14}
-        left={compact ? 8 : 14}
-        right={compact ? 52 : undefined}
-        radius="md"
-        px="sm"
-        py="xs"
-        bg="rgba(255,248,235,.97)"
-        shadow="sm"
-        className="risk-map-move-panel"
-        data-compact={compact || undefined}
-      >
-        <Text fz={compact ? 10.5 : 11.5} fw={700} c="orange.9">
-          {moveNotice}
-        </Text>
-      </Paper>
-    );
-  }
+  if (moveNotice) return <MoveNoticePanel compact={compact} notice={moveNotice} />;
   if (status !== "ready") return null;
+  return <MapInstructionChip compact={compact} />;
+}
+
+function pendingMoveSummary(pendingMove: PendingMapMove, compact: boolean): string {
+  const distance = `約${Math.max(1, Math.round(pendingMove.distanceMeters))}m`;
+  const valueLabel = pendingMove.valueLabel ?? "表示データなし";
+  return compact
+    ? `${distance} · ${valueLabel}`
+    : `${pendingMove.label}を${distance}移動 · ${valueLabel}`;
+}
+
+function PendingMovePanel({
+  compact,
+  pendingMove,
+  relocating,
+  onCancel,
+  onConfirm,
+}: {
+  compact: boolean;
+  pendingMove: PendingMapMove;
+  relocating: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Paper
+      component="output"
+      pos="absolute"
+      top={compact ? 8 : 14}
+      left={compact ? 8 : 14}
+      right={compact ? 52 : undefined}
+      radius="md"
+      px={compact ? "xs" : "sm"}
+      py={compact ? "4xs" : "xs"}
+      bg="rgba(255,255,255,.96)"
+      shadow="md"
+      className="risk-map-move-panel"
+      data-compact={compact || undefined}
+    >
+      <Group justify="space-between" gap="xs" wrap={compact ? "nowrap" : "wrap"}>
+        <Box>
+          <Text fz={compact ? 10.5 : 12} fw={800} c="var(--mantine-color-stone-9)">
+            {pendingMoveSummary(pendingMove, compact)}
+          </Text>
+          {!compact ? (
+            <Text fz={10.5} c="var(--mantine-color-stone-7)">
+              住所名はそのまま、ピン位置の結果を更新します。
+            </Text>
+          ) : null}
+        </Box>
+        <Group gap="4xs" wrap="nowrap">
+          <Button
+            variant="subtle"
+            color="gray"
+            size="compact-xs"
+            onClick={onCancel}
+            disabled={relocating}
+          >
+            戻す
+          </Button>
+          <Button size="compact-xs" onClick={onConfirm} loading={relocating}>
+            この位置で再判定
+          </Button>
+        </Group>
+      </Group>
+    </Paper>
+  );
+}
+
+function MoveNoticePanel({ compact, notice }: { compact: boolean; notice: string }) {
+  return (
+    <Paper
+      component="output"
+      pos="absolute"
+      top={compact ? 8 : 14}
+      left={compact ? 8 : 14}
+      right={compact ? 52 : undefined}
+      radius="md"
+      px="sm"
+      py="xs"
+      bg="rgba(255,248,235,.97)"
+      shadow="sm"
+      className="risk-map-move-panel"
+      data-compact={compact || undefined}
+    >
+      <Text fz={compact ? 10.5 : 11.5} fw={700} c="orange.9">
+        {notice}
+      </Text>
+    </Paper>
+  );
+}
+
+function MapInstructionChip({ compact }: { compact: boolean }) {
   return (
     <Paper
       pos="absolute"

@@ -58,16 +58,8 @@ function aiComponentsDevPage(): Plugin {
 const reactDoctorRules = {
   ...RECOMMENDED_RULES,
   ...TANSTACK_START_RULES,
-  // React Compiler が props・context value を自動メモ化するため、インライン生成の指摘は不要。
-  "react-doctor/jsx-no-new-object-as-prop": "off" as const,
-  "react-doctor/jsx-no-new-function-as-prop": "off" as const,
-  "react-doctor/jsx-no-new-array-as-prop": "off" as const,
-  "react-doctor/jsx-no-jsx-as-prop": "off" as const,
-  "react-doctor/jsx-no-constructed-context-values": "off" as const,
-  // TanStack Router のルートファイルは Route と同居するローカルコンポーネントを持つ構成のため対象外。
-  "react-doctor/only-export-components": "off" as const,
-  // react-doctor 0.9 で追加。既存コンポーネントの分割は別途リファクタリングで対応する。
-  "react-doctor/no-high-complexity-react-function": "off" as const,
+  // TANSTACK_START_RULES に含まれていない TanStack Start 向けルール
+  "react-doctor/tanstack-start-no-direct-fetch-in-loader": "warn" as const,
 };
 
 export default defineConfig(({ mode }) => ({
@@ -90,6 +82,14 @@ export default defineConfig(({ mode }) => ({
     },
     ignorePatterns: [".agents/**", "docs/**", "**/routeTree.gen.ts"],
     jsPlugins: [{ name: "react-doctor", specifier: "oxlint-plugin-react-doctor" }],
+    settings: {
+      "react-doctor": {
+        // React Compiler 利用時に不要なメモ化系ルールを自動で無効化する
+        capabilities: ["react-compiler"],
+        // フレームワーク（TanStack Router）の規約を考慮した判定にする
+        portedRuleMode: "curated",
+      },
+    },
     options: {
       denyWarnings: true,
       typeAware: true,
