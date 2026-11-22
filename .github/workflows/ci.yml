@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Node.js・pnpm のセットアップと vp install（postinstall で Cloudflare の型も生成）を行う
+      - uses: voidzero-dev/setup-vp@0072dab61af1caed438a55cb90c8d6dc0dfa09ce # v1.22.0
+        with:
+          node-version-file: .node-version
+          cache: true
+
+      # フォーマット・Lint・型チェック
+      - run: vp check
+
+      - run: vp run test
+
+      - run: vp build
+
+      # 未使用コードの検出は当面警告扱い
+      - run: vp run fallow
+        continue-on-error: true
