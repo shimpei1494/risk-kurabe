@@ -35,6 +35,5 @@ jobs:
 
       - run: vp build
 
-      # 未使用コードの検出は当面警告扱い
+      # 未使用のファイル・export・依存関係の検出
       - run: vp run fallow
-        continue-on-error: true
