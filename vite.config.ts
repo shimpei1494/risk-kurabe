@@ -2,7 +2,7 @@ import { cloudflare } from "@cloudflare/vite-plugin";
 import babel from "@rolldown/plugin-babel";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
-import reactDoctor from "react-doctor/eslint-plugin";
+import { RECOMMENDED_RULES, TANSTACK_START_RULES } from "oxlint-plugin-react-doctor";
 import { defineConfig, type Plugin } from "vite-plus";
 
 const AI_COMPONENTS_DEV_PATH = "/__dev/ai-components";
@@ -56,11 +56,18 @@ function aiComponentsDevPage(): Plugin {
 }
 
 const reactDoctorRules = {
-  ...reactDoctor.configs.recommended.rules,
-  ...reactDoctor.configs["tanstack-start"].rules,
-  // react-doctor 0.1 系は TanStack Start の新 API `validator()` を認識せず誤検知するため無効化。
-  // react-doctor 更新時に再有効化を検討する。
-  "react-doctor/tanstack-start-server-fn-validate-input": "off" as const,
+  ...RECOMMENDED_RULES,
+  ...TANSTACK_START_RULES,
+  // React Compiler が props・context value を自動メモ化するため、インライン生成の指摘は不要。
+  "react-doctor/jsx-no-new-object-as-prop": "off" as const,
+  "react-doctor/jsx-no-new-function-as-prop": "off" as const,
+  "react-doctor/jsx-no-new-array-as-prop": "off" as const,
+  "react-doctor/jsx-no-jsx-as-prop": "off" as const,
+  "react-doctor/jsx-no-constructed-context-values": "off" as const,
+  // TanStack Router のルートファイルは Route と同居するローカルコンポーネントを持つ構成のため対象外。
+  "react-doctor/only-export-components": "off" as const,
+  // react-doctor 0.9 で追加。既存コンポーネントの分割は別途リファクタリングで対応する。
+  "react-doctor/no-high-complexity-react-function": "off" as const,
 };
 
 export default defineConfig(({ mode }) => ({
@@ -82,7 +89,7 @@ export default defineConfig(({ mode }) => ({
       node: true,
     },
     ignorePatterns: [".agents/**", "docs/**", "**/routeTree.gen.ts"],
-    jsPlugins: [{ name: "react-doctor", specifier: "react-doctor/oxlint-plugin" }],
+    jsPlugins: [{ name: "react-doctor", specifier: "oxlint-plugin-react-doctor" }],
     options: {
       denyWarnings: true,
       typeAware: true,

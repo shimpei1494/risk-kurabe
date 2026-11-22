@@ -375,6 +375,7 @@ export function RiskMap(props: RiskMapProps) {
       compact,
     });
 
+  // oxlint-disable-next-line react-doctor/effect-needs-cleanup -- 非同期生成のリスナーはcleanupのmap.remove()で解放
   useEffect(() => {
     const container = containerRef.current;
     if (!active || !container || locations.length === 0) return;
