@@ -1,5 +1,7 @@
 import { createTheme, type MantineColorsTuple } from "@mantine/core";
 
+import type { FloodDepthCategory } from "./domain/risk";
+
 const teal: MantineColorsTuple = [
   "#E9F3F2",
   "#D3E9E6",
@@ -26,14 +28,6 @@ const stone: MantineColorsTuple = [
   "#75726A",
   "#55524A",
 ];
-
-export type FloodDepthCategory =
-  | "0.5m未満"
-  | "0.5〜3m"
-  | "3〜5m"
-  | "5〜10m"
-  | "10〜20m"
-  | "20m以上";
 
 interface SwatchToken {
   bg: string;
@@ -125,7 +119,7 @@ export const theme = createTheme({
   other: { risk },
 });
 
-export type RiskTokens = typeof risk;
+type RiskTokens = typeof risk;
 
 /**
  * useMantineTheme().other を型付けするための宣言マージ。

@@ -49,7 +49,7 @@ function isValidOpenUiResponse(response: string): boolean {
   return (result.meta?.errors?.length ?? 0) === 0;
 }
 
-export type RiskAssistantStreamEvent =
+type RiskAssistantStreamEvent =
   | { type: "delta"; content: string }
   | { type: "replace"; content: string }
   | { type: "done" };

@@ -6,7 +6,7 @@ import {
   tokyoOverallRiskPmtilesUrl,
 } from "../../gis/config";
 
-export const BACKGROUND_MAP_LAYER_ID = "background-map";
+const BACKGROUND_MAP_LAYER_ID = "background-map";
 export const RISK_FILL_LAYER_ID = "risk-theme-fill";
 
 const depthColors = {

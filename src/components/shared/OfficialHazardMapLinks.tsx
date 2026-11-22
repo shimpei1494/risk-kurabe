@@ -81,7 +81,7 @@ export function OfficialHazardMapLinks({
   );
 }
 
-export function selectHazardMapLocations(
+function selectHazardMapLocations(
   locations: readonly HazardMapLocation[],
   orders: readonly LocationOrder[],
 ): HazardMapLocation[] {
