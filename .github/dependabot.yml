@@ -1,0 +1,17 @@
+# 依存パッケージ（npm）の脆弱性修正はリポジトリ設定の Dependabot security updates で行う。
+# npm の version updates は Vite+ の catalog 指定を扱えるか確認してから追加する。
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Asia/Tokyo
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ["*"]

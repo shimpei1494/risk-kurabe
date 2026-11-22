@@ -34,12 +34,9 @@ describe("recent locations", () => {
     expect(stored).toHaveLength(10);
     expect(stored[0]?.address).toBe("東京都地点10");
 
-    rememberLocation(
-      storage,
-      { address: "東京都更新地点", point: stored[1]!.point },
-      new Date("2026-07-18T01:00:00.000Z"),
-    );
-    expect(loadRecentLocations(storage)[0]?.address).toBe("東京都更新地点");
+    const updatedAt = new Date("2026-07-18T01:00:00.000Z");
+    rememberLocation(storage, { address: "東京都更新地点", point: stored[1]!.point }, updatedAt);
+    expect(loadRecentLocations(storage, updatedAt)[0]?.address).toBe("東京都更新地点");
   });
 
   it("90日を過ぎた地点と破損値を復元しない", () => {
