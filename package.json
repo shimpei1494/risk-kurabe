@@ -18,6 +18,8 @@
     "doctor": "react-doctor . --verbose --yes --no-lint",
     "fallow": "vp exec fallow dead-code",
     "fix": "vp check --fix",
+    "mutation": "vp exec mutator",
+    "mutation:diff": "vp exec mutator --since main",
     "postinstall": "vp run cf-typegen",
     "preview": "vp preview",
     "test": "vp test",
@@ -44,6 +46,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "2.0.0-rc.3",
+    "@mizchi/mutator": "^0.5.0",
     "@openuidev/devtools": "^0.3.1",
     "@openuidev/observability": "^0.0.4",
     "@rolldown/plugin-babel": "^0.3.1",

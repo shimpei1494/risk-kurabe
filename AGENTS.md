@@ -21,6 +21,7 @@
 `vp check` には含まれません。インストールは Vite+ 経由で行うため `vp run` を使ってください。
 
 - **Fallow** (`vp run fallow`) — 未使用のファイル・依存関係・エクスポートを検出します。依存関係の整理やエントリーポイントのリファクタリング時に使用してください（設定は `.fallowrc.json`）。
+- **mutator** (`vp run mutation` / `vp run mutation:diff`) — ミューテーションテストでテストの検査漏れを検出します。ロジックを変更した PR の前に差分で実行してください（設定は `mutator.config.ts`）。スキル `mutator` / `mutation-test-loop` 内の `npx mutator` は `vp exec mutator` に読み替えてください。
 - **react-doctor** (`vp run doctor`) — React に特化したヘルスチェックを実行します。スクリプトは `--no-lint` で動作するため、通常の Lint は `vp lint` で行ってください。
 
 ## Mantine UI
