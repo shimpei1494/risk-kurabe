@@ -49,8 +49,10 @@ function sortedCopy<T>(values: readonly T[], compare: (a: T, b: T) => number): T
  * 4. featureId
  */
 function compareFloodMatches(a: FloodPolygonMatch, b: FloodPolygonMatch): number {
-  const maxDifference = comparableMaxMeters(b.depth) - comparableMaxMeters(a.depth);
-  if (Number.isFinite(maxDifference) && maxDifference !== 0) return maxDifference;
+  // 差を取ると「上限なし − 有限値」が Infinity、「上限なし同士」が NaN になるため、大小比較で判定する。
+  const aMax = comparableMaxMeters(a.depth);
+  const bMax = comparableMaxMeters(b.depth);
+  if (aMax !== bMax) return bMax > aMax ? 1 : -1;
 
   const minDifference = b.depth.minMeters - a.depth.minMeters;
   if (minDifference !== 0) return minDifference;
