@@ -36,3 +36,6 @@ docs/local/cloudflare-account-switching.md
 
 # playwrite
 .playwright-mcp/
+
+# mutation test cache and reports
+.mutator
